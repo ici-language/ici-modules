@@ -367,7 +367,7 @@ static int ici_sys_fdopen()
         return 1;
     }
     setvbuf(stream, NULL, _IOLBF, 0);
-    if ((f = ici_file_new((char *)stream, &ici_stdio_ftype, NULL)) == NULL)
+    if ((f = ici_file_new((char *)stream, &ici_stdio_ftype, NULL, NULL)) == NULL)
     {
         fclose(stream);
         return 1;
@@ -496,21 +496,21 @@ static int ici_sys_fcntl()
     }
     if (!isstring(objof(what)))
         return ici_argerror(1);
-    if (what == ICISO(dupfd))
+    if (what == ICIS(dupfd))
         iwhat = F_DUPFD;
-    else if (what == ICISO(getfd))
+    else if (what == ICIS(getfd))
         iwhat = F_GETFD;
-    else if (what == ICISO(setfd))
+    else if (what == ICIS(setfd))
         iwhat = F_SETFD;
-    else if (what == ICISO(getfl))
+    else if (what == ICIS(getfl))
         iwhat = F_GETFL;
-    else if (what == ICISO(setfl))
+    else if (what == ICIS(setfl))
         iwhat = F_SETFL;
-    else if (what == ICISO(getown))
+    else if (what == ICIS(getown))
         iwhat = F_GETOWN;
-    else if (what == ICISO(setown))
+    else if (what == ICIS(setown))
         iwhat = F_SETOWN;
-    else if (what == ICISO(setlk))
+    else if (what == ICIS(setlk))
     {
         struct flock myflock;
 
@@ -945,9 +945,9 @@ static int ici_sys_getitimer()
         return 1;
     if
     (
-        assign_timeval(s, ICISO(interval), &value.it_interval)
+        assign_timeval(s, ICIS(interval), &value.it_interval)
         ||
-        assign_timeval(s, ICISO(value), &value.it_value)
+        assign_timeval(s, ICIS(value), &value.it_value)
     )
     {
         ici_decref(s);
@@ -1021,9 +1021,9 @@ static int ici_sys_setitimer()
         return 1;
     if
     (
-        assign_timeval(s, ICISO(interval), &ovalue.it_interval)
+        assign_timeval(s, ICIS(interval), &ovalue.it_interval)
         ||
-        assign_timeval(s, ICISO(value), &ovalue.it_value)
+        assign_timeval(s, ICIS(value), &ovalue.it_value)
     )
     {
         ici_decref(s);
@@ -1098,7 +1098,7 @@ static int ici_sys_pipe()
     array_t     *a;
     int_t       *fd;
 
-    if ((a = ici_array_new()) == NULL)
+    if ((a = ici_array_new(2)) == NULL)
         return 1;
     if (pipe(pfd) == -1)
     {
@@ -1107,14 +1107,12 @@ static int ici_sys_pipe()
     }
     if ((fd = ici_int_new(pfd[0])) == NULL)
         goto fail;
+    *a->a_top++ = objof(fd);
     ici_decref(fd);
-    if (ici_assign(a, ici_zero, fd))
-        goto fail;
     if ((fd = ici_int_new(pfd[1])) == NULL)
         goto fail;
+    *a->a_top++ = objof(fd);
     ici_decref(fd);
-    if (ici_assign(a, ici_one, fd))
-        goto fail;
     return ici_ret_with_decref(objof(a));
 
 fail:
@@ -1498,14 +1496,14 @@ static int ici_sys_passwd()
         return ici_argcount(1);
     }
 
-    if ((a = ici_array_new()) == NULL)
+    if ((a = ici_array_new(0)) == NULL)
         return 1;
     setpwent();
     while ((pwent = getpwent()) != NULL)
     {
         struct_t        *s;
 
-        if (ici_stk_puch_chk(a, 1) || (s = password_struct(pwent)) == NULL)
+        if (ici_stk_push_chk(a, 1) || (s = password_struct(pwent)) == NULL)
         {
             ici_decref(a);
             return 1;
@@ -1846,14 +1844,16 @@ static cfunc_t ici_sys_cfuncs[] =
     {CF_OBJ, "read",    ici_sys_read},
     {CF_OBJ, "readlink",ici_sys_readlink},
     {CF_OBJ, "rmdir",   ici_sys_simple, rmdir,  "s"},
-    {CF_OBJ, "spawn",   ici_sys_spawn, spawnv},
-    {CF_OBJ, "spawnp",  ici_sys_spawn, spawnvp},
     {CF_OBJ, "stat",    ici_sys_stat},
     {CF_OBJ, "symlink", ici_sys_symlink},
     {CF_OBJ, "time",    ici_sys_time},
     {CF_OBJ, "unlink",  ici_sys_simple, unlink, "s"}, /* should go as remove(}, is more portable */
     {CF_OBJ, "wait",    ici_sys_wait},
     {CF_OBJ, "write",   ici_sys_write},
+#   ifdef _WINDOWS
+        {CF_OBJ, "spawn",   ici_sys_spawn, spawnv},
+        {CF_OBJ, "spawnp",  ici_sys_spawn, spawnvp},
+#   endif
 #   ifndef _WINDOWS
         /* poll */
         /* times */
@@ -1898,10 +1898,10 @@ static cfunc_t ici_sys_cfuncs[] =
         {CF_OBJ, "truncate",ici_sys_truncate},
         {CF_OBJ, "umask",   ici_sys_simple, umask,  "i"},
         {CF_OBJ, "usleep",  ici_sys_usleep},
-#       if !defined(linux), && !defined(BSD4_4),
+#       if !defined(linux) && !defined(BSD4_4)
             {CF_OBJ, "lockf",   ici_sys_simple, lockf,  "iii"},
 #       endif /* linux */
-#       if !defined(NeXT), && !defined(BSD4_4),
+#       if !defined(NeXT) && !defined(BSD4_4)
             {CF_OBJ, "ulimit",  ici_sys_simple, ulimit, "ii"},
 #       endif
 #   endif
