@@ -2241,6 +2241,7 @@ static int ici_sys_usleep()
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
+    return ici_null_ret();
 }
 
 #endif /* #ifndef _WIN32 */
