@@ -152,6 +152,7 @@ ici_pdf_new(void)
         return 1;
     }
     h->h_pre_free = ici_pdf_pre_free;
+    objof(h)->o_flags &= ~O_SUPER;
     return ici_ret_with_decref(objof(h));
 }
 
