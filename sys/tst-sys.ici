@@ -12,7 +12,7 @@ if (x.mtime >= t)
 
 sys.chdir(".");
 
-f := sys.open("test.ici", sys.O_RDONLY);
+f := sys.open("tst-sys.ici", sys.O_RDONLY);
 if (typeof(f) != "int")
     fail("sys.open() didn't return an int");
 sys.close(f);
@@ -28,5 +28,11 @@ sys.write(f, "world\n...", 6);
 sys.lseek(f, 0, sys.SEEK_SET);
 if (sys.read(f, 1024) != "Hello world\n")
     fail("failed to read file I wrote");
+sys.close(f);
+remove("junk-test-file");
 
 
+if (ver() !~ #Win32#)
+{
+    
+}
