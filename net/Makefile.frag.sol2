@@ -1,0 +1,3 @@
+# This comes from net/Makefile.frag...
+LIBS	= -lsocket -lnsl
+# End of net/Makefile.frag.
