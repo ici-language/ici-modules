@@ -28,7 +28,7 @@ depend:
 
 install: $(LIBINSTALLS)
 	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
-	$(INSTALL) ici$(MODULE).1 $(PREFIX)/lib/man1
+	$(INSTALL) ici$(MOD).1 $(PREFIX)/man/man1
 	
 
 $(OTHERRULES)
