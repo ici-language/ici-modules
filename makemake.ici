@@ -1,18 +1,21 @@
 /*
  * This script generates a Makefile in each of the module directories
  * on the list below for a UNIX-like system. Each Makefile is tailored to
- * build the modules on and for the flavour of system this script is run on.
- * The known flavours are listed below.
+ * build the modules on, and for, the flavour of system this script is
+ * run on. The known flavours are listed below.
  *
  * The Makefiles it generates are made by the following process:
  *
  * 1) If the sub-dir contains a Makefile.flavour, where flavour is
- *    the current system, that file is copied unmodified to Makefile.
- * 2) Otherwise, if the sub-dir contains a Makefile.generic, that
- *    is copies to Makefile with certain text substitutions as shown
- *    in the table below.
- * 3) Otherwise, the Makefile.generic from this top level directory is
- *    copied to Makefile in the sub-dir with similar substitutions.
+ *    the current system, that file is used as a basis.
+ *    Otherwise, if the sub-dir contains a Makefile.generic, that
+ *    is used as a basis.
+ *    Otherwise, the Makefile.generic from this top level directory is
+ *    used as a basis.
+ *
+ * 2) The makefile being used as a basis is copied to Makefile in the
+ *    module directory with certain $(...) variables textually replaced
+ *    by this script from values in the tables below.
  *
  * Ideally, a module will not have any Makefiles, and the generic one
  * will be sufficient. However, if there are special build requirements,
@@ -54,27 +57,27 @@ static modules = [struct
 static subs = [struct
 
     /*
-     * $(ICIV) ici4 or whatever version number we are up to.
+     * ICIV: ici4 or whatever version number we are up to.
      */
-    ("$(ICIV)") = "ici4",
+    ICIV = "ici4",
     
     /*
-     * $(ICISDK) The location of the ICISDK. In particular, the location
+     * ICISDK: The location of the ICISDK. In particular, the location
      * of ici.h for this system. This could be the directory where ICI
      * was recently built. (If relative, relative to the module dir.)
      */
-    ("$(ICISDK)") = "../../ici",
-    //("$(ICISDK)") = "/usr/local/lib/ici4",
+    ICISDK = "../../ici",
+    //ICISDK = "/usr/local/lib/ici4",
 
     /*
-     * $(MOD) is the name of the module (like sys, or net).
+     * MOD: the name of the module (like sys, or net).
      */
-    ("$(MOD)") = [func(){return module;}],
+    MOD = [func(){return module;}],
     
     /*
-     * $(ICIOBJS) is *.c in the module dir with all the .c changed to .o.
+     * ICIOBJS: *.c in the module dir with all the .c changed to .o.
      */
-    ("$(ICIOBJS)") = [func()
+    ICIOBJS = [func()
         {
             cs := dir(module, #\.c$#);
             r := strbuf();
@@ -84,9 +87,9 @@ static subs = [struct
         }],
         
     /*
-     * $(ICISRCS) is *.c in the module dir.
+     * ICISRCS: *.c in the module dir.
      */
-    ("$(ICISRCS)") = [func()
+    ICISRCS = [func()
         {
             cs := dir(module, #\.c$#);
             r := strbuf();
@@ -95,52 +98,51 @@ static subs = [struct
             return r;
         }],
      
-    
     /*
-     * $(PIC) is the option to the C compiler to make it produce
+     * PIC: is the option to the C compiler to make it produce
      * position independent code suitable for a shared or dynamicly
      * loading library of the sort ICI needs on this system.
      */
-    ("$(PIC)") = [struct osx = "-dynamic -fno-common", default = "-fpic"],
+    PIC = [struct osx = "-dynamic -fno-common", default = "-fpic"],
     
     /*
-     * $(SOSUFFIX) The suffix the shared, dynamic link, dynamic load,
+     * SOSUFFIX: The suffix the shared, dynamic link, dynamic load,
      * or whatever library should have to be suitable for ICI.
      */
-    ("$(SOSUFFIX)") = [struct osx = "dylib", default = "so"],
+    SOSUFFIX = [struct osx = "dylib", default = "so"],
     
     /*
      * $(OPTIM) The argument to the C compiler to turn on optimisation.
      */
-    ("$(OPTIM)") = [struct default = "-g -O2 -DNDEBUG"],
-    //("$(OPTIM)") = [struct default = "-g"],
+    OPTIM = [struct default = "-g -O2 -DNDEBUG"],
+    //OPTIM = [struct default = "-g"],
     
     /*
-     * $(ICICFLAGS) C compiler options in addition to the others already
+     * ICICFLAGS C compiler options in addition to the others already
      * mentioned here.
      */
-    ("$(ICICFLAGS)") = [struct bsd = "-DBSD_4", default = ""],
+    ICICFLAGS = [struct bsd = "-DBSD_4", default = ""],
 
     /*
-     * $(ICILDFLAGS) Linker options in addition to the others already
+     * ICILDFLAGS Linker options in addition to the others already
      * mentioned here.
      */
-    ("$(ICILDFLAGS)") =
+    ICILDFLAGS =
         [struct
             osx = "-flat_namespace -bundle -undefined suppress "
-		"-install_name /usr/local/lib/ici4/$(LIB)",
+                "-install_name /usr/local/lib/ici4/$(LIB)",
             sol2 = "-G",
             default = "-shared",
         ],
     
     /*
-     * $(LIBS) Any other libs that should be linked in.
+     * LIBS Any other libs that should be linked in.
      */
-    ("$(LIBS)") = "",
+    LIBS = "",
     
-    ("$(MAKEIN)") = [func(){return makein;}],
-    ("$(MAKEOUT)") = [func(){return makeout;}],
-    ("$(FLAVOUR)") = [func(){return flavour;}],
+    MAKEIN = [func(){return makein;}],
+    MAKEOUT = [func(){return makeout;}],
+    FLAVOUR = [func(){return flavour;}],
 ];
  
 /*
@@ -195,13 +197,12 @@ printf("Uname \"%s\", therefor flavour \"%s\".\n", uname, flavour);
 static module;
 
 /*
- * Build a regular expression from the keys of the subs struct. But we need
- * to escape all the $, ( and ) chars. Slosh city.
+ * Build a regular expression from the keys of the subs struct.
  */
-re = strbuf("(");
+re = strbuf("\\$\\((");
 forall (v, k in subs)
-    strcat(re, gsub(k, #[()$]#, "\\\\\\&"), "|");
-strcat(re, nels(re) - 1, ")");
+    strcat(re, k, "|");
+strcat(re, nels(re) - 1, ")\\)");
 re = regexp(re);
 
 /*
@@ -228,7 +229,7 @@ forall (can_do_flavs, module in modules)
      * Break it into bits to be replaced, and bits not to be replaced,
      * using that regular expression we built.
      */
-    f = smash(f, re, "\\0", "\\&", 1);
+    f = smash(f, re, "\\0", "\\1", 1);
     /*
      * Perform substitutions on the odd numbered entries.
      */
