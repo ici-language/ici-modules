@@ -33,22 +33,22 @@ ici_str_toupper(void)
     char    *p, *q;
 
     if (ici_typecheck("o", &str))
-    return 1;
+        return 1;
     if (!isstring(objof(str)))
-    return ici_argerror(0);
+        return ici_argerror(0);
     if ((buffer = ici_nalloc(str->s_nchars)) == NULL)
-    return 1;
+        return 1;
     for
     (
-    p = str->s_chars, q = buffer;
-    p - str->s_chars < str->s_nchars;
-    ++p, ++q
+        p = str->s_chars, q = buffer;
+        p - str->s_chars < str->s_nchars;
+        ++p, ++q
     )
     {
-    if (islower((int)*p))
-        *q = toupper(*p);
-    else
-        *q = *p;
+        if (islower((int)*p))
+            *q = toupper(*p);
+        else
+            *q = *p;
     }
     newstr = ici_str_new(buffer, str->s_nchars);
     ici_nfree(buffer, str->s_nchars);
@@ -71,22 +71,22 @@ ici_str_tolower(void)
     char    *p, *q;
 
     if (ici_typecheck("o", &str))
-    return 1;
+        return 1;
     if (!isstring(objof(str)))
-    return ici_argerror(0);
+        return ici_argerror(0);
     if ((buffer = ici_alloc(str->s_nchars)) == NULL)
-    return 1;
+        return 1;
     for
     (
-    p = str->s_chars, q = buffer;
-    p - str->s_chars < str->s_nchars;
-    ++p, ++q
+        p = str->s_chars, q = buffer;
+        p - str->s_chars < str->s_nchars;
+        ++p, ++q
     )
     {
-    if (isupper((int)*p))
-        *q = tolower(*p);
-    else
-        *q = *p;
+        if (isupper((int)*p))
+            *q = tolower(*p);
+        else
+            *q = *p;
     }
     newstr = ici_str_new(buffer, str->s_nchars);
     ici_free(buffer);
@@ -104,9 +104,9 @@ ici_str_tolower(void)
 static int
 ici_str_error(void)
 {
-    long    code;
+    long code;
     if (ici_typecheck("i", &code))
-    return 1;
+        return 1;
     return ici_str_ret(strerror((int)code));
 }
 
@@ -132,18 +132,18 @@ ici_str_ptime(void)
     struct tm   tm;
 
     if (ici_typecheck("ss", &str, &fmt))
-    return 1;
+        return 1;
     if (strptime(str, fmt, &tm) == NULL)
     {
-    ici_error = "failed to convert string";
-    return 1;
+        ici_error = "failed to convert string";
+        return 1;
     }
     if ((d = ici_struct_new()) == NULL)
-    return 1;
+        return 1;
 
 #define ASSIGN(N)\
     if ((i = ici_int_new(tm.tm_ ## N)) == NULL || ici_assign(d, ICIS(N), i))\
-    goto fail;\
+        goto fail;\
     ici_decref(i)
 
     ASSIGN(sec);
@@ -160,7 +160,7 @@ ici_str_ptime(void)
 
 fail:
     if (i != NULL)
-    ici_decref(i);
+        ici_decref(i);
     ici_decref(d);
     return 1;
 }
@@ -180,60 +180,57 @@ fail:
 static int
 ici_str_join(void)
 {
-    array_t             *a;
-    int                 i;
-    object_t            **o;
-    string_t            *s;
-    char                *p;
+    array_t     *a;
+    long        len;
+    long        n;
+    long        i;
+    string_t    *s;
+    char        *p;
     char        *sep = " ";
     char        seplen = 1;
 
     if (ici_typecheck("a", &a))
     {
-    if (ici_typecheck("ao", &a, &s))
-        return 1;
-    if (!isstring(objof(s)))
-        return ici_argerror(1);
-    sep = s->s_chars;
-    seplen = s->s_nchars;
+        if (ici_typecheck("ao", &a, &s))
+            return 1;
+        if (!isstring(objof(s)))
+            return ici_argerror(1);
+        sep = s->s_chars;
+        seplen = s->s_nchars;
     }
-    i = 0;
-    for (o = a->a_base; o < a->a_top; ++o)
-    {
-        switch ((*o)->o_tcode)
-        {
-        case TC_INT:
-            ++i;
-            break;
+    n = ici_array_nels(a);
+    if (n == 0)
+        return ici_str_ret("");
 
-        case TC_STRING:
-            i += stringof(*o)->s_nchars;
-            break;
-        }
-    if (o < (a->a_top-1))
-        i += seplen;
+    for (len = 0, i = 0; i < n; ++i)
+    {
+        object_t *o = ici_array_get(a, i);
+        if (isint(o))
+            ++len;
+        else if (isstring(o))
+            len += stringof(o)->s_nchars;
+        len += seplen;
     }
-    if ((s = ici_str_alloc(i)) == NULL)
+    len -= seplen; /* adjust for extra addition at tail of loop */
+
+    if ((s = ici_str_alloc(len)) == NULL)
         return 1;
     p = s->s_chars;
-    for (o = a->a_base; o < a->a_top; ++o)
+    for (i = 0; i < n; ++i)
     {
-        switch ((*o)->o_tcode)
+        object_t *o = ici_array_get(a, i);
+        if (isint(o))
+            *p++ = (char)intof(o)->i_value;
+        else if (isstring(o))
         {
-        case TC_INT:
-            *p++ = (char)intof(*o)->i_value;
-            break;
-
-        case TC_STRING:
-            memcpy(p, stringof(*o)->s_chars, stringof(*o)->s_nchars);
-            p += stringof(*o)->s_nchars;
-            break;
+            memcpy(p, stringof(o)->s_chars, stringof(o)->s_nchars);
+            p += stringof(o)->s_nchars;
         }
-    if (o < (a->a_top-1))
-    {
-        memcpy(p, sep, seplen);
-        p += seplen;
-    }
+        if (i < (n - 1))
+        {
+            memcpy(p, sep, seplen);
+            p += seplen;
+        }
     }
     if ((s = stringof(ici_atom(objof(s), 1))) == NULL)
         return 1;
