@@ -21,7 +21,7 @@
 static ici_objwsup_t *ici_db_class = NULL;
 
 static int
-set_error(const char *err)
+set_error(char *err)
 {
     if (ici_chkbuf(strlen(err)))
     {
@@ -30,6 +30,7 @@ set_error(const char *err)
     else
     {
 	strcpy(ici_buf, err);
+	free(err);
 	ici_error = ici_buf;
     }
     return 1;
@@ -129,7 +130,7 @@ callback(void *u, int ncols, char **cols, char **names)
     ici_array_t *recs = u;
     ici_struct_t *s;
     ici_str_t *k;
-    ici_str_t *v;
+    ici_obj_t *v;
     int i;
 
     if ((s = ici_struct_new()) == NULL)
@@ -138,11 +139,19 @@ callback(void *u, int ncols, char **cols, char **names)
     {
 	if ((k = ici_str_new_nul_term(names[i])) == NULL)
 	    goto fail;
-	if ((v = ici_str_new_nul_term(cols[i])) == NULL)
-	    goto fail1;
-	if (ici_assign(s, k, v))
-	    goto fail2;
-	ici_decref(v);
+	if (cols[i] == NULL)
+	{
+	    if (ici_assign(s, k, &o_null))
+		goto fail1;
+	}
+	else 
+	{
+	    if ((v = objof(ici_str_new_nul_term(cols[i]))) == NULL)
+		goto fail1;
+	    if (ici_assign(s, k, v))
+		goto fail2;
+	    ici_decref(v);
+	}
 	ici_decref(k);
     }
     if (ici_array_push(recs, objof(s)))
