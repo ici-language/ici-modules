@@ -1,0 +1,199 @@
+static files = struct();
+static stack = array();
+
+static interactive = 0;
+static stop = 0;    /* Stop on next line. */
+static break_line = -1;;
+static trace = 1;
+
+extern
+dbg_error(e, fname, lineno)
+{
+    printf("DBG: FAIL: %s, %d: %s\n", fname, lineno, e);
+}
+
+extern
+summary_line(fname, lineno, vs)
+{
+    /*
+     * Generate the stack traceback string.
+     */
+    bt := strbuf();
+    sep := "";
+    cvs := copy(vs);
+    while (v := pop(cvs))
+    {
+        if (v._func_ != NULL)
+	    s := sprintf("%a", v._func_);
+        else if (v._file_ != NULL)
+	    s := sprintf("%a", v._file_);
+        else
+            s := "?";
+        strcat(bt, sep, s);
+        sep := " ";
+    }
+    /*
+     * Generate the source location string.
+     */
+    sl := sprintf("%s, %d", fname, lineno);
+    /*
+     * Generate the actual source text string.
+     */
+    if (files[fname] == NULL)
+    {
+	try
+            files[fname] = gettokens(getfile(fname), '\n');
+        onerror
+            files[fname] = array();
+    }
+    lines := files[fname];
+    if ((st := lines[lineno - 1]) == NULL)
+        st := "?";
+    //st = st ~~ #\s*(.*)#;
+
+    /*
+     * -sl:15-|-st:?-|-bt:?-
+     * ----------79---------
+     */
+    if (nels(sl) > 15)
+        sl = interval(sl, -15);
+    btz = nels(bt);
+    if (btz > 30)
+        btz = 30;
+    bt = interval(bt, 0, btz);
+    stz = 79 - 16 - btz - 1;
+    sl = interval(sl, 0, stz);
+    if (stz > nels(st))
+        st = interval(st, 0, stz);
+    return sprintf("%15s|%-*s|%-*s", sl, stz, st, btz, bt);
+}
+
+extern
+dbg_src(fname, lineno)
+{
+    if (break_line == lineno)
+        stop = 1;
+    if (!stop && !trace)
+        return;
+    vs := vstack();
+    pop(vs);
+    printf("%s\n", summary_line(fname, lineno, vs));
+    /*
+    forall (v in vs)
+    {
+        if (v._func_ != NULL)
+	    printf("%a ", v._func_);
+    }
+    if (files[fname] == NULL)
+    {
+	try
+            files[fname] = gettokens(getfile(fname), '\n');
+        onerror
+            files[fname] = array();
+    }
+    lines := files[fname];
+    if ((l := lines[lineno - 1]) == NULL)
+        l := "?";
+    printf("DBG: %s, %d: %s\n", fname, lineno, l);
+    */
+    if (interactive && stop)
+        prompt(vstack(1));
+}
+
+extern
+dbg_fncall(func, args)
+{
+    auto	a, i;
+
+    if (typeof(func) == "func")
+        n := func.name;
+    else
+        n := sprintf("%a", func);
+    push(stack, n);
+    if (!stop)
+        return;
+    printf("DBG: -> %s(", n);
+    forall (a, i in args)
+    {
+	printf("%a%s", a, i < nels(args) - 1 ? ", " : "");
+    }
+    printf(")\n");
+}
+
+extern
+dbg_fnresult(result)
+{
+    if ((n := pop(stack)) == NULL)
+	return;
+    if (!stop)
+        return;
+    printf("DBG: <- %a, %s()\n", result, n);
+}
+
+extern
+prompt(call_scope)
+{
+    for (;;)
+    {
+        try
+        {
+            printf("DBG> ");
+            flush(stdout);
+            l := getline();
+            if (l ~ #^!#)
+            {
+                system(interval(l, 1));
+                continue;
+            }
+            if (l ~ #^p #)
+            {
+                l = interval(l, 2);
+                l = sprintf("x := (%s);", l);
+                s := parse(l, struct(call_scope));
+                printf("%a\n", s.x);
+                continue;
+            }
+            l = smash(l, #\S+#, "\\&");
+            if (l == NULL)
+            {
+                printf("? for help\n");
+                continue;
+            }
+            switch (l[0])
+            {
+            case "?":
+            case "help":
+            case "h":
+                printf("!cmd..., c, \n");
+                continue;
+
+            case "c":
+                stop = 0;
+                return;
+
+            case "s":
+                stop = 1;
+                return;
+
+            case "b":
+                break_line = int(l[1]);
+                continue;
+
+            case "q":
+                exit(1);
+
+            default:
+                printf("? for help\n");
+                continue;
+            }
+        }
+        onerror
+        {
+            printf("DBG error: %s\n", error);
+        }
+    }
+}
+
+interactive = 1;
+stop = 1;
+debug(1);

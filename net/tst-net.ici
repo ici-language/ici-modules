@@ -1,7 +1,6 @@
 n = 1000;
 static data = "Hello there sailor\n";
 
-printf("0\n");
 static
 echo_client(n, port)
 {
@@ -16,14 +15,10 @@ echo_client(n, port)
     return 1;
 }
 
-printf("1\n");
 ssock = net.listen(net.bind(net.socket("tcp/ip")));
-printf("2\n");
 client = thread(echo_client, n, net.getportno(ssock));
-printf("3\n");
 csock = net.accept(ssock);
 t = 0;
-printf("A\n");
 while (str = net.recv(csock, nels(data)))
 {
     net.send(csock, str);

@@ -56,6 +56,7 @@ static modules = [struct
     bignum  = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     channel = [set "bsd", "linux",                "cygwin", "w32"],
     cgi     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    dbg     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     dll     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     env     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     html    = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
