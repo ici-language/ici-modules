@@ -2208,13 +2208,16 @@ fail:
 static int ici_sys_sleep()
 {
     long    t;
+    ici_exec_t *x;
 
     if (ici_typecheck("i", &t))
         return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
+    x = ici_leave();
     sleep(t);
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
@@ -2231,13 +2234,16 @@ static int ici_sys_sleep()
 static int ici_sys_usleep()
 {
     long    t;
+    ici_exec_t *x;
 
     if (ici_typecheck("i", &t))
         return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
+    x = ici_leave();
     usleep(t);
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
