@@ -2,7 +2,7 @@
  * This is a totally fake "install" program for Windows. It assumes
  * UNIX-like install arguments, but re-interprets them into fragments
  * of an NSIS install script. It accumulates these fragments by appending
- * onto ../install-bits.txt. That file s truncated at the start of a build
+ * onto ../install-bits.txt. That file is truncated at the start of a build
  * process, then at the end, it is read by mk-nsis-installer.ici to
  * build the complete NSIS install script.
  */
@@ -20,9 +20,17 @@ static descs = [struct
 static
 desc(name)
 {
-    if (descs[name])
-        return descs[name];
-    return sprintf("The ICI %s module", name);
+    try
+    {
+        f := fopen(name + ".synopsis", "r");
+        s := getline(f);
+        close(f);
+    }
+    onerror
+    {
+        s := sprintf("The ICI %s module", name);
+    }
+    return s;   
 }
 
 cwd = getcwd();

@@ -1,10 +1,12 @@
 /*
- * $Id: uuid.c,v 1.3 2003/01/27 11:15:34 atrn Exp $
+ * $Id: uuid.c,v 1.4 2003/02/01 04:52:12 atrn Exp $
  *
  * ICI UUID library interface. Placed in the PUBLIC DOMAIN, A.Newman, October 2000.
  */
 
 /*
+ * Universal Unique Identifier manipulation
+ *
  * The ICI `uuid' module provides facilities for creating and manipulating
  * `Universal Unique Identifiers' or UUIDs. These are also known as
  * `Globally Unique Identifiers' or GUIDs. UUIDs are 128-bit values
@@ -21,7 +23,7 @@
  * the GNU Library General Public License and is included with most Linux
  * distributions or is otherwise widely available.
  *
- * This --intro-- forms part of the --ici-uuid-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-uuid-- documentation.
  */
 
 #include <ici.h>

@@ -1,4 +1,6 @@
 /*
+ * The environment as a data object
+ *
  * The env ici module provides access the process environment
  * vector as an ici struct. Variables can be retrieved from the environment
  * by fetching them from the global variable "env" and the environment may
@@ -24,7 +26,7 @@
  * using a forall statement nor is it possible to retrieve the
  * names of all environment variables using the keys() function.
  *
- * This --intro-- forms part of the --ici-env-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-env-- documentation.
  */
 
 #include <ici.h>

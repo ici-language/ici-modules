@@ -1,7 +1,9 @@
 /*
+ * PDFlib binding
+ *
  * ICI language binding to Thomas Merz's PDFlib PDF generation library.
  *
- * This --intro-- forms part of the --ici-pdf-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-pdf-- documentation.
  */
 
 #include <ici.h>

@@ -10,58 +10,68 @@
                     H2 {font-size: 10pt; font-family: Arial;
                         font-style: italic; font-weight: bold}
                     PRE {background: aliceblue}
+                    DT {font-style: Italic}
+                    DD.DefnIn4cm {width: 337pt; margin-left: 113pt}   
+                    DD.DefnIn2cm {width: 396pt; margin-left: 56pt}
                 </STYLE>
                 <META NAME="Generator" CONTENT="extract-doc-from-src.ici">
                 <META NAME="Keywords" CONTENT="ICI">
                 <META NAME="Description" CONTENT="ICI extension module documentation">
             </HEAD>
             <BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
-            <H1>The ICI dll module</H1>
+            <H1>The ICI dll module - Call dynamic libs directly</H1>
 <P ALIGN="left">The ICI <I>dll</I> module allows the calling of pre-existing
 functions in dynamic loaded libraries directly from
-ICI without any explicitly compiled linkage. For example,
-under Windows one may execute:</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>The subject</I>&nbsp;</TD>
-                <TD>And the full description of something that requirs
-a tagged paragraph.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>The subject</I>&nbsp;</TD>
-                <TD>And the full description of something that requirs
-a tagged paragraph.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <PRE>    dll.user32.MessageBox
-    (
-        NULL,
-        &quot;Test of call to dll.user32.MessageBox(...)&quot;,
-        &quot;ICI DLL call test&quot;,
-        0
-    );</PRE>
-<PRE>    dll.user32.MessageBox
-    (
-        NULL,
-        &quot;Test of call to dll.user32.MessageBox(...)&quot;,
-        &quot;ICI DLL call test&quot;,
-        0
-    );</PRE>
-<P ALIGN="left">And this is some more body text. The ICI <I>dll</I>
-module allows the calling of pre-existing functions
-in dynamic loaded libraries directly from ICI without
-any explicitly compiled linkage. For example, under
-Windows one may execute.</P>
-<P ALIGN="left">And this is some more body text. The ICI <I>dll</I>
-module allows the calling of pre-existing functions
-in dynamic loaded libraries directly from ICI without
-any explicitly compiled linkage. For example, under
-Windows one may execute.</P>
+ICI without any explicitly compiled linkage. Calls
+have the form:</P>
+<PRE>    dll.libname.funcname(args...)</PRE>
+<P ALIGN="left">Where <I>libname</I> is used to determine a dynamically
+loadable library using the ususal conventions of the
+local system. (For example, it might find <I>libname.dll</I>
+on Windows, or <I>liblibname.so</I> on many UNIX-like
+systems. The usual system search paths will be used.)</P>
+<P ALIGN="left">The first time a particular name (such as <I>libname</I>
+in this example) is used to index the <I>dll</I> object,
+it is resolved to a library which is loaded into the
+current processes address space. A special object that
+refers to this library is then assigned to that field
+of the <I>dll</I> object. Thus subsequent references
+to the same library will return the reference to the
+same loaded library.</P>
+<P ALIGN="left">Function names are resolved in a similar fashion. That
+is, on first index the name is looked up in the library
+and a special internal linkage function created. This
+is assigned to that field of the loaded library object.
+Thus subsequent references to the same function name
+reference the created linkage function.</P>
 <H1>Details</H1>
+<H2>Argument translation</H2>
+<P ALIGN="left">The linkage function will follow simple rules to translate
+actual arguments made in the ICI call into actual arguments
+passed to the library function.</P>
+<DT>int</DT>
+<DD CLASS="DefnIn4cm">Will be passed as a 32 bit integer.
+</DD>
+<DT>string</DT>
+<DD CLASS="DefnIn4cm">Will be passed as a pointer to the internal character
+data of the string. If the string is atomic (as almost
+all strings are), the function must not modify the
+content in any way. If the string is non-atomic (as
+created by <I>strbuf()</I>) it may be modified within its
+length constraints. Note that the internal representation
+of ICI strings have a guard nul character just beyond
+their known length, and thus can be used as C nul-terminated
+strings. But they may also have internal nul characters
+of course.
+</DD>
+<DT>NULL</DT>
+<DD CLASS="DefnIn4cm">A 32 bit 0 will be passed.
+</DD>
+<DT>array of strings</DT>
+<DD CLASS="DefnIn4cm">XXXmore
+</DD>
+<P ALIGN="left">Up to 8 32 bit words worth of arguments may be passed
+to the library function.</P>
 <H2>dll.xxx.DECL(func-name, ...)</H2>
 <P ALIGN="left"><I>DECL</I> allows the explicit declaration of functions
 that, for some reason, can't be relied on to deduce

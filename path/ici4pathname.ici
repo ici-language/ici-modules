@@ -1,11 +1,13 @@
 /*
- * $Id$
+ * $Id: ici4pathname.ici,v 1.1 2003/01/27 06:43:03 atrn Exp $
  */
 
 /*
+ * Pathname manipulation
+ *
  * Functions for manipulating file system pathnames.
  *
- * This --intro-- forms part of the --ici-pathname-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-pathname-- documentation.
  */
 
 /*

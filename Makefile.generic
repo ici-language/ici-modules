@@ -25,19 +25,19 @@ $(CF_MAKE_FRAG_FLAV)
 $(ICIMOD): $(OBJS)
 	$(CC) $(CF_LD_OUT_NAME_OPT) $(OBJS) $(LIBS) $(LDFLAGS) 
 
-doc: ici$(MOD).1 ici$(MOD).html
+doc: ici$(MOD).1 ici$(MOD).html $(MOD).man.frag $(MOD).synopsis
 
-ici$(MOD).1: $(ALL_SRC)
+ici$(MOD).1 $(MOD).man.frag $(MOD).synopsis: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici man $(ALL_SRC)
 
 ici$(MOD).html: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
 clean:
-	$(CF_RM) -f $(OBJS) 
+	-$(CF_RM) $(OBJS) $(MOD).man.frag $(MOD).html.frag $(MOD).synopsis
 
 clobber: clean
-	$(CF_RM) -f $(ICIMOD) ici$(MOD).1 ici$(MOD).html .depend
+	-$(CF_RM) $(ICIMOD) ici$(MOD).1 ici$(MOD).html .depend
 
 depend:
 	mkdep $(CFLAGS) $(C_SRC)

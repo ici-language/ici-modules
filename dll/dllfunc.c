@@ -13,6 +13,38 @@ int                     dllfunc_tcode;
 #endif
 
 /*
+ * Argument translation
+ *
+ * The linkage function will follow simple rules to translate actual
+ * arguments made in the ICI call into actual arguments passed to the
+ * library function.
+ *
+ * int                  Will be passed as a 32 bit integer.
+ *
+ * string               Will be passed as a pointer to the internal
+ *                      character data of the string. If the string
+ *                      is atomic (as almost all strings are), the
+ *                      function must not modify the content in any way.
+ *                      If the string is non-atomic (as created by
+ *                      'strbuf()') it may be modified within its
+ *                      length constraints. Note that the internal
+ *                      representation of ICI strings have a guard
+ *                      nul character just beyond their known length,
+ *                      and thus can be used as C nul-terminated strings.
+ *                      But they may also have internal nul characters
+ *                      of course.
+ *
+ * NULL                 A 32 bit 0 will be passed.
+ *
+ * array of strings     XXXmore
+ *
+ * Up to 8 32 bit words worth of arguments may be passed to the
+ * library function.
+ *
+ * This --topic-- forms part of the --ici-dll-- documentation.
+ */
+
+/*
  * Call the function at addr, which has the function style given by ct,
  * with the nargs 32 bit words of arguments stored in args and return
  * the 32 bit word the function returned.
@@ -87,14 +119,14 @@ static int
 is_array_of_strings(object_t *o)
 {
     array_t     *a;
-    object_t	**po;
+    object_t    **po;
 
     if (!isarray(o))
-	    return 0;
+        return 0;
     a = arrayof(o);
     for (po = ici_astart(a); po != ici_alimit(a); po = ici_anext(a, po));
-	    if (!isstring(*po))
-	        return 0;
+        if (!isstring(*po))
+            return 0;
     return 1;
 }
 
@@ -107,33 +139,33 @@ is_array_of_strings(object_t *o)
 static char **
 ici_array_to_argv(array_t *a)
 {
-    char	    **argv;
-    int		    argc;
-    size_t	    sz;
-    char	    *p;
-    ici_obj_t	**po;
+    char        **argv;
+    int         argc;
+    size_t      sz;
+    char        *p;
+    ici_obj_t   **po;
     int         i;
 
     argc = ici_array_nels(a);
     sz = (argc + 1) * sizeof (char *);
     for (po = ici_astart(a); po != ici_alimit(a); po = ici_anext(a, po));
     {
-	    if (!isstring(*po))
-	    {
-	        ici_error = "non-string in argv-style array";
-	        return NULL;
-	    }
-	    sz += stringof(*po)->s_nchars + 1;
+        if (!isstring(*po))
+        {
+            ici_error = "non-string in argv-style array";
+            return NULL;
+        }
+        sz += stringof(*po)->s_nchars + 1;
     }
     if ((argv = ici_alloc(sz)) == NULL)
-	    return NULL;
+        return NULL;
     p = (char *)&argv[argc + 1];
     i = 0;
     for (po = ici_astart(a); po != ici_alimit(a); po = ici_anext(a, po));
     {
-	    argv[i++] = p;
-	    memcpy(p, stringof(*po)->s_chars, stringof(*po)->s_nchars + 1);
-	    p += stringof(*po)->s_nchars + 1;
+        argv[i++] = p;
+        memcpy(p, stringof(*po)->s_chars, stringof(*po)->s_nchars + 1);
+        p += stringof(*po)->s_nchars + 1;
     }
     argv[argc] = NULL;
     return argv;
@@ -254,10 +286,10 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
         {
             *argp = 0;
         }
-	    else if (is_array_of_strings(o))
-	    {
-	        *argp = (long)ici_array_to_argv(arrayof(o));
-	    }
+        else if (is_array_of_strings(o))
+        {
+            *argp = (long)ici_array_to_argv(arrayof(o));
+        }
         else if (isptr(o))
         {
             object_t    *po;
@@ -277,15 +309,15 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
                 *p = intof(po)->i_value;
                 *argp = (long)p;
             }
-	        else if (is_array_of_strings(po))
-	        {
-		        char ***pargv;
-		        pargv = alloca(sizeof (char **));
+            else if (is_array_of_strings(po))
+            {
+                char ***pargv;
+                pargv = alloca(sizeof (char **));
                 if (pargv == NULL)
                     goto alloca_fail;
-		        *pargv = ici_array_to_argv(arrayof(po));
-		        *argp = (long)pargv;
-	        }
+                *pargv = ici_array_to_argv(arrayof(po));
+                *argp = (long)pargv;
+            }
             else
             {
                 return ici_argerror(i);
@@ -319,10 +351,10 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
                     return 1;
             }
         }
-	    else if (is_array_of_strings(o))
-	    {
-	        ici_free((char *)*argp);
-	    }
+        else if (is_array_of_strings(o))
+        {
+            ici_free((char *)*argp);
+        }
     }
     return ici_int_ret(ret);
 

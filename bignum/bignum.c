@@ -1,8 +1,11 @@
 /*
- * ICI language binding to the DEC/INRIA "bignum" high-precision interger arithmetic package
+ * DEC/INRIA big integer arithmetic
+ *
+ * ICI language binding to the DEC/INRIA "bignum" high-precision interger
+ * arithmetic package
  *
  *
- * This --intro-- forms part of the --ici-bignum-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-bignum-- documentation.
  */
 
 #include <ici.h>

@@ -239,7 +239,7 @@ ici_debug_t ici_debug_funcs =
 };
 
 /*
- * break()
+ * widb.break()
  *
  * Suspends execution and presents the debugger's GUI to the user,
  * where they may view the current source, the stact traceback,
@@ -258,7 +258,7 @@ f_debug_break()
 
 
 /*
- * view(any)
+ * widb.view(any)
  *
  * Suspends executions and presents a window to the user with the value
  * 'any' displayed. If 'any' is an aggregate object, it can be expanded
@@ -293,6 +293,8 @@ widb_ici_uninit(void)
 }
 
 /*
+ * Windows ICI debugger
+ *
  * The Windows ICI Debugger ('widb') extension module provides a simple
  * graphical interface to ICI's debugging facilities under Windows.
  *
@@ -306,10 +308,19 @@ widb_ici_uninit(void)
  *  load("widb");
  *
  * Upon load, the extension module self-registers with ICI's debugger
- * interface and enables debugging. Uncaught errors will automatically
- * cause the debuggers GUI to be presented.
+ * interface and enables debugging.
  *
- * This --intro-- forms part of the --ici-widb-- documentation.
+ * Uncaught errors will automatically trigger the debugger and an alert
+ * box with the error and the choices "Abort", "Retry", and "Ignore".
+ * Selecting "Retry" will cause the debuggers GUI to be presented
+ * with a source window at the failing source line.
+ *
+ * The debugger may also be triggered explicitly by use of the 'widb.break'
+ * and 'widb.view' functions.
+ *
+ * This debugger is fairly old. It is due for an update.
+ *
+ * This --intro-- and --synopsis-- forms part of --ici-widb-- documentation.
  */
 ici_obj_t *
 ici_widb_library_init() /* Was widb_ici_init() */

@@ -116,8 +116,8 @@ static modules = [struct
  * CF_INSTALL           The command, with options, to copy files into an
  *                      install directory. (Varies with flavour.)
  *
- * CF_RM                The command to remove files. It is assumed to support
- *                      a -f option. (rm except for Windows, where is is del.)
+ * CF_RM                The command to remove files, including any "force"
+ *                      option. (rm except for Windows, where is is del.)
  *
  * CF_SO                The suffix the shared, dynamic link, dynamic load, or
  *                      whatever library should have to be suitable for ICI.
@@ -205,8 +205,8 @@ static subs = [struct
 
     CF_RM =
     [struct
-        w32 = "del",
-        default = "rm"
+        w32 = "del /f",
+        default = "rm -f"
     ],
 
     CF_SO =
@@ -324,6 +324,22 @@ configure_module(module)
     close(file);
     return result;
 }
+
+static
+lookup_subs(s)
+{
+    s = subs[s];
+    if (typeof(s) == "string")
+        ;
+    else if (typeof(s) == "func")
+        s = s();
+    else if (s[flavour] != NULL)
+        s = s[flavour];
+    else
+        s = s.default;
+    return s;
+}
+
 
 /*
  * Emulate configure :)
@@ -450,16 +466,8 @@ forall (module in sort(keys(modules)))
     {
         if ((i & 1) == 0)
             continue;
-        s = subs[s];
-        if (typeof(s) == "string")
-            ;
-        else if (typeof(s) == "func")
-            s = s();
-        else if (s[flavour] != NULL)
-            s = s[flavour];
-        else
-            s = s.default;
-        f[i] = s;
+       s = lookup_subs(s);
+       f[i] = s;
     }
     f = implode(f);
     f = gsub(f, #(?=\n\n\n)\n#, ""); /* Just to tidy up blank lines. */
@@ -491,11 +499,24 @@ forall (target in targs)
         else
             printf(m, "\tcd %s; make %s\n", module, target == "all" ? "" : target);
     }
+    if (target == "doc" || target == "install")
+    {
+        printf(m, "\tici tools/make-iciex.ici");
+        forall (t in sort(configured_modules))
+            printf(m, " %s", t);
+        printf(m, "\n");
+    }
     if (target == "install" && flavour == "w32")
     {
         printf(m, "\tici tools/mk-nsis-installer.ici\n");
         printf(m, "\tmakensis /v2 ici4-modules-install.nsi\n");
         printf(m, "\t.\\ici4-modules-install.exe\n");
+    }
+    if (target == "install" && flavour != "w32")
+    {
+        printf(m, "\t%s iciex.1 %s/man/man1\n",
+            lookup_subs("CF_INSTALL"),
+            lookup_subs("CF_PREFIX"));
     }
     printf(m, "\n");
 }

@@ -9,43 +9,33 @@
 int                     dllmanager_tcode;
 
 /*
+ * Call dynamic libs directly
+ * 
  * The ICI 'dll' module allows the calling of pre-existing functions
  * in dynamic loaded libraries directly from ICI without any
- * explicitly compiled linkage. For example, under Windows one may execute:
+ * explicitly compiled linkage. Calls have the form:
  *
- * The subject          And the full description of something that requirs
- *                      a tagged paragraph.
+ *  dll.libname.funcname(args...)
  *
- * The subject          And the full description of something that requirs
- *                      a tagged paragraph.
+ * Where 'libname' is used to determine a dynamically loadable library
+ * using the ususal conventions of the local system. (For example, it
+ * might find 'libname.dll' on Windows, or 'liblibname.so' on many
+ * UNIX-like systems. The usual system search paths will be used.)
  *
- *  dll.user32.MessageBox
- *  (
- *      NULL,
- *      "Test of call to dll.user32.MessageBox(...)",
- *      "ICI DLL call test",
- *      0
- *  );
+ * The first time a particular name (such as 'libname' in this example)
+ * is used to index the 'dll' object, it is resolved to a library which
+ * is loaded into the current processes address space. A special object
+ * that refers to this library is then assigned to that field of the
+ * 'dll' object. Thus subsequent references to the same library will
+ * return the reference to the same loaded library.
  *
- *  dll.user32.MessageBox
- *  (
- *      NULL,
- *      "Test of call to dll.user32.MessageBox(...)",
- *      "ICI DLL call test",
- *      0
- *  );
+ * Function names are resolved in a similar fashion. That is, on first
+ * index the name is looked up in the library and a special internal
+ * linkage function created. This is assigned to that field of the
+ * loaded library object. Thus subsequent references to the same function
+ * name reference the created linkage function.
  *
- * And this is some more body text. 
- * The ICI 'dll' module allows the calling of pre-existing functions
- * in dynamic loaded libraries directly from ICI without any
- * explicitly compiled linkage. For example, under Windows one may execute.
- *
- * And this is some more body text. 
- * The ICI 'dll' module allows the calling of pre-existing functions
- * in dynamic loaded libraries directly from ICI without any
- * explicitly compiled linkage. For example, under Windows one may execute.
- *
- * This --intro-- forms part of the --ici-dll-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-dll-- documentation.
  */
  
 /*
@@ -137,26 +127,26 @@ fetch_dllmanager(object_t *o, object_t *k)
     if (!valid_dll(lib))
     {
 #       ifndef  _WIN32
-    if (strchr(fname, '/') == 0 && stringof(k)->s_nchars < FILENAME_MAX - 20)
-    {
-        sprintf(fname, "lib%s.%s", stringof(k)->s_chars, ICI_DLL_EXT);
-        lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
-    }
-    else
-#       endif
-    {
-        char        *err;
-        char const  fmt[] = "failed to load %s, %s";
-
-        if ((err = (char *)dlerror()) == NULL)
-        err = "dynamic link error";
-        if (ici_chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
-        strcpy(ici_buf, err);
+        if (strchr(fname, '/') == 0 && stringof(k)->s_nchars < FILENAME_MAX - 20)
+        {
+            sprintf(fname, "lib%s.%s", stringof(k)->s_chars, ICI_DLL_EXT);
+            lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
+        }
         else
-        sprintf(ici_buf, fmt, fname, err);
-        ici_error = ici_buf;
-        return NULL;
-    }
+#       endif
+        {
+            char        *err;
+            char const  fmt[] = "failed to load %s, %s";
+
+            if ((err = (char *)dlerror()) == NULL)
+                err = "dynamic link error";
+            if (ici_chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
+                strcpy(ici_buf, err);
+            else
+                sprintf(ici_buf, fmt, fname, err);
+            ici_error = ici_buf;
+            return NULL;
+        }
     }
     gotlib = 1;
     if ((v = objof(new_dll(lib))) == NULL)

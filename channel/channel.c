@@ -1,8 +1,10 @@
 /*
- * $Id$
+ * $Id: channel.c,v 1.1 2003/03/02 03:32:34 atrn Exp $
  */
 
 /*
+ * Inter-thread link object
+ * 
  * A channel is a communications link between threads. Channels
  * allows threads to send objects to one another and to synchronize
  * their actions.
@@ -44,7 +46,7 @@
  * with channels within ICI any decision on this matter is being
  * delayed until experience shows it is desirable.
  *
- * This --intro-- forms part of the --ici-channel-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-channel-- documentation.
  *
  */
 

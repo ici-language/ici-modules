@@ -1,17 +1,18 @@
 /*
- * $Id: cgi.ici,v 1.5 2002/10/04 01:08:47 atrn Exp $
+ * $Id: ici4cgi.ici,v 1.1 2003/01/27 05:05:06 atrn Exp $
  */
 
 /*
+ * HTTP CGI script helper functions
+ *
  * ICI module to interface with an HTTP server's Common Gateway Interface.
  *
  * The cgi module provides a number of functions to simplify writing
  * CGI "scripts" in ICI.  Functions are provided to retrieve data
  * sent to the CGI program as the result of a form's post and to
  * abstract the output side of a CGI program.
- * 
  *
- * This --intro-- forms part of the --ici-cgi-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-cgi-- documentation.
  */
 
 /*

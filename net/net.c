@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.20 2003/01/27 00:33:04 timl Exp $
+ * $Id: net.c,v 1.21 2003/01/27 02:13:53 atrn Exp $
  *
  * net module - ici sockets interface
  *
@@ -19,6 +19,8 @@
  */
 
 /*
+ * Sockets based networking
+ *
  * The ICI 'net' module provides sockets style network interface functions.
  * It is available on systems that provide BSD-compatible sockets calls and
  * for Win32 platforms.  The sockets extension is generally compatible with
@@ -29,7 +31,7 @@
  * objects.  The function, 'net.socket()', returns a 'socket'
  * object.
  *
- * This --intro-- forms part of the --ici-net-- documentation.
+ * This --intro-- and --synopsis-- forms part of --ici-net-- documentation.
  */
 
 #include <ici.h>

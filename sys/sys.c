@@ -1,4 +1,6 @@
 /*
+ * System calls and related
+ *
  * The ICI 'sys' module provides raw access to many UNIX system calls and some
  * other useful C library functions.  Not all system calls are supported and
  * some are incompletely supported (e.g., signal).  Most system call
@@ -14,7 +16,7 @@
  * support all these variables.  If the C header files do not define a value
  * then the 'sys' module will not pre-define the variable.
  *
- * This --intro-- forms part of the --ici-sys-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-sys-- documentation.
  */
 #include <ici.h>
 #undef file_t

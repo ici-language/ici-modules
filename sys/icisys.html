@@ -10,13 +10,16 @@
                     H2 {font-size: 10pt; font-family: Arial;
                         font-style: italic; font-weight: bold}
                     PRE {background: aliceblue}
+                    DT {font-style: Italic}
+                    DD.DefnIn4cm {width: 337pt; margin-left: 113pt}   
+                    DD.DefnIn2cm {width: 396pt; margin-left: 56pt}
                 </STYLE>
                 <META NAME="Generator" CONTENT="extract-doc-from-src.ici">
                 <META NAME="Keywords" CONTENT="ICI">
                 <META NAME="Description" CONTENT="ICI extension module documentation">
             </HEAD>
             <BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
-            <H1>The ICI sys module</H1>
+            <H1>The ICI sys module - System calls and related</H1>
 <P ALIGN="left">The ICI <I>sys</I> module provides raw access to many
 UNIX system calls and some other useful C library functions.
 Not all system calls are supported and some are incompletely
@@ -165,93 +168,53 @@ status to the parent. Supported on Win32 platforms.</P>
 The action taken depends on the value of <I>what</I>,
 which must be one of the following strings (which map
 to the given C define):</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;dupfd&quot;</I>&nbsp;</TD>
-                <TD>F_DUPFD - Dup and return the file descriptor.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;getfd&quot;</I>&nbsp;</TD>
-                <TD>F_GETFD - Read the close-on-exec flag.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;getfl&quot;</I>&nbsp;</TD>
-                <TD>F_GETFL - Read the descriptor's flags (all flags (as
-set by open(2)) are returned).</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;setfl&quot;</I>&nbsp;</TD>
-                <TD>F_SETFL - Set the descriptor's flags to the value specified
+<DT>&quot;dupfd&quot;</DT>
+<DD CLASS="DefnIn4cm">F_DUPFD - Dup and return the file descriptor.
+</DD>
+<DT>&quot;getfd&quot;</DT>
+<DD CLASS="DefnIn4cm">F_GETFD - Read the close-on-exec flag.
+</DD>
+<DT>&quot;getfl&quot;</DT>
+<DD CLASS="DefnIn4cm">F_GETFL - Read the descriptor's flags (all flags (as
+set by open(2)) are returned).
+</DD>
+<DT>&quot;setfl&quot;</DT>
+<DD CLASS="DefnIn4cm">F_SETFL - Set the descriptor's flags to the value specified
 by arg. Only O_APPEND, O_NONBLOCK and O_ASYNC may be
-set; the other flags are unaffected.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;getown&quot;</I>&nbsp;</TD>
-                <TD>F_GETOWN - Get the process ID or process group currently
+set; the other flags are unaffected.
+</DD>
+<DT>&quot;getown&quot;</DT>
+<DD CLASS="DefnIn4cm">F_GETOWN - Get the process ID or process group currently
 receiving SIGIO and SIGURG signals for events on file
 descriptor fd. Process groups are returned as negative
-values.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;setown&quot;</I>&nbsp;</TD>
-                <TD>F_SETOWN - Set the process ID or process group that
+values.
+</DD>
+<DT>&quot;setown&quot;</DT>
+<DD CLASS="DefnIn4cm">F_SETOWN - Set the process ID or process group that
 will receive SIGIO and SIGURG signals for events on
-file descriptor fd.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;setlk&quot;</I>&nbsp;</TD>
-                <TD>F_SETLK - Set or clear a lock (see below).</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <P ALIGN="left">For <I>setlk</I>, the third parameter <I>arg</I> must
+file descriptor fd.
+</DD>
+<DT>&quot;setlk&quot;</DT>
+<DD CLASS="DefnIn4cm">F_SETLK - Set or clear a lock (see below).
+</DD>
+<P ALIGN="left">For <I>setlk</I>, the third parameter <I>arg</I> must
 be supplied. It may be a struct (or NULL) that will
 be used to populate a <I>struct flock</I> with the
 following items (a default is used for each if missing
 or NULL):</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>start</I>&nbsp;</TD>
-                <TD>An int which will be used in the <I>l_start</I> field. Default
-0.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>len</I>&nbsp;</TD>
-                <TD>An int which will be used in the <I>l_len</I> field. Default
-0.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>type</I>&nbsp;</TD>
-                <TD>Either an int giving the lock type, or one of the strings
-<I>rdlck</I>, <I>wrlck</I>, or <I>unlck</I>. Default F_RDLCK;</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <P ALIGN="left">Not suppored on Win32.</P>
+<DT>start</DT>
+<DD CLASS="DefnIn4cm">An int which will be used in the <I>l_start</I> field. Default
+0.
+</DD>
+<DT>len</DT>
+<DD CLASS="DefnIn4cm">An int which will be used in the <I>l_len</I> field. Default
+0.
+</DD>
+<DT>type</DT>
+<DD CLASS="DefnIn4cm">Either an int giving the lock type, or one of the strings
+<I>rdlck</I>, <I>wrlck</I>, or <I>unlck</I>. Default F_RDLCK;
+</DD>
+<P ALIGN="left">Not suppored on Win32.</P>
 <H2>file = sys.fdopen(int [, openmode])</H2>
 <P ALIGN="left">Open a file descriptor as an (ICI) file object. This
 is analogous to fopen, sopen, mopen, popen, net.sktopen,
@@ -281,28 +244,16 @@ process. Not supported on Win32.</P>
 <H2>struct = sys.getitimer(which)</H2>
 <P ALIGN="left">Invokes <I>getitimer(2)</I> where <I>which</I> is a
 string with one of the values:</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;real&quot;</I>&nbsp;</TD>
-                <TD>ITIMER_REAL - The real-time timer.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;virtual&quot;</I>&nbsp;</TD>
-                <TD>ITIMER_VIRTUAL - The user CPU time timer.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;prof&quot;</I>&nbsp;</TD>
-                <TD>ITIMER_PROF - The system and use CPU time timer.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <P ALIGN="left">Returns a struct with the keys <I>interval</I> and
+<DT>&quot;real&quot;</DT>
+<DD CLASS="DefnIn4cm">ITIMER_REAL - The real-time timer.
+</DD>
+<DT>&quot;virtual&quot;</DT>
+<DD CLASS="DefnIn4cm">ITIMER_VIRTUAL - The user CPU time timer.
+</DD>
+<DT>&quot;prof&quot;</DT>
+<DD CLASS="DefnIn4cm">ITIMER_PROF - The system and use CPU time timer.
+</DD>
+<P ALIGN="left">Returns a struct with the keys <I>interval</I> and
 <I>value</I>, each of which are struct with the keys
 <I>sec</I> and <I>usec</I> being the second and microsecond
 values of the requested timer.</P>
@@ -325,77 +276,37 @@ Not supported on Win32.</P>
 values of a set of system parameters identified by
 <I>resource</I>. <I>resource</I> may be an int, or
 one of the strings:</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;core&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_CORE - max core file size.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;cpu&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_CPU - CPU time in seconds.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;data&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_DATA - max data size.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;fsize&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_FSIZE - maximum filesize.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;memlock&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_MEMLOCK - max locked-in-memory address space.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;nofile&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_NOFILE - max number of open files.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;nproc&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_NPROC - max number of processes.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;rss&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_RSS - max resident set size.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;stack&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_STACK - max stack size.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>&quot;sbsize&quot;</I>&nbsp;</TD>
-                <TD>RLIMIT_SBSIZE - max socket buffer size.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <P ALIGN="left">The returned struct has two integer fields, <I>cur</I>
+<DT>&quot;core&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_CORE - max core file size.
+</DD>
+<DT>&quot;cpu&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_CPU - CPU time in seconds.
+</DD>
+<DT>&quot;data&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_DATA - max data size.
+</DD>
+<DT>&quot;fsize&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_FSIZE - maximum filesize.
+</DD>
+<DT>&quot;memlock&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_MEMLOCK - max locked-in-memory address space.
+</DD>
+<DT>&quot;nofile&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_NOFILE - max number of open files.
+</DD>
+<DT>&quot;nproc&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_NPROC - max number of processes.
+</DD>
+<DT>&quot;rss&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_RSS - max resident set size.
+</DD>
+<DT>&quot;stack&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_STACK - max stack size.
+</DD>
+<DT>&quot;sbsize&quot;</DT>
+<DD CLASS="DefnIn4cm">RLIMIT_SBSIZE - max socket buffer size.
+</DD>
+<P ALIGN="left">The returned struct has two integer fields, <I>cur</I>
 and <I>max</I>.</P>
 <P ALIGN="left">Not supported on Win32.</P>
 <H2>struct = sys.gettimeofday()</H2>
@@ -463,58 +374,30 @@ With a parameter <I>sys.passwd()</I> returns the entry
 for the specific user id., int parameter, or user name,
 string parameter. A password file entry is a struct
 with the following keys and values:</P>
-<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>name</I>&nbsp;</TD>
-                <TD>The user's login name, a string.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>passwd</I>&nbsp;</TD>
-                <TD>The user's encrypted password, a string. Note that
+<DT>name</DT>
+<DD CLASS="DefnIn4cm">The user's login name, a string.
+</DD>
+<DT>passwd</DT>
+<DD CLASS="DefnIn4cm">The user's encrypted password, a string. Note that
 some systems protect this (shadow password files) and
-this field may not be an actual encrypted password.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>uid</I>&nbsp;</TD>
-                <TD>The user id., an int.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>gid</I>&nbsp;</TD>
-                <TD>The user's default group, an int.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>gecos</I>&nbsp;</TD>
-                <TD>The so-called gecos field, a string.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>dir</I>&nbsp;</TD>
-                <TD>The user's home directory, a string.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
-            <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=120><I>shell</I>&nbsp;</TD>
-                <TD>The user's shell (initial program), a string.</TD>
-            </TR>
-            </TABLE>
-            <P>&nbsp;<BR></P>
-            <P ALIGN="left">Not supported on Win32.</P>
+this field may not be an actual encrypted password.
+</DD>
+<DT>uid</DT>
+<DD CLASS="DefnIn4cm">The user id., an int.
+</DD>
+<DT>gid</DT>
+<DD CLASS="DefnIn4cm">The user's default group, an int.
+</DD>
+<DT>gecos</DT>
+<DD CLASS="DefnIn4cm">The so-called gecos field, a string.
+</DD>
+<DT>dir</DT>
+<DD CLASS="DefnIn4cm">The user's home directory, a string.
+</DD>
+<DT>shell</DT>
+<DD CLASS="DefnIn4cm">The user's shell (initial program), a string.
+</DD>
+<P ALIGN="left">Not supported on Win32.</P>
 <H2>sys.pause()</H2>
 <P ALIGN="left">Wait until a signal is delivered to the process. Not
 supported on Win32.</P>

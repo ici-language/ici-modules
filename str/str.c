@@ -1,4 +1,6 @@
 /*
+ * More string operations
+ *
  * The str module contains functions that perform various operations on
  * strings.
  *
@@ -6,7 +8,7 @@
  * of common operations to avoid the interpreter overhead if
  * these operations were written in ici.
  *
- * This --intro-- forms part of the --ici-str-- documentation.
+ * This --intro-- and --synopsis-- are part of --ici-str-- documentation.
  */
 #include <ici.h>
 #include "icistr.h"
