@@ -16,7 +16,8 @@ ALL=	$(ICIV)getbyte.so\
 	$(ICIV)join.so\
 	$(ICIV)fread.so\
 	$(ICIV)ungetc.so\
-	$(ICIV)tmpnam.so
+	$(ICIV)tmpnam.so\
+	$(ICIV)assert.so
 
 all:	$(ALL)
 
@@ -34,6 +35,9 @@ $(ICIV)ungetc.so: iciungetc.o
 
 $(ICIV)tmpnam.so: icitmpnam.o
 	$(CC) -shared -Wl,-soname,$@ -o $@ icitmpnam.o
+
+$(ICIV)assert.so: iciassert.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ iciassert.o
 
 install: $(ALL)
 	install -c -m 444 $(ALL) $(LIBICI)
