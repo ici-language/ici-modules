@@ -1,5 +1,5 @@
 /*
- * $Id: ici3HTML.ici,v 1.7 2002/01/26 07:18:20 atrn Exp $
+ * $Id: ici3HTML.ici,v 1.8 2002/01/27 20:54:18 atrn Exp $
  *
  *
  * HTML element classes for ICI.
@@ -1846,11 +1846,18 @@ extern GreaterThan	= Entity:new("gt");
 extern LessThan		= Entity:new("lt");
 extern NonBreakingSpace	= Entity:new("nbsp");
 extern CopyrightSymbol	= Entity:new("copy");
-
+extern TrademarkSymbol	= Entity:new("trade");
+extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 
 /*
  * $Log: ici3HTML.ici,v $
+ * Revision 1.8  2002/01/27 20:54:18  atrn
+ * Added support for other types of lists, a method to get all the query
+ * string parameters, add a character encoding spec. to the document
+ * header, a method for creating hidden fields in tables, allow submit
+ * and reset button values to be set and remove old ImageInput class.
+ *
  * Revision 1.7  2002/01/26 07:18:20  atrn
  * Added CGI support, turned on by default but controllable at Page:new()
  * time.  CGI support includes automatic output of CGI headers when a
