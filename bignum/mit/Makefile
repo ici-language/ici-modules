@@ -8,8 +8,8 @@ CC = cc
 LIB = BigNum.a
 OBJECT = o/KerN.o o/bnInit.o o/bnMult.o o/bnDivide.o o/bnCmp.o o/bzf.o o/bz.o 
 KERNH = h/BigNum.h 
-CFLAGS = -c `cat .Version` -I./h -O #-g -pg
-LKFLAGS = -O #-g
+CFLAGS = -c `cat .Version` -I./h -O2 # -g -pg
+LKFLAGS = -O2 #-g
 
 SENDMAIL=/usr/lib/sendmail
 SENDMAILFLAGS=
@@ -32,7 +32,8 @@ tidy:
 	rm -f */,* */.,* */*~ */#*# */.emacs_[0-9]* */*.BAK */*.CKP
 
 scratch:tidy 
-	rm -f o/*.o
+	-[ -d o ] && rm -f o/*.o
+	[ -d o ] || mkdir o
 
 # build the BigNum library
 $(LIB): $(OBJECT)
@@ -44,54 +45,54 @@ $(LIB): $(OBJECT)
 o/KerN.o: c/KerN.c Makefile
 	echo "The Default is KerN written in C with digits on 32 bits"
 	echo "-DDIGITon32BITS" >.Version
-	make C32 CC=$(CC) CFLAGS="$(CFLAGS)"
+	$(MAKE) C32 CC=$(CC) CFLAGS="$(CFLAGS)"
 
 C16: scratch
 	echo "-DDIGITon16BITS" >.Version
 	$(CC) $(CFLAGS) c/KerN.c
 	mv KerN.o o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 C32: scratch
 	echo "-DDIGITon32BITS" >.Version
 	$(CC) $(CFLAGS) c/KerN.c
 	mv KerN.o o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 68K: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/68KerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 vax: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/vaxKerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 rt: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/rtKerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 ns: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/nsKerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 mips: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as -w s/mipsKerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 pyramid: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/pyramidKerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 i960: scratch
 	echo "-DDIGITon32BITS" >.Version
 	as s/i960KerN.s -o o/KerN.o
-	make CC=$(CC) CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC=$(CC) CFLAGS="$(CFLAGS)" all
 
 # Construct VMS assembler from UNIX version
 
