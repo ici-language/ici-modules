@@ -1,5 +1,5 @@
 /*
- * $Id: cgi.ici,v 1.2 2001/07/01 11:33:02 atrn Exp $
+ * $Id: cgi.ici,v 1.3 2002/05/20 02:01:12 atrn Exp $
  *
  * ICI module to interface with the HTTP server Common Gateway Interface
  */
@@ -58,6 +58,28 @@ extern
 end_reply_header()
 {
     printf("\r\n");
+}
+
+/*
+ * status - generate a status CGI header
+ *
+ * Parameters:
+ *      code
+ *      msg
+ */
+extern
+status(code, msg)
+{
+    printf("Status: %d", code);
+    if (msg)
+        printf(" %s", msg);
+    printf("\r\n");
+}
+
+extern
+no_content()
+{
+    return status(204, "No Content");
 }
 
 /*
