@@ -1,5 +1,5 @@
 /*
- * $Id: icixml.ici,v 1.1.1.1 1999/09/08 01:27:26 andy Exp $
+ * $Id: icixml.ici,v 1.2 2000/07/14 10:15:51 atrn Exp $
  *
  * A simple XML interface for ici. This module provides three functions
  * layered atop the expat interface in the C code. The read() function
@@ -257,22 +257,29 @@ write(els, f_out, ind)
  * traverse - traverse the in-memory XML document
  *
  * This function is similar to process but simply
- * calls a function on each node.
+ * calls a function on each node.  If the function
+ * returns non-NULL the traversal is stopped and
+ * that value returned.
  */
 extern
 traverse(els, fn, uarg)
 {
     auto	fn;
     auto	e;
+    auto        rc;
 
     forall (e in els)
     {
 	if (typeof(e) == "struct")
 	{
-	    fn(e, uarg);
+	    if (rc = fn(e, uarg))
+            {
+                break;
+            }
 	    traverse(e[ELEMENTS], fn, uarg);
 	}
     }
+    return rc;
 }
 
 extern
