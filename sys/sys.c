@@ -135,7 +135,7 @@ ici_sys_vars_init(objwsup_t *scp)
         VALOF(SEEK_CUR),
         VALOF(SEEK_END),
 
-#ifndef ICI_SYS_NOFLOCK
+#if !defined(ICI_SYS_NOFLOCK) && defined(LOCK_SH)
         VALOF(LOCK_SH),
         VALOF(LOCK_EX),
         VALOF(LOCK_NB),
