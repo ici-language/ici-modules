@@ -1,0 +1,10 @@
+id1 := uuid.generate();
+id2 := uuid.generate();
+
+if (id1 == id2)
+     fail("equal uuids");
+
+s := uuid.unparse(id1);
+id3 := uuid.parse(s);
+
+printf("%d\n", uuid.compare(id1, id3));
