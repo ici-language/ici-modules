@@ -1,19 +1,35 @@
 /*
- * env.c - access the process environment as a struct
- *
- * This is an ici module that provides access the whole environment
+ * The env ici module provides access the process environment
  * vector as an ici struct. Variables can be retrieved from the environment
  * by fetching them from the global variable "env" and the environment may
  * be altered by assigning to fields of this variable. E.g.,
  *
- *	printf("%s\n", env.PATH);
- *	env.LD_LIBRARY_PATH += ":/usr/local/lib/ici";
- *	etc...
+ * To `get' an environment variable normal indexing is performed,
  *
- * The env global is a struct object with a modified ici_assign function.
+ *      printf("%s\n", env.PATH);
+ *
+ * And to `set' a variable,
+ *
+ *      env.LD_LIBRARY_PATH += ":/usr/local/lib/ici";
+ *
+ * The env global is implemented as a struct object with modified
+ * assignment semantics. Keys and values are restricted to being
+ * strings and assignment to the struct is propogated to the process
+ * environment as if putenv() had been called.
+ *
+ * LIMITATIONS
+ *
+ * The typeof `env' is `env', not `struct'. Because of this it
+ * is not possible to iterate over the members of the environment
+ * using a forall statement nor is it possible to retrieve the
+ * names of all environment variables using the keys() function.
+ *
+ * This --intro-- forms part of the --ici-env-- documentation.
  */
 
 #include <ici.h>
+
+static int env_tcode = 0;
 
 static int
 assign_env(object_t *o, object_t *k, object_t *v)
@@ -77,7 +93,6 @@ ici_env_library_init(void)
 
     if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "env"))
         return NULL;
-
     if ((e = ici_struct_new()) == NULL)
 	return NULL;
     for (p = environ; *p != NULL; ++p)
@@ -110,11 +125,12 @@ ici_env_library_init(void)
      */
     env_type = *ici_types[TC_STRUCT];
     env_type.t_assign = assign_env;
-    if (!ici_register_type(&env_type))
+    env_type.t_name = "env";
+    if (!(env_tcode = ici_register_type(&env_type)))
     {
 	return NULL;
     }
-
+    objof(e)->o_tcode = env_tcode;
     return objof(e);
 
 fail:
