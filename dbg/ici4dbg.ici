@@ -1,10 +1,14 @@
 static files = struct();
-static stack = array();
 
-static interactive = 0;
-static stop = 0;    /* Stop on next line. */
-static break_line = -1;;
-static trace = 1;
+extern cmd = 0;
+extern stop = 0;    /* Stop on next line. */
+extern bp = NULL;;
+extern trace = 0;
+/*
+ * Depth the scope stack must return to in order for use to have
+ * finished the 'next' command.
+ */
+extern next = 0;
 
 extern
 dbg_error(e, fname, lineno)
@@ -49,55 +53,50 @@ summary_line(fname, lineno, vs)
     lines := files[fname];
     if ((st := lines[lineno - 1]) == NULL)
         st := "?";
-    st = gsub(dt, #\s+#, " ");
+    st = gsub(st, #\s+#, " ");
 
     /*
-     * -sl:15-|-st:?-|-bt:?-
-     * ----------79---------
+     * -sl:15-|-st:39-|-bt:23-
+     * ----------79-----------
      */
     if (nels(sl) > 15)
         sl = interval(sl, -15);
-    btz = nels(bt);
-    if (btz > 30)
-        btz = 30;
-    bt = interval(bt, 0, btz);
-    stz = 79 - 16 - btz - 1;
-    sl = interval(sl, 0, stz);
-    if (stz > nels(st))
-        st = interval(st, 0, stz);
-    return sprintf("%15s|%-*s|%-*s", sl, stz, st, btz, bt);
+    st = interval(st, 0, 39);
+    bt = interval(bt, 0, 23);
+    return sprintf("%15s|%-39s|%-23s", sl, st, bt);
 }
 
 extern
 dbg_src(fname, lineno)
 {
-    if (break_line == lineno)
+    auto    vs;
+
+    if (bp == lineno)
+    {
         stop = 1;
+        cmd = 1;
+    }
+    if (next > 0)
+    {
+        vs := vstack();
+        pop(vs);
+        if (nels(vs) <= next)
+        {
+            next = 0;
+            stop = 1;
+            cmd = 1;
+        }
+    }
     if (!stop && !trace)
         return;
-    vs := vstack();
-    pop(vs);
+    if (vs == NULL)
+    {
+        vs := vstack();
+        pop(vs);
+    }
     printf("%s\n", summary_line(fname, lineno, vs));
-    /*
-    forall (v in vs)
-    {
-        if (v._func_ != NULL)
-	    printf("%a ", v._func_);
-    }
-    if (files[fname] == NULL)
-    {
-	try
-            files[fname] = gettokens(getfile(fname), '\n');
-        onerror
-            files[fname] = array();
-    }
-    lines := files[fname];
-    if ((l := lines[lineno - 1]) == NULL)
-        l := "?";
-    printf("DBG: %s, %d: %s\n", fname, lineno, l);
-    */
-    if (interactive && stop)
-        prompt(vstack(1));
+    if (cmd)
+        prompt(vs);
 }
 
 extern
@@ -109,10 +108,9 @@ dbg_fncall(func, args)
         n := func.name;
     else
         n := sprintf("%a", func);
-    push(stack, n);
-    if (!stop)
+    if (!stop && !trace)
         return;
-    printf("DBG: -> %s(", n);
+    printf("%15s> %s(", "", n);
     forall (a, i in args)
     {
 	printf("%a%s", a, i < nels(args) - 1 ? ", " : "");
@@ -123,15 +121,29 @@ dbg_fncall(func, args)
 extern
 dbg_fnresult(result)
 {
-    if ((n := pop(stack)) == NULL)
-	return;
-    if (!stop)
+    if (!stop && !trace)
         return;
-    printf("DBG: <- %a, %s()\n", result, n);
+    printf("%15s< %a\n", "", result);
 }
 
+static text(f) {return gettoken(f, "]");}
+
+static help = [text
+c       continue execution
+n       next - execute till new source line at this call depth
+s       step - execute till new source line
+u       until - execute till subsequent line at this call depth
+t       toggle printing of tace summary lines
+q       quit
+p expr  evaluate expr and print result
+v       print local variables
+vv      print next outer scope variables
+vvv...  etc.
+!cmd    execute cmd in a sub-shell
+];
+
 extern
-prompt(call_scope)
+prompt(vs)
 {
     for (;;)
     {
@@ -149,8 +161,22 @@ prompt(call_scope)
             {
                 l = interval(l, 2);
                 l = sprintf("x := (%s);", l);
-                s := parse(l, struct(call_scope));
+                s := parse(l, struct(top(vs)));
                 printf("%a\n", s.x);
+                continue;
+            }
+            if (l ~ #^v#)
+            {
+                d := nels(l) - 1;
+                ss := top(vs);
+                while (d-- > 0 && ss != NULL)
+                    ss = super(ss);
+                forall (v, k in ss)
+                {
+                    if (!typeof(k) == "string")
+                        continue;
+                    printf("%15s: %a\n", k, v);
+                }
                 continue;
             }
             l = smash(l, #\S+#, "\\&");
@@ -164,15 +190,22 @@ prompt(call_scope)
             case "?":
             case "help":
             case "h":
-                printf("!cmd..., c, \n");
+                printf("%s", help);
                 continue;
 
             case "c":
                 stop = 0;
+                cmd = 0;
                 return;
 
             case "s":
                 stop = 1;
+                return;
+
+            case "n":
+                next = nels(vs);
+                stop = 0;
+                cmd = 0;
                 return;
 
             case "b":
@@ -181,6 +214,11 @@ prompt(call_scope)
 
             case "q":
                 exit(1);
+
+            case "t":
+                trace = !trace;
+                printf("trace now %s\n", trace ? "on" : "off");
+                continue;
 
             default:
                 printf("? for help\n");
@@ -194,6 +232,5 @@ prompt(call_scope)
     }
 }
 
-interactive = 1;
-stop = 1;
+trace = 1;
 debug(1);
