@@ -1,5 +1,5 @@
 /*
- * $Id: cgi.ici,v 1.3 2002/05/20 02:01:12 atrn Exp $
+ * $Id: cgi.ici,v 1.4 2002/09/18 02:18:48 atrn Exp $
  *
  * ICI module to interface with the HTTP server Common Gateway Interface
  */
@@ -229,6 +229,10 @@ query_string_to_struct(qs)
 	    break;
 
 	case "POST":
+	    if (getenv("CONTENT_TYPE") ~ #multipart/form-data#)
+	    {
+		return cgi.multipart_form_data();
+	    }
 	    qs = getfile();
 	    break;
 
@@ -259,8 +263,119 @@ query_string_to_struct(qs)
 }
 
 /*
- * Short form for lazy people
+ * Short forms for lazy people
  */
-extern
-query_string = query_string_to_struct;
+extern query_string = query_string_to_struct;
+extern query = query_string_to_struct;
 
+
+/*
+ * Multipart form data parser
+ */
+
+static
+strip_cr(str)
+{
+    len = nels(str) - 1;
+    if (len >= 0 && str[len] == "\r")
+	str = interval(str, 0, len);
+    return str;
+}
+
+static
+initial_state(input, ctx)
+{
+    input = strip_cr(input);
+    if (input ~ ctx.boundary)
+    {
+	ctx.hdrs = array();
+	return header_state;
+    }
+}
+
+static
+header_state(input, ctx)
+{
+    input = strip_cr(input);
+    if (input == "")
+    {
+	return body_state;
+    }
+    else if (input ~ $regexpi("^content-disposition:"))
+    {
+	if (!(v = input ~~ $regexpi("^content-disposition:(.*)")))
+	    return;
+	form_data := false;
+	data_name := NULL;
+	file_name := NULL;
+	forall (t in gettokens(v, "; "))
+	{
+	    if (t == "form-data")
+		form_data = true;
+	    else if (t ~ #^name=#)
+		data_name = t ~~ #^name="(.*)"#;
+	    else if (t ~ #^filename=#)
+		file_name = t ~~ #^filename="(.*)"#;
+	}
+	if (!form_data || data_name == "")
+	    fail("incorrect content disposition");
+	if (file_name)
+	{
+	    ctx.values[data_name + "_file_name"] = file_name;
+	}
+	if (data_name)
+	{
+	    ctx.values[data_name] = "";
+	    ctx.curval = data_name;
+	}
+    }
+}
+
+static
+body_state(input, ctx)
+{
+    input = strip_cr(input);
+    if (input ~ ctx.sentinel)
+    {
+	fail("end");
+    }
+    else if (input ~ ctx.boundary)
+    {
+	return header_state;
+    }
+    if (ctx.neednl && ctx.values[ctx.curval] != "")
+	ctx.values[ctx.curval] = ctx.values[ctx.curval] + "\n";
+    ctx.values[ctx.curval] = ctx.values[ctx.curval] + input;
+    ctx.neednl = true;
+}
+
+extern
+multipart_form_data()
+{
+    v := gettokens(getenv("CONTENT_TYPE"), "; ");
+    if (v[0] != "multipart/form-data")
+	fail("Incorrectly invoked");
+    if (v[1] !~ #^boundary=#)
+	fail(sprintf("Unexpected input: \"%s\"", v[1]));
+    boundary := v[1] ~~ #^boundary=(.*)#;
+    ctx := struct();
+    ctx.boundary = regexp(sprintf("--%s", boundary));
+    ctx.sentinel = regexp(sprintf("%s--", boundary));
+    ctx.values = struct();
+    for (handler := initial_state; line := getline(); )
+    {
+	try
+	{
+	    if (next := handler(line, ctx))
+		handler = next;
+	}
+	onerror
+	{
+	    if (error == "end")
+		break;
+	    printf(stderr, "post state machine: error = %s\n", error);
+	    fail(error);
+	}
+    }
+    return ctx.values;
+}
