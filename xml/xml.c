@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.2 2000/03/11 00:34:40 andy Exp $
+ * $Id: xml.c,v 1.3 2002/04/06 01:42:48 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -18,6 +18,7 @@
 #include "icistr.h"
 #include <icistr-setup.h>
 #include <XMLParse.h>
+#include <assert.h>
 
 objwsup_t    *ici_xml_module;
 objwsup_t    *ici_xml_parser_class;
@@ -58,7 +59,6 @@ start_element(void *udata, const char *name, const char **atts)
 {
     ici_handle_t    *h = udata;
     object_t    *a;
-    object_t    *f;
 
     if (ici_error != NULL)
         return;
@@ -241,7 +241,7 @@ ici_xml_Parse(object_t *inst)
     ici_error = NULL;
     if (!XML_Parse(p, s->s_chars, s->s_nchars, is_final))
         return ici_xml_error(p);
-    return ici_error != NULL ? 1 : null_ret();
+    return ici_error != NULL ? 1 : ici_null_ret();
 }
 
 /**
@@ -336,7 +336,7 @@ ici_xml_SetBase(object_t *inst)
         return 1;
     if (!XML_SetBase(p, (XML_Char *)s))
         return ici_xml_error(p);
-    return null_ret();
+    return ici_null_ret();
 }
 
 cfunc_t ici_xml_cfuncs[] =
@@ -360,6 +360,8 @@ cfunc_t ici_xml_parser_cfuncs[] =
 object_t *
 ici_xml_library_init(void)
 {
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "xml"))
+        return NULL;
     if (init_ici_str())
         return NULL;
     if ((ici_xml_module = ici_module_new(ici_xml_cfuncs)) == NULL)
