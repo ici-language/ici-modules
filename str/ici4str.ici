@@ -1,27 +1,40 @@
 /*
- * $Id: str.ici,v 1.5 2001/03/04 22:59:59 atrn Exp $
+ * $Id: ici4str.ici,v 1.1 2003/01/26 11:20:34 atrn Exp $
  */
 
+/*
+ * str.capitalize - capitalize a word
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
 extern
-capitalise(s)
+capitalize(s)
 {
     if (s[0] >= "a" && s[0] <= "z")
 	s = str.toupper(s[0]) + interval(s, 1);
     return s;
 }
 
-extern	capitalize = capitalise; /* internationalization :) */
-
+/*
+ * str.plural - form a plural form of a word
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
 extern
-plural(word, count, ending)
+plural(word, count, suffix)
 {
-    auto ending = "s";
+    auto suffix = "s";
 
     if (count != 1)
-	word += ending;
+	word += suffix;
     return word;
 }
 
+/*
+ * str.trim - remove leading and trailing spaces
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
 extern
 trim(str)
 {
@@ -52,6 +65,13 @@ static	base64_value	= [struct
     ('8') = 60,   ('9') = 61,   ('+') = 62,   ('/') = 63,
 ];
 
+/*
+ * string = str.base64_encode(string)
+ *
+ * Encode a string using MIME's base 64 encoding mechanism.
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
 extern
 base64_encode(src)
 {
@@ -87,6 +107,13 @@ base64_encode(src)
     return implode(dst);
 }
 
+/*
+ * string = str.base64_decode(string)
+ *
+ * Decode a string encoded using MIME's base 64 encoding mechanism.
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
 extern
 base64_decode(src)
 {
