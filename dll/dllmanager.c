@@ -1,6 +1,6 @@
 #include <ici.h>
-#include <icistr-setup.h>
 #include "icistr.h"
+#include <icistr-setup.h>
 #include "load.h"
 #include "dllmanager.h"
 #include "dll.h"
