@@ -4,7 +4,7 @@
 #
 # See the comments in makemake.ici for details.
 #
-CFLAGS	= $(PIC) $(OPTIM) -I$(ICISDK) -I. $(ICICFLAGS) -Iexpat/xmlparse -Iexpat/xmltok
+CFLAGS	= $(PIC) $(OPTIM) -I. -I$(PREFIX)/include $(ICICFLAGS) -Iexpat/xmlparse -Iexpat/xmltok
 OBJS	= xml.o xmlparse.o xmltok.o xmlrole.o
 LIB	= $(ICIV)$(MOD).$(SOSUFFIX)
 $(OTHERDEFS)
@@ -20,6 +20,9 @@ clobber: clean
 
 depend:
 	mkdep $(CFLAGS) $(ICISRCS)
+
+install: $(LIBINSTALLS)
+	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
 
 xmlparse.o: expat/xmlparse/xmlparse.c
 	$(CC) $(CFLAGS) -c expat/xmlparse/xmlparse.c

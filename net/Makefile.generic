@@ -22,7 +22,7 @@ clobber: clean
 depend:
 	mkdep $(CFLAGS) $(ICISRCS)
 
-install:
+install: $(LIBINSTALLS)
 	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
 
 $(OTHERRULES)

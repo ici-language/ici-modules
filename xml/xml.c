@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.4 2003/01/04 11:16:41 timl Exp $
+ * $Id: xml.c,v 1.5 2003/01/23 10:38:32 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -17,7 +17,7 @@
 #include <ici.h>
 #include "icistr.h"
 #include <icistr-setup.h>
-#include <XMLParse.h>
+#include <xmlparse.h>
 #include <assert.h>
 
 objwsup_t    *ici_xml_module;
