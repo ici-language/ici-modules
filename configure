@@ -54,6 +54,7 @@
 static modules = [struct
 
     bignum  = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    channel = [set "bsd", "linux",                "cygwin", "w32"],
     cgi     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     dll     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     env     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
@@ -285,6 +286,45 @@ static flavours = [struct
 /*--------------------End of tables, start of code.----------------------*/
 
 /*
+ * Determine if a module has a configuration script and if so, parse it
+ * to attempt to configure the module.  Presumably the configuration
+ * script tailors the module's build process for the particular system
+ * but it may perform any actions.
+ *
+ * The configuration script must be called "configure" and is parsed
+ * prior to creating makefiles so may generated the "Makefile.flavour"
+ * or "Makefile.frag" files used to create makefiles.
+ *
+ * The module configuration script is called with the scope of this
+ * function and has access to the variables defined within configure.
+ *
+ * If the module cannot be configured for this platform the configuration
+ * script should raise an error (i.e. invoke fail()).
+ *
+ */
+static
+configure_module(module)
+{
+    configure_script := sprintf("./%s/configure", module);
+    try
+        file := fopen(configure_script);
+    onerror
+        // No configure script, assume success.
+        return error ~ #[Nn]o such file#;
+    try
+    {
+        parse(file);
+        result := 1;
+    }
+    onerror
+    {
+        result := 0;
+    }
+    close(file);
+    return result;
+}
+
+/*
  * Emulate configure :)
  */
 if (argv[1] == "--help")
@@ -320,6 +360,7 @@ else
 printf("Uname \"%s\", therefor flavour \"%s\".\n", uname, flavour);
 
 static module;
+static configured_modules = array();
 
 /*
  * Build a regular expression from the keys of the subs struct. That is,
@@ -336,10 +377,12 @@ re = regexp(re);
  * Forall the modules, generate the Makefiles we can.
  */
 static makein, makeout;
-forall (can_do_flavs, module in modules)
+forall (module in sort(keys(modules)))
 {
-    if (!can_do_flavs[flavour])
+    can_do_flavs = modules[module];
+    if (!can_do_flavs[flavour] || !configure_module(module))
         continue;
+    push(configured_modules, module);
     /*
      * Find and read a Makefile to use as a basis.
      */
@@ -440,10 +483,8 @@ forall (target in targs)
     printf(m, "%s%s:\n", target, target == "doc" ? " docs" : "");
     if (target == "install" && flavour == "w32")
         printf(m, "\t-del install-bits.txt\n");
-    forall (can_do_flavs, module in modules)
+    forall (module in sort(configured_modules))
     {
-        if (!can_do_flavs[flavour])
-            continue;
         if (flavour == "w32")
             printf(m, "\tcd %s\n\tnmake /nologo %s\n\tcd ..\n", module, target == "all" ? "" : target);
         else
