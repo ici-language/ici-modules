@@ -16,9 +16,9 @@ LIBINSTALLS = $(LIB) $(CF_ICI_DOT_ICI)
 
 default: $(LIB)
 
-$(CF_MAKE_FRAG_FLAV)
-
 $(CF_MAKE_FRAG)
+
+$(CF_MAKE_FRAG_FLAV)
 
 $(LIB): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
@@ -38,6 +38,6 @@ clobber: clean
 depend:
 	mkdep $(CFLAGS) $(C_SRC)
 
-install: $(LIBINSTALLS) ici$(MOD).1
+install: $(LIBINSTALLS) ici$(CF_MOD).1
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
-	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1
+	$(CF_INSTALL) ici$(CF_MOD).1 $(PREFIX)/man/man1

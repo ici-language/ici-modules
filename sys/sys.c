@@ -1,3 +1,8 @@
+/*
+ * The ICI sys modules provides stuff..
+ *
+ * This --intro-- formas part of the --ici-sys-- documentation.
+ */
 #include <ici.h>
 #undef file_t
 #include "icistr.h"
