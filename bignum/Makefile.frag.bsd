@@ -1,7 +1,0 @@
-LIBS += mit/BigNum.a
-CFLAGS += -Imit/h
-
-$(ICIMOD) : mit/BigNum.a
-
-mit/BigNum.a:
-	cd mit && $(MAKE) C32
