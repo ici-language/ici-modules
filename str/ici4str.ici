@@ -1,5 +1,5 @@
 /*
- * $Id: ici4str.ici,v 1.1 2003/01/26 11:20:34 atrn Exp $
+ * $Id: ici4str.ici,v 1.2 2003/01/27 02:34:48 atrn Exp $
  */
 
 /*
@@ -11,7 +11,7 @@ extern
 capitalize(s)
 {
     if (s[0] >= "a" && s[0] <= "z")
-	s = str.toupper(s[0]) + interval(s, 1);
+        s = str.toupper(s[0]) + interval(s, 1);
     return s;
 }
 
@@ -26,7 +26,7 @@ plural(word, count, suffix)
     auto suffix = "s";
 
     if (count != 1)
-	word += suffix;
+        word += suffix;
     return word;
 }
 
@@ -42,11 +42,11 @@ trim(str)
 }
 
 
-static	base64_digit	= "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			  "abcdefghijklmnopqrstuvwxyz"
-			  "0123456789+/";
+static  base64_digit    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                          "abcdefghijklmnopqrstuvwxyz"
+                          "0123456789+/";
 
-static	base64_value	= [struct
+static  base64_value    = [struct
     ('A') = 0,    ('B') = 1,    ('C') = 2,    ('D') = 3,
     ('E') = 4,    ('F') = 5,    ('G') = 6,    ('H') = 7,
     ('I') = 8,    ('J') = 9,    ('K') = 10,   ('L') = 11,
@@ -77,32 +77,32 @@ base64_encode(src)
 {
     for
     (
-	src = explode(src), dst = array(), idx = 0, len = nels(src);
-	len >= 3;
-	idx += 3, len -= 3
+        src = explode(src), dst = array(), idx = 0, len = nels(src);
+        len >= 3;
+        idx += 3, len -= 3
     )
     {
-	t = (src[idx+0] << 16) | (src[idx+1] << 8) | src[idx+2];
-	push(dst, base64_digit[(t >> 18) & 0x3f]);
-	push(dst, base64_digit[(t >> 12) & 0x3f]);
-	push(dst, base64_digit[(t >>  6) & 0x3f]);
-	push(dst, base64_digit[ t        & 0x3f]);
+        t = (src[idx+0] << 16) | (src[idx+1] << 8) | src[idx+2];
+        push(dst, base64_digit[(t >> 18) & 0x3f]);
+        push(dst, base64_digit[(t >> 12) & 0x3f]);
+        push(dst, base64_digit[(t >>  6) & 0x3f]);
+        push(dst, base64_digit[ t        & 0x3f]);
     }
     if (len == 2)
     {
-	t = (src[idx+0] << 16) | (src[idx+1] << 8);
-	push(dst, base64_digit[(t >> 18) & 0x3f]);
-	push(dst, base64_digit[(t >> 12) & 0x3f]);
-	push(dst, base64_digit[(t >>  6) & 0x3f]);
-	push(dst, '=');
+        t = (src[idx+0] << 16) | (src[idx+1] << 8);
+        push(dst, base64_digit[(t >> 18) & 0x3f]);
+        push(dst, base64_digit[(t >> 12) & 0x3f]);
+        push(dst, base64_digit[(t >>  6) & 0x3f]);
+        push(dst, '=');
     }
     else if (len == 1)
     {
-	t = src[idx+0] << 16;
-	push(dst, base64_digit[(t >> 18) & 0x3f]);
-	push(dst, base64_digit[(t >> 12) & 0x3f]);
-	push(dst, '=');
-	push(dst, '=');
+        t = src[idx+0] << 16;
+        push(dst, base64_digit[(t >> 18) & 0x3f]);
+        push(dst, base64_digit[(t >> 12) & 0x3f]);
+        push(dst, '=');
+        push(dst, '=');
     }
     return implode(dst);
 }
@@ -119,34 +119,127 @@ base64_decode(src)
 {
     for
     (
-	src = explode(src), dst = array(), idx = 0, len = nels(src);
-	len >= 4;
-	idx += 4, len -= 4
+        src = explode(src), dst = array(), idx = 0, len = nels(src);
+        len >= 4;
+        idx += 4, len -= 4
     )
     {
-	if (src[idx+2] == $toint("="))
-	{
-	    code = (base64_value[src[idx]] << 18) | (base64_value[src[idx+1]] << 12);
-	    push(dst, (code >> 16) & 0xff);
-	}
-	else if (src[idx+3] == $toint("="))
-	{
-	    code = (base64_value[src[idx]] << 18)
-		   | (base64_value[src[idx+1]] << 12)
-		   | (base64_value[src[idx+2]] << 6);
-	    push(dst, (code >> 16) & 0xff);
-	    push(dst, (code >>  8) & 0xff);
-	}
-	else
-	{
-	    code = (base64_value[src[idx]] << 18)
-		   | (base64_value[src[idx+1]] << 12)
-		   | (base64_value[src[idx+2]] << 6)
-		   | base64_value[src[idx+3]];
-	    push(dst, (code >> 16) & 0xff);
-	    push(dst, (code >>  8) & 0xff);
-	    push(dst, code & 0xff);
-	}
+        if (src[idx+2] == $toint("="))
+        {
+            code = (base64_value[src[idx]] << 18) | (base64_value[src[idx+1]] << 12);
+            push(dst, (code >> 16) & 0xff);
+        }
+        else if (src[idx+3] == $toint("="))
+        {
+            code = (base64_value[src[idx]] << 18)
+                   | (base64_value[src[idx+1]] << 12)
+                   | (base64_value[src[idx+2]] << 6);
+            push(dst, (code >> 16) & 0xff);
+            push(dst, (code >>  8) & 0xff);
+        }
+        else
+        {
+            code = (base64_value[src[idx]] << 18)
+                   | (base64_value[src[idx+1]] << 12)
+                   | (base64_value[src[idx+2]] << 6)
+                   | base64_value[src[idx+3]];
+            push(dst, (code >> 16) & 0xff);
+            push(dst, (code >>  8) & 0xff);
+            push(dst, code & 0xff);
+        }
     }
     return implode(dst);
+}
+
+/*
+ * [str text...] or [str(raw,squeeze) text...]
+ *
+ * Parse bulk text into a string. Text up to the first un-escaped off-square
+ * bracket is gathered. The text is gathered without regard to special
+ * characters except for the sequence '\]' which is reduced to a single ']'.
+ * Apart from that, '\' characters are not special.
+ *
+ * By default, leading white-space (spaces and tabs) is stripped from each
+ * line before the text is returned as a string. Also, all whitespace
+ * (including newlines etc.) are stripped from the start and end of the text.
+ *
+ * A set of optional flags may be supplied by placing a '(' character
+ * immediately after the '[str'. After this may follow comma seperated
+ * identifiers and finally a closing ')' (whitespace is allowed). The possible
+ * identifiers and their meanings are:
+ *
+ * raw                  Don't strip any whitespace.
+ *
+ * squeeze              Reduce all sequences of whitespace characters to a
+ *                      single space.
+ *
+ * This --topic-- forms part of the --ici-str-- documentation.
+ */
+extern
+parser(f)
+{
+    auto    raw = 0;
+    auto    squeeze = 0;
+
+    if ((c := getchar(f)) == "(")
+    {
+        while ((t = parsetoken(f)) != ")")
+        {
+            if (t != "name")
+                fail(sprintf("%s, %d: \"[str(...\" not followed by an identifier",
+                    f.name, f.line));
+            switch ((t := tokenobj(f)))
+            {
+            case "raw":
+                raw := 1;
+                break;
+                
+            case "squeeze":
+                squeeze := 1;
+                break;
+                
+            default:
+                fail(sprintf("%s, %d: \"[str(...\" followed by \"%s\" which is not \"raw\" or \"squeeze\"",
+                    f.name, f.line, t));
+            }
+            switch ((t := parsetoken(f)))
+            {
+            case ",": continue;
+            default: fail(sprintf("%s, %d: \"[str(...ident\" not followed by \",\" or \")\"",
+                f.name, f.line));
+            case ")": break;
+            }
+            break;
+        }
+    }
+    else
+    {
+        rejectchar(f, c);
+    }
+    s := strbuf();
+    sloshed := 0;
+    for (;;) 
+    {
+        c := getchar(f);
+        if (c == "]")
+        {
+            if (sloshed)
+                s[nels(s) - 1] = toint(c);
+            else
+                break;
+        }
+        else
+            strcat(s, c);
+        sloshed = (c == "\\");
+    }
+    rejectchar(f, c);
+    if (!raw)
+    {
+        s = s ~~ #(?s)^\s*(\S.*)#;
+        s = s ~~ #(?s)^(.*\S)\s*$#;
+        s = gsub(s, #(^|\n)[ \t]+#, "\\1");
+    }
+    if (squeeze)
+        s = gsub(s, #\s+#, " ");
+    return @s;
 }
