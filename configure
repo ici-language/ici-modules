@@ -193,6 +193,7 @@ static subs = [struct
 
     CF_INSTALL =
     [struct
+        W32 = "@echo",
         sol2 = "/usr/ucb/install -c -m 444",
         default = "install -c -m 444"
     ],
@@ -429,7 +430,7 @@ printf("Makefile <- generated. Targets:");
 forall (target in targs)
 {
     printf(" %s", target);
-    printf(m, "%s:\n", target);
+    printf(m, "%s%s:\n", target, target == "doc" ? " docs" : "");
     forall (can_do_flavs, module in modules)
     {
         if (!can_do_flavs[flavour])

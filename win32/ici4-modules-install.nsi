@@ -38,6 +38,8 @@ system directory." " "
 InstallDir "$PROGRAMFILES\ICI"
 InstallDirRegKey HKLM "SOFTWARE\ICI Programming Language Core" ""
 
+
+
 ;
 ; Default section. Always executed. Other sections are only executed if
 ; the user selects them at install time.
@@ -56,53 +58,49 @@ StrCpy $0 "Yes docs"
 CreateDirectory "$SMPROGRAMS\ICI Programming Language"
 SectionEnd
 
+!macro install_doc MOD
+    StrCmp $0 "No docs" no_${MOD}_doc
+        SetOutPath "$INSTDIR"
+        pop $R1
+        File /oname=ici${MOD}.html ..\${MOD}\ici${MOD}.html
+        CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI "${MOD}" module doc.lnk"\
+            "$INSTDIR\ici"${MOD}".html"
+    no_${MOD}_doc:
+!macroend
+
+
 Section "xml - Expat based XML parser"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4xml.dll" "..\xml\Release\ici4xml.dll"
 File "/oname=ici4xml.ici" "..\xml\ici4xml.ici"
-;StrCmp $0 "No docs" no_xml_doc
-;	SetOutPath "$INSTDIR"
-;	File "/oname=icixml.html" "..\xml\icixml.html"
-;	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI xml module doc.lnk"\
-;	 "$INSTDIR\icixml.html"
-;no_xml_doc:
+!insertmacro install_doc xml
 SectionEnd
 
 Section "net - Sockets based networking"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4net.dll" "..\net\Release\ici4net.dll"
 File "/oname=ici4net.ici" "..\net\ici4net.ici"
-StrCmp $0 "No docs" no_net_doc
-	SetOutPath "$INSTDIR"
-	File "/oname=icinet.html" "..\net\icinet.html"
-	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI net module doc.lnk"\
-	 "$INSTDIR\icinet.html"
-no_net_doc:
+!insertmacro install_doc net
 SectionEnd
 
 Section "sys - System calls and related"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4sys.dll" "..\sys\Release\ici4sys.dll"
 File "/oname=ici4sys.ici" "..\sys\ici4sys.ici"
-StrCmp $0 "No docs" no_sys_doc
-	SetOutPath "$INSTDIR"
-	File "/oname=icisys.html" "..\sys\icisys.html"
-	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"\
-	 "$INSTDIR\icisys.html"
-no_sys_doc:
+!insertmacro install_doc sys
 SectionEnd
 
 Section "dll - Call DLL functions directly"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4dll.dll" "..\dll\Release\ici4dll.dll"
-StrCmp $0 "No docs" no_dll_doc
-	SetOutPath "$INSTDIR"
-	File "/oname=icidll.html" "..\dll\icidll.html"
-	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI dll module doc.lnk"\
-	 "$INSTDIR\icidll.html"
-no_dll_doc:
+!insertmacro install_doc dll
 SectionEnd
 
+Section "html - HTML element classes"
+SetOutPath "$SYSDIR\ici"
+File "/oname=ici4html.ici" "..\html\ici4html.ici"
+!insertmacro install_doc html
+SectionEnd
 
 ;----------------------------------------------------------------------
 ; Uninstall stuff. Note that this stuff is logically seperate from the
@@ -124,6 +122,7 @@ Delete "$SYSDIR\ici\ici4net.ici"
 Delete "$SYSDIR\ici\ici4sys.dll"
 Delete "$SYSDIR\ici\ici4sys.ici"
 Delete "$SYSDIR\ici\ici4dll.dll"
+Delete "$SYSDIR\ici\ici4html.ici"
 RMDir  "$SYSDIR\ici"
 
 ;
@@ -137,8 +136,8 @@ Delete "$INSTDIR\icinet.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI net module doc.lnk"
 Delete "$INSTDIR\icisys.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"
-Delete "$INSTDIR\icidll.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI dll module doc.lnk"
+Delete "$INSTDIR\icihtml.html"
+Delete "$SMPROGRAMS\ICI Programming Language\ICI html module doc.lnk"
 RMDir  "$SMPROGRAMS\ICI Programming Language"
 RMDir  "$PROGRAMFILES\ICI"
 

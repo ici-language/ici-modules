@@ -10,10 +10,10 @@
  * script generally tries to avoid special markup tags in the source
  * comments. But does want you to use a particular format.
  *
- * Basically, simple un-indented block comments like this one are
+ * Basically, simple block comments like this one are
  * examined. If they contain the text --intro-- they will contribute
  * to the introductory part of the documentation. Alternatively, if they
- * contain the text --topic-- they will contribute to the detailed
+ * contain the text --topic-- they will contribute to the "detailed"
  * (sorted) section of the documentation. In this case, the first
  * paragraph should be a one line heading for the topic.
  *
@@ -48,9 +48,10 @@
  *
  *                      There are two depths of indentation generated in
  *                      the output, designed to correspond with nominal
- *                      indentations at column 25 (like this one)
- *                      and at column 13. Basicly, if the first indent is
- *                      > 17, the deep form is used.
+ *                      indentations at 6x4space indents (like this one)
+ *                      and at 3x4space indents. Basicly, if the first
+ *                      indent is > 17, the deep form is used. (These
+ *                      would be column 25 and 17 for un-indented comments.)
  *
  * Code "paragraphs"    If the first line is indented, the paragraph is
  *                      assumed to be pre-formatted code. Most code starts
@@ -167,9 +168,9 @@ static html = [class
     tagged(subject, body, deep)
     {
         auto table = inline_text("*");
-            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH="100%%">
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
             <TR ALIGN="left" VALIGN="top">
-                <TD WIDTH=%d><I>%s</I></TD>
+                <TD WIDTH=%d><I>%s</I>&nbsp;</TD>
                 <TD>%s</TD>
             </TR>
             </TABLE>
@@ -366,7 +367,7 @@ forall (file in files)
      * minimise .* (i.e. make it non-greedy and match the first comment
      * end that comes along).
      */
-    src = smash(src, #(^|\n)((?s)/\*.*?\*/)#, "\\2");
+    src = smash(src, #((?s)/\*.*?\*/)#, "\\1");
     while (text = rpop(src))
     {
         /*
@@ -379,7 +380,7 @@ forall (file in files)
             printf("Warning: tabs in comments of module %s.\n", module);
         /*
          * Strip the comment text down to its body. This is defined as
-         * the lines that start with space then a star, minus the space,
+         * the lines that start with spaces then a star, minus the spaces,
          * the star, and any single following space. We also strip
          * trailing spaces on lines. Finally, escape special chars
          * as required by the output format.

@@ -1,202 +1,72 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
-<HTML>
-<HEAD>
-<TITLE>dll - Directly call DLL functions from ICI</TITLE>
-<META NAME="Generator" CONTENT="TextPad 4.0">
-<META NAME="Author" CONTENT="Tim Long">
-<META NAME="Keywords" CONTENT="ICI DLL">
-<META NAME="Description" CONTENT="">
-</HEAD>
-
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
-<H1>dll - Directly call DLL functions from ICI</H1>
-<H2>Introduction</H2>
-This describes the use of the ICI dynamically loaded extention module
-<B>dll</B>. This module allows the calling of pre-existing functions
-defined in dynamic load libraries directly from ICI without any
-explicitly compiled linkage. For example, under Windows one may execute:
-<PRE>
-<CODE>
-dll.user32.MessageBox
-(
-    "int",
-    NULL,
-    "Test of call to dll.user32.MessageBox(...)",
-    "ICI DLL call test",
-    0/*MB_OK*/
-);
-</CODE>
-</PRE>
-<P ALIGN="left">
-In general this is a dangerous operation and there
-are several caveats. One must exercise as much care, or more,
-as one would when writing ordinary C.
-<H2>Usage in brief</H2>
-A function in a DLL can be called with:
-<PRE>
-<CODE>
-    <I>ret</I> <B>= dll.</B><I>dll-name</I><B>.</B><I>func-name</I><B>(</B><I>ret-type</I><B>,</B> <I>...</I><B>)</B>
-</CODE>
-</PRE>
-Where:
-<DL>
-<DT><I>ret</I><DD>
-Will be an object of the type declared by <I>ret-type</I>.
-<DT><I>dll-name</I><DD>
-Is the name of a DLL. Extensions will be added and paths searched as
-necessary to convert this name to a specific DLL (see below for details).
-<DT><I>func-name</I><DD>
-Is the name of a function to be found in that DLL. Compiler name decoration
-(such as leading underscores) will be added as necessary and callings
-conventions deduced as best as possible (see below).
-<DT><I>ret-type</I><DD>
-Is a string declaring the type returned by this function. Currently
-only <B><CODE>"int"</CODE></B> is supported, which should be used for
-all 32 (or less) bit integral quantities including pointers.
-<DT><I>...</I><DD>
-Represents arguments to be passed to the function.
-</DL>
-<P ALIGN="left">
-Actual arguments to the DLL function are fabricated from the
-ICI arguments given in this call according to the following rules:
-<TABLE BORDER=1 CELLSPACING=1 CELLPADDING=1 WIDTH="100%">
-<TR ALIGN="left" VALIGN="top">
-    <TH>ICI argument</TH>
-    <TH>Raw argument</TH>
-<TR ALIGN="left" VALIGN="top">
-    <TD>an int</TD>
-    <TD>A 32 bit integral value, generally suitable for smaller sizes too.</TD>
-<TR ALIGN="left" VALIGN="top">
-    <TD>a string</TD>
-    <TD>A pointer to the raw characters of the string.
-    This will be '\0' terminated,
-    although embedded '\0's will obviously cause problems for some functions.
-    It is vital that normal atomic strings are not modified. I the function
-    being called modifies the string data, you <EM>must</EM> use a mutable string
-    as created by <I>strbuf()</I>.
-    The string must not be modifiled.</TD>
-<TR ALIGN="left" VALIGN="top">
-    <TD>NULL</TD>
-    <TD>A 32 bit zero.</TD>
-<TR ALIGN="left" VALIGN="top">
-    <TD>an pointer to an int</TD>
-    <TD>A pointer to a 32 bit integral value. The integral value may
-    be modified by the function, which will cause the ICI int to be
-    updated accordingly.</TD>
-<TR ALIGN="left" VALIGN="top">
-    <TD>a mem object</TD>
-    <TD>A pointer to the read-write memory. Care must be exercised
-    not to allow over-runs etc.</TD>
-</TABLE>
-<P ALIGN="left">
-As long a DLLs and functions are referred to with the same names,
-repeated calls are efficient and do not cause repeated library loads
-or function lookups.
-<H2>Detailed usage</H2>
-<P ALIGN="left">
-On first reference of the identifier
-<BLOCKQUOTE>
-dll
-</BLOCKQUOTE>
-the ICI interpreter will load the extention module in the normal
-fashion. The extenstion module will cause a single object of
-type <B>dllmanager</B> to be assigned to <B>dll</B>.
-<P ALIGN="left">
-This object
-supports fields in the manner of a struct, except that reference to
-a previsously undefined field is interpreted as a request to load a
-DLL of that name, and if successful, assign it to that same field
-and return it. Subsequent lookups of that field merely return the
-previsouly assigned object.
-<P ALIGN="left">
-When a name is resolved to a DLL, attempts are made to resolve it
-to a specific file by, possibly, adding extensions and searching for
-the file in various directories as is appropriate for the local system.
-(Under Windows the name is looked up as if by LoadLibrary()).
-It should be noted that refering to the same DLL by two different
-name will result in two independent loads of the DLL.
-<P ALIGN="left">
-Each loaded DLL is represented by an object of type <B>dll</B>. this also
-acts like a struct, with a similar side effect that references to
-undefined elements causes an attempt to resolve the name to a function
-of that name in the DLL. If the function is successfully resolved,
-a special function object of type <B>dllfunc</B> is made and assigned to that
-name. Subsequent references to the name just return the special function
-object. Calls to this function object transfer to the DLL function
-as described above.
-<P ALIGN="left">
-Although it is not necessary to do so, either the <B>dll</B> or <B>dllfunc</B> objects,
-once created, can be copied to other variables. That is, you don't
-have to always refere to a functions with <I>dll.lib.func</I>, but can
-say:
-<PRE>
-<CODE>
-    func = dll.lib.func;
-    func(...);
-</CODE>
-</PRE>
-<H2>A more complex example (Windows)</H2>
-<PRE>
-<CODE>
-static HKEY_CURRENT_CONFIG = 0x80000005;
-static KEY_QUERY_VALUE = 1;
-static value_type = 0;
-static valuez = 128;
-static value = alloc(valuez);
-static key_handle = 0;
-static ecode;
-
-ecode = dll.advapi32.RegOpenKeyEx
-(
-    "int",
-    HKEY_CURRENT_CONFIG,
-    "Display\\Settings",
-    0,
-    KEY_QUERY_VALUE,
-    &amp;key_handle
-);
-if (ecode != 0)
-    fail(sprintf("Failed to RegOpenKeyEx(), returned %d.", ecode));
-ecode = dll.advapi32.RegQueryValueEx
-(
-    "int",
-    key_handle,
-    "Resolution",
-    0,
-    &amp;value_type,
-    value,
-    &amp;valuez
-);
-if (ecode != 0)
-    fail(sprintf("Failed to RegQueryValueEx(), returned %d.", ecode));
-
-static
-cstring(m)
-{
-    auto    a, c, i;
-    auto    vargs = [array 0];
-
-    a = array();
-    for (i = 0 + vargs[0]; i < nels(m); ++i)
-    {
-        if ((c = m[i]) == 0)
-            break;
-        push(a, c);
-    }
-    return implode(a);
-}
-
-dll.user32.MessageBox
-(
-    "int",
-    NULL,
-    sprintf("HKEY_CURRENT_CONFIG\\Display\\Settings\\Resolution = %s",
-        cstring(value)),
-    "ICI DLL call test",
-    0/*MB_OK*/
-);
-</CODE>
-</PRE>
-
+            <HTML>
+            <HEAD>
+                <TITLE>The ICI dll module</TITLE>
+                <STYLE TYPE="text/css" TITLE="Bright Colours">
+                    BODY {color: black}
+                    P {font-size: 12pt}
+                    H1 {font-size: 14pt; font-family: Arial;
+                        font-weight: bold}
+                    H2 {font-size: 12pt; font-family: Arial;
+                        font-style: italic; font-weight: bold}
+                    PRE {background: aliceblue}
+                </STYLE>
+                <META NAME="Generator" CONTENT="extract-doc-from-src.ici">
+                <META NAME="Keywords" CONTENT="ICI">
+                <META NAME="Description" CONTENT="ICI extension module documentation">
+            </HEAD>
+            <BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
+            <H1>The ICI dll module</H1>
+<P ALIGN="left">The ICI <I>dll</I> module allows the calling of pre-existing
+functions in dynamic loaded libraries directly from
+ICI without any explicitly compiled linkage. For example,
+under Windows one may execute:</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>The subject</I>&nbsp;</TD>
+                <TD>And the full description of something that requirs
+a tagged paragraph.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>The subject</I>&nbsp;</TD>
+                <TD>And the full description of something that requirs
+a tagged paragraph.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <PRE>    dll.user32.MessageBox
+    (
+        NULL,
+        &quot;Test of call to dll.user32.MessageBox(...)&quot;,
+        &quot;ICI DLL call test&quot;,
+        0
+    );</PRE>
+<PRE>    dll.user32.MessageBox
+    (
+        NULL,
+        &quot;Test of call to dll.user32.MessageBox(...)&quot;,
+        &quot;ICI DLL call test&quot;,
+        0
+    );</PRE>
+<P ALIGN="left">And this is some more body text. The ICI <I>dll</I>
+module allows the calling of pre-existing functions
+in dynamic loaded libraries directly from ICI without
+any explicitly compiled linkage. For example, under
+Windows one may execute.</P>
+<P ALIGN="left">And this is some more body text. The ICI <I>dll</I>
+module allows the calling of pre-existing functions
+in dynamic loaded libraries directly from ICI without
+any explicitly compiled linkage. For example, under
+Windows one may execute.</P>
+<H1>Details</H1>
+<H2>dll.xxx.DECL(func-name, ...)</H2>
+<P ALIGN="left"><I>DECL</I> allows the explicit declaration of functions
+that, for some reason, can't be relied on to deduce
+their interface from the actual paraeters. For example,
+returning a C style nul terminated string rather than
+the default 32 bit integer.</P>
 </BODY>
 </HTML>
