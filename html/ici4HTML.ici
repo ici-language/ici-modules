@@ -1,5 +1,5 @@
 /*
- * $Id: ici4HTML.ici,v 1.2 2003/01/30 13:00:59 timl Exp $
+ * $Id: ici4HTML.ici,v 1.3 2003/02/24 21:06:07 timl Exp $
  *
  *
  * HTML element classes for ICI.
@@ -827,7 +827,7 @@ extern Page = [class: Element,
      */
     new(title, docgi)
     {
-        auto docgi = true;
+        auto docgi = 1;
         auto title = "";
         this = this:^new("body");
         this.page_title := title;
@@ -878,7 +878,7 @@ extern Page = [class: Element,
      */
     nocgi(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         page_docgi = !flag;
         return this;
     }
@@ -1070,7 +1070,7 @@ extern Hr = [class: NoEndTagElement,
 
     new(size, shade)
     {
-        auto shade = true;
+        auto shade = 1;
         this = this:^new("hr");
         if (size != NULL && size != 0)
             this:attr("size", string(size));
@@ -1080,14 +1080,14 @@ extern Hr = [class: NoEndTagElement,
 
     shade(flag)
     {
-        auto flag = false;
+        auto flag = 0;
         hr_noshade = !flag;
         return this;
     }
 
     noshade(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         return this:shade(!flag);
     }
 
@@ -1115,7 +1115,7 @@ extern Image = [class: NoEndTagElement,
     {
         auto alt = "[Image]";
         this = this:^new("img");
-        this.i_ismap := false;
+        this.i_ismap := 0;
         this:src(src);
         this:alt(alt);
         return this;
@@ -1160,7 +1160,7 @@ extern Image = [class: NoEndTagElement,
 
     ismap(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         i_ismap = flag;
         return this;
     }
@@ -1778,7 +1778,7 @@ static CheckedInputElement = [class: InputElement,
 
     checked(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         cie_checked = flag;
         return this;
     }
@@ -1921,7 +1921,7 @@ extern SelectList = [class: Element,
 
     multiple(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         s_multiple = flag;
         return this;
     }
@@ -1960,7 +1960,7 @@ extern SelectOption = [class: Element,
     new(val, text)
     {
         this = this:^new("option", text);
-        this.o_selected := false;
+        this.o_selected := 0;
         return this:value(val);
     }
 
@@ -1971,7 +1971,7 @@ extern SelectOption = [class: Element,
 
     selected(flag)
     {
-        auto flag = true;
+        auto flag = 1;
         o_selected = flag;
         return this;
     }
@@ -2024,6 +2024,9 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici4HTML.ici,v $
+ * Revision 1.3  2003/02/24 21:06:07  timl
+ * Corrected name of HTML doc files.
+ *
  * Revision 1.2  2003/01/30 13:00:59  timl
  * Added comment tags in html module and upgraded the Win32 installer.
  *
