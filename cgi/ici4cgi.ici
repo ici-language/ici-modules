@@ -1,5 +1,5 @@
 /*
- * $Id: ici4cgi.ici,v 1.1 2003/01/27 05:05:06 atrn Exp $
+ * $Id: ici4cgi.ici,v 1.2 2003/03/08 06:48:05 timl Exp $
  */
 
 /*
@@ -266,7 +266,20 @@ form_data(qs)
             {
                 return cgi.multipart_form_data();
             }
-            qs = getfile();
+            content_length := getenv("CONTENT_LENGTH");
+            if (content_length == NULL)
+            {
+                qs = getfile();
+            }
+            else
+            {
+                content_length = int(content_length);
+                qs := "";
+                while (content_length-- > 0)
+                {
+                    qs += getchar();
+                }
+            }
             break;
 
         default:
