@@ -209,7 +209,7 @@ static subs = [struct
 
     CF_SO =
     [struct
-        osx = "dylib",
+        osx = "bundle",
         cygwin = "dll",
         w32 = "dll",
         default = "so"
@@ -217,7 +217,7 @@ static subs = [struct
 
     CF_CFLAGS =
     [struct
-        osx = "-dynamic -fno-common -g -O2 -DNDEBUG",
+        osx = "-fno-common -g -Os -DNDEBUG -DICI_MODULE_NAME=$(MOD)",
         bsd = "-DBSD_4 -g -O2 -DNDEBUG",
         sol2 = "-DSUNOS5 -g -O2 -DNDEBUG",
         cygwin = "-g -O2 -DNDEBUG",
@@ -227,8 +227,7 @@ static subs = [struct
 
     CF_LDFLAGS =
     [struct
-        osx = "-flat_namespace -dynamiclib -undefined suppress "
-            "-install_name $(PREFIX)/lib/ici4/$(LIB)",
+        osx = "-flat_namespace -bundle -undefined suppress",
         sol2 = "-G",
         cygwin = "-shared -L$(PREFIX)/lib",
         w32 = "/MD /link /DLL /export:ici_$(MOD)_library_init",
