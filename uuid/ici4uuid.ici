@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ici4uuid.ici,v 1.1 2003/02/01 04:52:12 atrn Exp $
  */
 
 /*
@@ -25,6 +25,20 @@ extern VARIANT_DCE = 1;
 extern VARIANT_MICROSOFT = 2;
 extern VARIANT_OTHER = 3;
 
+/*
+ * uuid.variant_name - array of UUID variant names
+ *
+ * The uuid.variant_name array maps UUID variant values
+ * as returned by uuid.variant() to human readable strings.
+ *
+ * This --topic-- forms part of the --ici-uuid-- documentation.
+ */
+extern variant_name = [array
+    "NCS",
+    "DCE",
+    "Microsoft",
+    "other"
+];
 
 /* 
  * UUID Types
@@ -42,3 +56,25 @@ extern VARIANT_OTHER = 3;
  *
  * This --topic-- forms part of the --ici-uuid-- documentation.
  */
+
+extern TYPE_TIME = 1;
+extern TYPE_DCE = 2;
+extern TYPE_NAME = 3;
+extern TYPE_RANDOM = 4;
+
+/*
+ * uuid.type_name - array of UUID type names
+ *
+ * The uuid.type_name array maps a UUID type as returned
+ * by the uuid.type() function to a human readable string.
+ *
+ * This --topic-- forms part of the --ici-uuid-- documentation.
+ */
+
+extern type_name = [array
+    NULL, // nb. types start at 1
+    "time",
+    "DCE",
+    "name",
+    "random"
+];
