@@ -1,5 +1,5 @@
 /*
- * $Id: icisys.ici,v 1.1 2000/03/11 00:31:52 andy Exp $
+ * $Id: icisys.ici,v 1.2 2001/04/19 13:23:22 atrn Exp $
  *
  * System module portions more easily done in ICI than C.
  */

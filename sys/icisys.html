@@ -1,0 +1,931 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML EXPERIMENTAL 970324//EN">
+<HTML>
+<HEAD>
+<META NAME="GENERATOR" CONTENT="Adobe FrameMaker 5.5/HTML Export Filter">
+<LINK REL="STYLESHEET" HREF="ici.css">
+<TITLE> Unix System Calls</TITLE></HEAD>
+<BODY BGCOLOR="#ffffff">
+<H1 CLASS="Title">
+<A NAME="pgfId=177406">
+ </A>Unix System Calls</H1>
+<P CLASS="Body">
+<A NAME="pgfId=177407">
+ </A>Most Unix implementation of ICI provide access to many of the Unix system calls and other useful C library functions. Note that not all system calls are supported and those that are may be incompletely supported (e.g., <I CLASS="+Italic">
+signal</I>
+). Most system call functions return integers, zero if the call succeeded. Errors are reported using ICI's error handling and &quot;system calls&quot; will never return the -1 error return value. If an error is raised by a system call the value of &quot;error&quot; in the error handler will be the error message (as printed by the perror(3) function or returned by the ANSI C strerror() function).</P>
+<P CLASS="Body">
+<A NAME="pgfId=178009">
+ </A>To assist in the use of system calls ICI pre-defines variables to hold the various flags and other values used when calling the system calls. These variables are equivalent to the macros used in C. Not all systems support all these variables. If the C header files do not define a value then ICI will not pre-define the variable.</P>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180009">
+ </A>Win32 Support</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180010">
+ </A>The version of ICI for Microsoft's 32-bit Windows platforms (Win32)  supports many of these functions. Functions supported on Win32 platforms (Windows 95 and Windows NT) are marked with WIN32. In addition some functions are only available on Win32 platforms and are marked as so.</P>
+<P CLASS="Body">
+<A NAME="pgfId=177764">
+ </A>The following list summarises the Unix system call interface pre-defined variables. See the documentation for the C macros for information as to their use.</P>
+<P CLASS="Body">
+<A NAME="pgfId=177770">
+ </A>Values for open's <I CLASS="+Italic">
+flags</I>
+ parameter,</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177425">
+ </A>O_RDONLY</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177428">
+ </A>O_WRONLY</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177269">
+ </A>O_RDWR</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177270">
+ </A>O_APPEND</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177271">
+ </A>O_CREAT</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177272">
+ </A>O_TRUNC</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177273">
+ </A>O_EXCL</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177274">
+ </A>O_SYNC</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177275">
+ </A>O_NDELAY</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177277">
+ </A>O_NONBLOCK</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180011">
+ </A>O_BINARY		(WIN32 only)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180102">
+ </A>&nbsp;</P>
+<P CLASS="Body">
+<A NAME="pgfId=180103">
+ </A>Values for spawn's <I CLASS="+Italic">
+mode</I>
+ parameter,</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180104">
+ </A>&nbsp;</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180096">
+ </A>_P_WAIT		(WIN32 only)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180097">
+ </A>_P_NOWAIT		(WIN32 only)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177279">
+ </A>&nbsp;</P>
+<P CLASS="Body">
+<A NAME="pgfId=177771">
+ </A>Values for access's <I CLASS="+Italic">
+mode</I>
+ parameter,</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177494">
+ </A>R_OK</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177280">
+ </A>W_OK</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177281">
+ </A>X_OK</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177282">
+ </A>F_OK</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177779">
+ </A>&nbsp;</P>
+<P CLASS="Body">
+<A NAME="pgfId=177778">
+ </A>Values for lseek's <I CLASS="+Italic">
+whence</I>
+ parameter,</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177485">
+ </A>SEEK_SET</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177284">
+ </A>SEEK_CUR</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177285">
+ </A>SEEK_END</P>
+<P CLASS="Body">
+<A NAME="pgfId=177420">
+ </A>&nbsp;</P>
+<P CLASS="Body">
+<A NAME="pgfId=177503">
+ </A>The following list summarises the system interface functions. Following this is a detailed descriptions of each of them.</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177264">
+ </A>	int =	access(string <I CLASS="+Italic">
+[</I>
+, int<I CLASS="+Italic">
+]</I>
+)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177295">
+ </A>	int = 	creat(string, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180291">
+ </A>	array = 	dir([string,] [string,] [regexp])</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177296">
+ </A>	int =	dup(int <I CLASS="+Italic">
+[</I>
+, int<I CLASS="+Italic">
+]</I>
+)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177297">
+ </A>		exec(string, array)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177685">
+ </A>		exec(string, string...)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177298">
+ </A>	int =	lseek(int, int <I CLASS="+Italic">
+[</I>
+, int<I CLASS="+Italic">
+]</I>
+)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177299">
+ </A>	int = 	open(string, int <I CLASS="+Italic">
+[</I>
+, int<I CLASS="+Italic">
+]</I>
+)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177300">
+ </A>	array = 	pipe()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177301">
+ </A>	struct =	stat(string|int|file)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177302">
+ </A>	int =	wait()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177303">
+ </A>	string =	ctime(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177304">
+ </A>	int =	time()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177305">
+ </A>	file = 	fdopen(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180075">
+ </A>	string =	getcwd()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177310">
+ </A>		alarm(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177311">
+ </A>		acct(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177312">
+ </A>		chdir(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177313">
+ </A>		chmod(string, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177314">
+ </A>		chown(string, int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177315">
+ </A>		chroot(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177316">
+ </A>		_close(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177318">
+ </A>		_exit(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177319">
+ </A>	int =	fork()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177320">
+ </A>	int =	getpid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177321">
+ </A>	int = 	getpgrp()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177823">
+ </A>	int = 	getppid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177828">
+ </A>	int = 	getuid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177324">
+ </A>	int = 	geteuid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177325">
+ </A>	int = 	getgid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177326">
+ </A>	int = 	getegid()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177327">
+ </A>		kill(int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177328">
+ </A>		link(string, string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177329">
+ </A>		mkdir(string, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177330">
+ </A>		mknod(string, int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177331">
+ </A>		nice(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177332">
+ </A>		pause()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177335">
+ </A>		rmdir(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177336">
+ </A>		setpgrp()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177337">
+ </A>		setuid(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177338">
+ </A>		setgid(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177339">
+ </A>		signal(int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177340">
+ </A>		sync()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177343">
+ </A>		ulimit(int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177345">
+ </A>		umask(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177347">
+ </A>		unlink(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177354">
+ </A>		clock()</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177355">
+ </A>		system(string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177357">
+ </A>		lockf(int, int, int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=177359">
+ </A>		sleep(int)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180115">
+ </A>	int =	spawn([int, ] string, string...)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180116">
+ </A>	int =	spawn([int, ] string, array)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180112">
+ </A>		rename(string, string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180113">
+ </A>	struct =	passwd(int|string)</P>
+<P CLASS="Untitled">
+<A NAME="pgfId=180114">
+ </A>	array =	passwd()</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=177949">
+ </A><CODE CLASS="CourierBold">
+int = access(string </CODE>
+<I CLASS="+Italic">
+[</I>
+<CODE CLASS="CourierBold">
+, int</CODE>
+<I CLASS="+Italic">
+]</I>
+<CODE CLASS="CourierBold">
+)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178002">
+ </A>Call the access(2) function to determine the accessibility of a file. The first parameter is the pathname of the file system object to be tested. The second, optional, parameter is the <I CLASS="+Italic">
+mode</I>
+ (a bitwise combination of R_OK, W_OK and X_OK or the special value, F_OK). If <I CLASS="+Italic">
+mode</I>
+ is not passed F_OK is assumed. Access returns 0 if the file system object is accessible. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=177950">
+ </A><CODE CLASS="CourierBold">
+int = creat(string, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178030">
+ </A>Create a new ordinary file with the given pathname and mode (permissions etc...) and return the file descriptor, open for writing, for the file. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180344">
+ </A><CODE CLASS="CourierBold">
+array = dir([string,] [string,] [regexp])</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180345">
+ </A>The dir() function is used to read the contents of directories. It returns an array of strings being the names found in the directory. The first string parameter names a directory to read and defaults to &quot;.&quot; -- the current directory. The second string parameter controls which names are returned. It may be one of &quot;f&quot; -- return only the names of files, &quot;d&quot; -- return the names of sub-directories, or &quot;a&quot; -- return the names of all objects in the directory. The regexp parameter, if passed, is used to filter the returned names. Only names that match the regexp are returned. Note that when using dir() to traverse directory hierarchies that the &quot;.&quot; and &quot;..&quot; names are returned when listing the names of sub-directories, these will need to be avoided when traversing.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180292">
+ </A><CODE CLASS="CourierBold">
+int = dup(int </CODE>
+<I CLASS="+Italic">
+[</I>
+<CODE CLASS="CourierBold">
+, int</CODE>
+<I CLASS="+Italic">
+]</I>
+<CODE CLASS="CourierBold">
+)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178089">
+ </A>Duplicate a file descriptor by calling dup(2) or dup2(2) and return a new descriptor. If only a single parameter is passed dup(2) is called otherwise dup2(2) is called. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178051">
+ </A><CODE CLASS="CourierBold">
+exec(string, array)</CODE>
+</H4>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178054">
+ </A><CODE CLASS="CourierBold">
+exec(string, string...)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178099">
+ </A>Execute a new program in the current process. The first parameter to exec is the pathname of an executable file (the program). The remaining parameters are either; an array of strings defining the parameters to be passed to the program, or, a variable number of strings that are passed, in order, to the program as its parameters. The first form is similar to C's execv function and the second form to C's execl functions. Note that no searching of the user's path is performed and the environment passed to the program is that of the current process (i.e., both are implemented by calls to execv(2)). This function is available on Win32 platforms</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178057">
+ </A><CODE CLASS="CourierBold">
+int = lseek(int, int </CODE>
+<I CLASS="+Italic">
+[</I>
+<CODE CLASS="CourierBold">
+, int</CODE>
+<I CLASS="+Italic">
+]</I>
+<CODE CLASS="CourierBold">
+)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178250">
+ </A>Set the read/write position for an open file. The first parameter is the file descriptor associated with the file system object, the second parameter the offset. The third is the <I CLASS="+Italic">
+whence</I>
+ value which determines how the new file position is calculated. The whence value may be one of SEEK_SET, SEEK_CUR or SEEK_END and defaults to SEEK_SET if not specified. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178060">
+ </A><CODE CLASS="CourierBold">
+int = open(string, int </CODE>
+<I CLASS="+Italic">
+[</I>
+<CODE CLASS="CourierBold">
+, int</CODE>
+<I CLASS="+Italic">
+]</I>
+<CODE CLASS="CourierBold">
+)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178251">
+ </A>Open the named file for reading or writing depending upon the value of the second parameter, <I CLASS="+Italic">
+flags</I>
+, and return a file descriptor. The second parameter is a bitwise combination of the various O_ values (see above) and if this set includes the O_CREAT flag a third parameter, <I CLASS="+Italic">
+mode</I>
+, <B CLASS="+Bold">
+must</B>
+ also be supplied. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178063">
+ </A><CODE CLASS="CourierBold">
+array = pipe()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178252">
+ </A>Create a pipe and return an array containing two, integer, file descriptors used to refer to the input and output endpoints of the pipe.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178066">
+ </A><CODE CLASS="CourierBold">
+struct = stat(string|int|file)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178253">
+ </A>Obtain information on the named file system object, file descriptor or file underlying an ICI file object and return a struct containing that information. If the parameter is a file object that file object must refer to a file opened with ICI's <CODE CLASS="CourierBold">
+fopen</CODE>
+ function. The returned struct contains the following keys (which have the same names as the fields of the Unix statbuf structure with the leading &quot;st_&quot; prefix removed),</P>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178311"></A>dev</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178371"></A>ino</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178314"></A>mode</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178315"></A>nlink</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178317"></A>uid</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178344"></A>gid</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178318"></A>rdev</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178319"></A>size</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178320"></A>atime</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178321"></A>mtime</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178322"></A>ctime</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178323"></A>blksize</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=178324"></A>blocks</PRE>
+<P CLASS="Body">
+<A NAME="pgfId=178372">
+ </A>&nbsp;</P>
+<P CLASS="Body">
+<A NAME="pgfId=178375">
+ </A>All values are integers. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178108">
+ </A><CODE CLASS="CourierBold">
+int = wait()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178254">
+ </A>Wait until a signal is received or a child process terminates or stops due to tracing and return the status returned by system call.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178111">
+ </A><CODE CLASS="CourierBold">
+string = ctime(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178255">
+ </A>Convert a time value (see time, below) to a string of the form &quot;Sun Sep 16 01:03:52 1973\n&quot; and return that string. This is primarily of use when converting the time values returned by stat. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178114">
+ </A><CODE CLASS="CourierBold">
+int = time()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178256">
+ </A>Return the time since 00:00:00 GMT,  Jan.  1,  1970, measured in seconds.  Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178117">
+ </A><CODE CLASS="CourierBold">
+file = fdopen(int </CODE>
+<I CLASS="+Italic">
+[</I>
+<CODE CLASS="CourierBold">
+, mode</CODE>
+<I CLASS="+Italic">
+]</I>
+<CODE CLASS="CourierBold">
+)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178257">
+ </A>Returns a file object that can be used to perform I/O on the specified file descriptor. The file is opened for reading or writing according to <I CLASS="+Italic">
+mode</I>
+ (see <I CLASS="+Italic">
+fopen</I>
+). If mode is specified <CODE CLASS="CourierBold">
+&quot;r&quot;</CODE>
+ (reading) is assumed.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178120">
+ </A><CODE CLASS="CourierBold">
+string = getcwd()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180077">
+ </A>Returns the name of the current working directory. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180076">
+ </A><CODE CLASS="CourierBold">
+alarm(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178261">
+ </A>Schedule a SIGALRM signal to be posted to the current process in the specified number of seconds. If the parameter is zero any alarm is cancelled.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178123">
+ </A><CODE CLASS="CourierBold">
+acct(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178262">
+ </A>Enable accounting on the specified file.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178126">
+ </A><CODE CLASS="CourierBold">
+chdir(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178263">
+ </A>Change the process's current working directory to the specified path. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178129">
+ </A><CODE CLASS="CourierBold">
+chmod(string, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178264">
+ </A>Change the mode of a file system object.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178132">
+ </A><CODE CLASS="CourierBold">
+chown(string, int, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178265">
+ </A>Change the owner and group identifiers for a file system object.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178135">
+ </A><CODE CLASS="CourierBold">
+chroot(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178266">
+ </A>Change root directory for process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178138">
+ </A><CODE CLASS="CourierBold">
+_close(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178267">
+ </A>Close a file descriptor. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178141">
+ </A><CODE CLASS="CourierBold">
+_exit(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178268">
+ </A>Exit the current process returning an integer exit status to the parent. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178144">
+ </A><CODE CLASS="CourierBold">
+int = fork()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178269">
+ </A>Create a new process. In the parent this returns the process identifier for the newly created process. In the newly created process it returns zero.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178150">
+ </A><CODE CLASS="CourierBold">
+int = getpid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178270">
+ </A>Get the process identifier for the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178154">
+ </A><CODE CLASS="CourierBold">
+int = getpgrp()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178271">
+ </A>Get the current process group identifier.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178159">
+ </A><CODE CLASS="CourierBold">
+int = getppid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178272">
+ </A>Get the parent process identifier.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178164">
+ </A><CODE CLASS="CourierBold">
+int = getuid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178273">
+ </A>Get the real user identifier of the owner of the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178167">
+ </A><CODE CLASS="CourierBold">
+int = geteuid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178274">
+ </A>Get the effective user identifier for the owner of the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178170">
+ </A><CODE CLASS="CourierBold">
+int = getgid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178275">
+ </A>Get the real group identifier for the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178173">
+ </A><CODE CLASS="CourierBold">
+int = getegid()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178276">
+ </A>Get the effective group identifier for the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178176">
+ </A><CODE CLASS="CourierBold">
+kill(int, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178277">
+ </A>Post a signal to a process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178179">
+ </A><CODE CLASS="CourierBold">
+link(string, string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178278">
+ </A>Create a link to an existing file.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178182">
+ </A><CODE CLASS="CourierBold">
+mkdir(string, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178279">
+ </A>Create a directory with the specified mode. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178185">
+ </A><CODE CLASS="CourierBold">
+mknod(string, int, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178280">
+ </A>Create a special file.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178188">
+ </A><CODE CLASS="CourierBold">
+nice(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178281">
+ </A>Change the <I CLASS="+Italic">
+nice</I>
+ value of a process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178191">
+ </A><CODE CLASS="CourierBold">
+pause()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178282">
+ </A>Wait until a signal is delivered to the process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178194">
+ </A><CODE CLASS="CourierBold">
+rmdir(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178283">
+ </A>Remove a directory. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178197">
+ </A><CODE CLASS="CourierBold">
+setpgrp()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178287">
+ </A>Set the process group.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178200">
+ </A><CODE CLASS="CourierBold">
+setuid(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178288">
+ </A>Set the real and effective user identifier for the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178203">
+ </A><CODE CLASS="CourierBold">
+setgid(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178289">
+ </A>Set the real and effective group identifier for the current process.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178206">
+ </A><CODE CLASS="CourierBold">
+signal(int, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178290">
+ </A>Control signal handling in the process. Note at present handlers cannot be installed so signals are of limited use in ICI programs.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178209">
+ </A><CODE CLASS="CourierBold">
+sync()</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178291">
+ </A>Schedule in-memory file data to be written to disk.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178212">
+ </A><CODE CLASS="CourierBold">
+ulimit(int, int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178292">
+ </A>Get and set user limits.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178215">
+ </A><CODE CLASS="CourierBold">
+umask(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178293">
+ </A>Set file creation mask.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178218">
+ </A><CODE CLASS="CourierBold">
+unlink(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178294">
+ </A>Remove a file. Also supported on WIN32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178224">
+ </A><CODE CLASS="CourierBold">
+system(string)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178296">
+ </A>Execute a system command and return its exit status. Also supported on WIN32 platforms however using the system's command interpreter.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=178230">
+ </A><CODE CLASS="CourierBold">
+sleep(int)</CODE>
+</H4>
+<P CLASS="Body">
+<A NAME="pgfId=178298">
+ </A>Suspend the process for the specified number of seconds.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180117">
+ </A>int = spawn([mode,] string, string...)</H4>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180121">
+ </A>int = spawn([mode, ] string, array)</H4>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180146">
+ </A>int = spawnp([mode,] string, string...)</H4>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180147">
+ </A>int = spawnp([mode, ] string, array)</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180123">
+ </A>Spawn a sub-process. The parameters, other than mode, are as for exec - the string is the name of the executable and the remaining parameters form the command line arguments passed to the executable.</P>
+<P CLASS="Body">
+<A NAME="pgfId=180126">
+ </A>The mode parameter controls whether or not the parent process waits for the spawned process to termiante. If mode is _P_WAIT the call to spawn returns when the process terminates and the result of spawn is the process exit status. If mode is not passed or is _P_NOWAIT the call to spawn returns prior to the process terminating and the result is the Win32 process handle for the new process.</P>
+<P CLASS="Body">
+<A NAME="pgfId=180148">
+ </A>The <I CLASS="+Italic">
+spawnp</I>
+ variant will search the directories listed in the PATH environment variable for the executable program. In all other respects it is indentical to spawn.</P>
+<P CLASS="Body">
+<A NAME="pgfId=180127">
+ </A>This function is only available on Win32 platforms.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180120">
+ </A>rename(string, string)</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180118">
+ </A>Change the name of a file. The first parameter is the name of an existing file and the second is the new name that it is to be given.</P>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180130">
+ </A>struct = passwd(int | string)</H4>
+</DIV>
+<DIV>
+<H4 CLASS="Heading2">
+<A NAME="pgfId=180131">
+ </A>array = passwd()</H4>
+<P CLASS="Body">
+<A NAME="pgfId=180132">
+ </A>The passwd() function accesses the Unix password file (which may or may not be an actual file according to the local system configuration). With no parameters passwd() returns an array of all password file entries, each entry is a struct. With a parameter passwd() returns the entry for the specific user id., int parameter, or user name, string parameter. A password file entry is a struct with the following keys and values,</P>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180133"></A>name			The user's login name, a string.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180134"></A>passwd			The user's encrypted password, a string. Note that some systems protect this (shadow password files) and this field may not be an actual encrypted password.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180135"></A>uid			The user id., an int.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180136"></A>gid			The user's default group, an int.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180137"></A>gecos			The so-called gecos field, a string.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180138"></A>dir			The user's home directory, a string.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180139"></A>shell			The user's shell (initial program), a string.</PRE>
+<PRE CLASS="CodeIn1cm"><A NAME="pgfId=180140"></A>&nbsp;</PRE>
+</DIV>
+</BODY>
+</HTML>

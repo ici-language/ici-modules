@@ -68,6 +68,13 @@ auto	rules = [struct
 	#alarm#,
 	#acct#,
 	#truncate#,
+	#getrlimit#,
+	#setrlimit#,
+	#setlinebuf#,
+	#setitimer#,
+	#gettimeofday#,
+	#getitimer#,
+	#getpass#,
     ],
 
 ];
@@ -95,4 +102,5 @@ while (s = getline(f))
 close(g);
 close(f);
 remove("cfuncs.c");
-rename("newcfuncs.c", "cfuncs.c");
+//rename("newcfuncs.c", "cfuncs.c");
+put(getfile(fopen("newcfuncs.c")), fopen("cfuncs.c", "w"));
