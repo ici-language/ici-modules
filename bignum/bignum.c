@@ -1,119 +1,60 @@
-#include "ici.h"
+/*
+ * ICI language binding to the DEC/INRIA "bignum" high-precision interger arithmetic package
+ *
+ *
+ * This --intro-- forms part of the --ici-bignum-- documentation.
+ */
+
+#include <ici.h>
+#include "icistr.h"
+#include <icistr-setup.h>
+
 #include "BigNum.h"
 #include "BigZ.h"
 
 static BigZ	zero;
 
-typedef struct
-{
-    object_t	o_head;
-    BigZ	b_num;
-}
-bignum_t;
-
-inline
-static bignum_t *
-bignumof(void *p)
-{
-    return (bignum_t *)p;
-}
-
-static unsigned long
-mark_bignum(object_t *o)
-{
-    o->o_flags |= O_MARK;
-    return sizeof (bignum_t) + sizeof (struct BigZStruct);
-}
-
 static void
-free_bignum(object_t *o)
+ici_bignum_pre_free(ici_handle_t *h)
 {
-    BzFree(bignumof(o)->b_num);
-    ici_free(o);
+    BzFree((BigZ)h->h_ptr);
 }
 
-static type_t	bignum_type =
+static ici_handle_t *
+new_bignum(BigZ z)
 {
-    mark_bignum,
-    free_bignum,
-    hash_unique,
-    cmp_unique,
-    copy_simple,
-    assign_simple,
-    fetch_simple,
-    "bignum"
-};
+    ici_handle_t *h;
 
-inline
-static int
-isbignum(object_t *o)
-{
-    return o->o_type == &bignum_type;
+    if ((h = ici_handle_new(z, ICIS(bignum), NULL)) != NULL)
+    {
+        h->h_pre_free = ici_bignum_pre_free;
+        objof(h)->o_flags &= ~O_SUPER;
+    }
+    return h;
 }
 
 /*
  * Called to set error when we fail to allocate a bignum.
  */
-inline
 static int
 allocerr(void)
 {
-    error = "failed to allocate BigNum";
+    ici_error = "failed to allocate a BigNum";
     return 1;
-}
-
-/*
- * new_bignum - create a new ICI bignum object.
- */
-static bignum_t *
-new_bignum(BigZ bigz)
-{
-    bignum_t	*bn = 0;
-
-    if (bigz == NULL)
-	allocerr();
-    else if ((bn = talloc(bignum_t)) != NULL)
-    {
-	objof(bn)->o_tcode = TC_OTHER;
-	objof(bn)->o_nrefs = 1;
-	objof(bn)->o_flags = 0;
-	objof(bn)->o_type  = &bignum_type;
-	bn->b_num	   = bigz;
-	rego(objof(bn));
-    }
-    return bn;
-}
-
-/*
- * Non-zero if we need to call BzInit().
- */
-static	int need_init = 1;
-
-/*
- * Initialise if required.
- */
-inline
-static void
-checkinit(void)
-{
-    if (need_init)
-    {
-	BzInit();
-	zero = BzFromInteger(0);
-	need_init = 0;
-    }
 }
 
 /*
  * bignum = bignum.bignum(int|string)
  *
  * Convert object to bignum.
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
  */
-FUNC(bignum)
+static int
+ici_bignum_bignum(void)
 {
     BigZ	z;
 
-    checkinit();
     if (NARGS() > 1)
 	return ici_argcount(1);
     if (NARGS() == 0)
@@ -126,140 +67,192 @@ FUNC(bignum)
 	    z = BzFromInteger(intof(ARG(0))->i_value);
 	else
 	{
-	    char	n[80];
+	    char n[80];
 
-	    objname(n, ARG(0));
-	    sprintf(buf, "unable to convert a %s to a bignum", n);
-	    error = buf;
+	    ici_objname(n, ARG(0));
+	    sprintf(ici_buf, "unable to convert a %s to a bignum", n);
+	    ici_error = ici_buf;
 	    return 1;
 	}
     }
-    return z == NULL ? allocerr() : ici_ret_with_decref(objof(new_bignum(z)));
+    if (z == NULL)
+        return allocerr();
+    return ici_ret_with_decref(objof(new_bignum(z)));
 }
 
 /* 
  * bignum = bignum.create(ndigits)
  *
  * Create a BigNum with room to store ndigits digits.
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
  */
-FUNC(create)
+static int
+ici_bignum_create(void)
 {
     long	ndigits;
     BigZ	z;
 
-    checkinit();
     if (ici_typecheck("i", &ndigits))
 	return 1;
     if (ndigits < 1)
     {
-	error = "attempt to create bignum with zero (or fewer) digits";
+	ici_error = "attempt to create bignum with zero (or fewer) digits";
 	return 1;
     }
-    z = BzCreate(ndigits);
-    return z == NULL ? allocerr() : ici_ret_with_decref(objof(new_bignum(z)));
+    if ((z = BzCreate(ndigits)) == NULL)
+        return allocerr();
+    return ici_ret_with_decref(objof(new_bignum(z)));
 }
 
 /* 
  * string = bignum.tostring(bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
  */
-FUNC(tostring)
+static int
+ici_bignum_tostring(void)
 {
-    bignum_t	*bn;
+    ici_handle_t *bn;
     char	*s;
     string_t	*str;
 
-    checkinit();
-    if (ici_typecheck("o", &bn))
+    if (ici_typecheck("h", ICIS(bignum), &bn))
 	return 1;
-    if (!isbignum(objof(bn)))
-	return ici_argerror(0);
-    s = BzToString(bn->b_num, 10);
-    str = new_cname(s);
+    s = BzToString((BigZ)bn->h_ptr, 10);
+    str = ici_str_new_nul_term(s);
     BzFreeString(s);
     return ici_ret_with_decref(objof(str));
 }
 
-FUNCDEF(glue_N_N)
+static int
+glue_N_N(void)
 {
-    bignum_t	*a;
+    ici_handle_t *a;
+    BigZ (*pf)(BigZ);
+    BigZ z;
 
-    if (ici_typecheck("o", &a))
+    if (ici_typecheck("h", ICIS(bignum), &a))
 	return 1;
-    if (!isbignum(objof(a)))
-	return ici_argerror(0);
-    return ici_ret_with_decref
-    (
-	objof
-	(
-	    new_bignum((BigZ)(*CF_ARG1())(a->b_num))
-	)
-    );
+    pf = CF_ARG1();
+    z = (*pf)((BigZ)a->h_ptr);
+    return ici_ret_with_decref(objof(new_bignum(z)));
 }
 
-FUNCDEF(glue_NN_N)
+static int
+glue_NN_N(void)
 {
-    bignum_t	*a;
-    bignum_t	*b;
+    ici_handle_t *a;
+    ici_handle_t *b;
+    BigZ (*pf)(BigZ, BigZ);
+    BigZ z;
 
-    if (ici_typecheck("oo", &a, &b))
+    if (ici_typecheck("hh", ICIS(bignum), &a, ICIS(bignum), &b))
 	return 1;
-    if (!isbignum(objof(a)))
-	return ici_argerror(0);
-    if (!isbignum(objof(b)))
-	return ici_argerror(1);
-    return ici_ret_with_decref
-    (
-	objof
-	(
-	    new_bignum((BigZ)(*CF_ARG1())(a->b_num, b->b_num))
-	)
-    );
+    pf = CF_ARG1();
+    z = (*pf)((BigZ)a->h_ptr, (BigZ)b->h_ptr);
+    return ici_ret_with_decref(objof(new_bignum(z)));
 }
 
-CFUNC1(negate,	glue_N_N,  BzNegate);
-CFUNC1(abs,	glue_N_N,  BzAbs);
-CFUNC1(add,	glue_NN_N, BzAdd);
-CFUNC1(sub,	glue_NN_N, BzSubtract);
-CFUNC1(mult,	glue_NN_N, BzMultiply);
-CFUNC1(mod,	glue_NN_N, BzMod);
-
-FUNC(div)
+/*
+ * bignum = bignum.div(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+static int
+ici_bignum_div(void)
 {
-    bignum_t	*a;
-    bignum_t	*b;
+    ici_handle_t *a;
+    ici_handle_t *b;
+    BigZ z;
 
-    if (ici_typecheck("oo", &a, &b))
+    if (ici_typecheck("hh", ICIS(bignum), &a, ICIS(bignum), &b))
 	return 1;
-    if (!isbignum(objof(a)))
-	return ici_argerror(0);
-    if (!isbignum(objof(b)))
-	return ici_argerror(1);
-    if (BzCompare(b->b_num, zero) == 0)
+    if (BzCompare((BigZ)b->h_ptr, zero) == 0)
     {
-	error = "division by zero";
+	ici_error = "division by zero";
 	return 1;
     }
-    return ici_ret_with_decref
-    (
-	objof(new_bignum(BzDiv(a->b_num, b->b_num)))
-    );
+    z = BzDiv((BigZ)a->h_ptr, (BigZ)b->h_ptr);
+    return ici_ret_with_decref(objof(new_bignum(z)));
 }
 
-FUNC(compare)
+/*
+ * int = bignum.compare(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+static int
+ici_bignum_compare(void)
 {
-    bignum_t	*a;
-    bignum_t	*b;
+    ici_handle_t *a;
+    ici_handle_t *b;
 
-    if (ici_typecheck("oo", &a, &b))
+    if (ici_typecheck("hh", ICIS(bignum), &a, ICIS(bignum), &b))
 	return 1;
-    if (!isbignum(objof(a)))
-	return ici_argerror(0);
-    if (!isbignum(objof(b)))
-	return ici_argerror(1);
-    return int_ret(BzCompare(a->b_num, b->b_num));
+    return ici_int_ret(BzCompare((BigZ)a->h_ptr, (BigZ)b->h_ptr));
 }
 
-#if defined __MACH__ && defined __APPLE__
-#include "cfuncs.c"
-#include "strings.c"
-#endif
+static cfunc_t ici_bignum_cfuncs[] =
+{
+    {CF_OBJ, "bignum",   ici_bignum_bignum},
+    {CF_OBJ, "create",   ici_bignum_create},
+    {CF_OBJ, "tostring", ici_bignum_tostring},
+    {CF_OBJ, "div",      ici_bignum_div},
+    {CF_OBJ, "compare",  ici_bignum_compare},
+
+/*
+ * bignum = bignum.negate(bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "negate",	 glue_N_N,  BzNegate},
+
+/*
+ * bignum = bignum.abs(bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "abs",	 glue_N_N,  BzAbs},
+
+/*
+ * bignum = bignum.add(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "add",	 glue_NN_N, BzAdd},
+
+/*
+ * bignum = bignum.sub(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "sub",	 glue_NN_N, BzSubtract},
+
+/*
+ * bignum = bignum.mult(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "mult",	 glue_NN_N, BzMultiply},
+
+/*
+ * bignum = bignum.mod(bignum, bignum)
+ *
+ * This --topic-- forms part of the --ici-bignum-- documentation.
+ */
+    {CF_OBJ, "mod",	 glue_NN_N, BzMod},
+    {CF_OBJ}
+};
+
+object_t *
+ici_bignum_library_init(void)
+{
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "bignum"))
+        return NULL;
+    if (init_ici_str())
+        return NULL;
+    BzInit();
+    zero = BzFromInteger(0);
+    return objof(ici_module_new(ici_bignum_cfuncs));
+}
