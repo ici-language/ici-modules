@@ -65,7 +65,7 @@ static modules = [struct
     str     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     uuid    = [set "bsd", "linux"                                ],
-    xml     = [set "bsd", "linux",        "sol2", "cygwin", "w32"],
+    xml     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
 ];
 
 /*
@@ -217,7 +217,7 @@ static subs = [struct
 
     CF_LDFLAGS =
     [struct
-        osx = "-flat_namespace -bundle -undefined suppress "
+        osx = "-flat_namespace -dynamiclib -undefined suppress "
             "-install_name $(PREFIX)/lib/ici4/$(LIB)",
         sol2 = "-G",
         cygwin = "-shared -L$(PREFIX)/lib",
