@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.15 2001/09/14 05:32:33 atrn Exp $
+ * $Id: net.c,v 1.16 2002/04/06 01:43:26 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -1708,7 +1708,7 @@ ici_net_sktopen()
         return 1;
     if ((sf = skt_open(skt, mode)) == NULL)
         return 1;
-    if ((f = new_file((char *)sf, &net_skt_ftype, NULL, NULL)) == NULL)
+    if ((f = ici_file_new((char *)sf, &net_skt_ftype, NULL, NULL)) == NULL)
     {
         skt_fclose(sf);
         return 1;
@@ -1840,6 +1840,8 @@ ici_net_library_init(void)
         }
     }
 #endif
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "net"))
+        return NULL;
     if (init_ici_str())
         return NULL;
     return objof(ici_module_new(ici_net_cfuncs));

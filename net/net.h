@@ -24,7 +24,7 @@ typedef struct skt
 }
 net_skt_t;
 #define	netsktof(o)	((net_skt_t *)(o))
-#define	isnetskt(o)	((o)->o_type == &net_netsocket_type)
+#define	isnetskt(o)	(ici_typeof(o) == &net_netsocket_type)
 
 extern type_t	net_netsocket_type;
 
