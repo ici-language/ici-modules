@@ -1,5 +1,5 @@
 /*
- * $Id: ici3HTML.ici,v 1.9 2002/03/13 04:40:28 atrn Exp $
+ * $Id: ici3HTML.ici,v 1.10 2002/05/23 00:29:26 atrn Exp $
  *
  *
  * HTML element classes for ICI.
@@ -1383,6 +1383,13 @@ extern TableRow = [class: TableElement,
 		return c;
 	}
 
+	emptycell()
+	{
+		c := EmptyTableCell:new();
+		this:add(c);
+		return c;
+	}
+
 ];
 
 
@@ -1866,6 +1873,9 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici3HTML.ici,v $
+ * Revision 1.10  2002/05/23 00:29:26  atrn
+ * Added EmptyTableCell for simpler addition of blank cells
+ *
  * Revision 1.9  2002/03/13 04:40:28  atrn
  * Add trademark entities
  *
