@@ -34,13 +34,16 @@ ici$(MOD).html: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
 clean:
-	rm -f $(OBJS)
+	$(CF_RM) -f $(OBJS)
 
 clobber: clean
-	rm -f $(ICIMOD) ici$(MOD).1 ici$(MOD).html .depend
+	$(CF_RM) -f $(ICIMOD) ici$(MOD).1 ici$(MOD).html .depend
 
 depend:
 	mkdep $(CFLAGS) $(C_SRC)
+
+test:
+	ici tst-$(MOD).ici
 
 install: $(LIBINSTALLS) ici$(MOD).1
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4

@@ -8,7 +8,6 @@ if (typeof(t) != "int")
     fail("sys.time() didn't return an int");
 
 sys.chdir(".");
-
 f := sys.open("tst-sys.ici", sys.O_RDONLY);
 if (typeof(f) != "int")
     fail("sys.open() didn't return an int");
@@ -33,4 +32,3 @@ if (version() !~ #Win32#)
 {
     
 }
-printf("OK\n");

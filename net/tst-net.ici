@@ -1,0 +1,31 @@
+n = 1000;
+static data = "Hello there sailor\n";
+
+static
+echo_client(n, port)
+{
+    sock := net.connect(net.socket("tcp/ip"), port);
+    for (i := 0; i < n; ++i)
+    {
+        net.send(sock, data);
+        if ((ans := net.recv(sock, nels(data))) != data)
+            fail(sprintf("received \"%s\", expected \"%s\"", ans, data));
+    }
+    net.close(sock);
+    return 1;
+}
+
+ssock = net.listen(net.bind(net.socket("tcp/ip")));
+client = thread(echo_client, n, net.getportno(ssock));
+csock = net.accept(ssock);
+t = 0;
+while (str = net.recv(csock, nels(data)))
+{
+    net.send(csock, str);
+    t += nels(str);
+}
+waitfor(client.state != "active"; client)
+    ;
+
+if (t != n * nels(data))
+    fail("didn't process right amount of data");

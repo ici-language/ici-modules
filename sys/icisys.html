@@ -96,10 +96,11 @@ as to their use.</P>
 accessibility of a file. The first parameter is the
 pathname of the file system object to be tested. The
 second, optional, parameter is the mode (a bitwise
-combination of <I>R_OK</I>, <I>W_OK</I> and <I>X_OK</I>
-or the special value, <I>F_OK</I>). If mode is not
-passed <I>F_OK</I> is assumed. Access returns 0 if
-the file system object is accessible, else it fails.</P>
+combination of <I>sys.R_OK</I>, <I>sys.W_OK</I> and
+<I>sys.X_OK</I> or the special value, <I>sys.F_OK</I>).
+If mode is not passed <I>sys.F_OK</I> is assumed. Access
+returns 0 if the file system object is accessible,
+else it fails.</P>
 <P ALIGN="left">Supported on Win32 platforms.</P>
 <H2>sys.acct(pathname)</H2>
 <P ALIGN="left">Enable accounting on the specified file. Not suppored
@@ -416,7 +417,7 @@ Not supported on Win32.</P>
 Win32.</P>
 <H2>int = sys.lockf(fd, cmd, len)</H2>
 <P ALIGN="left">Invoked <I>lockf(3)</I> on a file.</P>
-<P ALIGN="left">Not supported on Linux, BDS, Cygwin, Win32.</P>
+<P ALIGN="left">Not supported on Linux, Cygwin, Win32.</P>
 <H2>int = sys.lseek(int, int [, int])</H2>
 <P ALIGN="left">Set the read/write position for an open file. The first
 parameter is the file descriptor associated with the
