@@ -52,15 +52,6 @@
     typedef void *dll_t;
 #   define valid_dll(dll)  ((dll) != NULL)
 
-    static char *
-    get_dll_path(void)
-    {
-        char	*path;
-
-        if ((path = getenv("ICIPATH")) == NULL)
-    	    path = ".:" PREFIX "/lib/ici:/usr/X11R6/lib:/usr/local/lib:/usr/lib:/lib";
-        return path ;
-    }
 
 #endif /* _WIN32 vs UNIX */
 

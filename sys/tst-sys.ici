@@ -33,3 +33,4 @@ if (version() !~ #Win32#)
 {
     
 }
+printf("OK\n");

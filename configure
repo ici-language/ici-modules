@@ -70,8 +70,7 @@ static subs = [struct
      * of ici.h for this system. This could be the directory where ICI
      * was recently built. (If relative, relative to the module dir.)
      */
-    ICISDK = "../../ici",
-    //ICISDK = "/usr/local/lib/ici4",
+    ICISDK = [func(){return (getenv("PREFIX") || "/usr/local") + "/lib/ici4";}],
 
     /*
      * MOD: the name of the module (like sys, or net).
@@ -101,6 +100,33 @@ static subs = [struct
                 strcat(r, c, " ");
             return r;
         }],
+
+    /*
+     * LIBINSTALLS: The files to be installed in $(PREFIX)/lib/ici4
+     */
+    LIBINSTALLS = [func()
+        {
+            cs := dir(module, #^ici4\.ici$#);
+            r := strbuf("$(LIB)");
+            forall (c in cs)
+                strcat(r, " ", c);
+            return r;
+        }],
+
+    /*
+     * PREFIX: The install base, like /usr/local.
+     */
+    PREFIX = [func() {return getenv("PREFIX") || "/usr/local";}],
+
+    /*
+     * INSTALL: The command, with standard options, to copy files
+     * into an install directory.
+     */
+    INSTALL =
+        [struct
+            sol2 = "install -m 444",
+            default = "install -c -m 444"
+        ],
 
     /*
      * PIC: is the option to the C compiler to make it produce

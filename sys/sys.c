@@ -15,6 +15,7 @@
 #endif
 #if defined(sun) || defined(BSD4_4) || defined(linux)
 #include <sys/wait.h>
+#include <sys/time.h>
 #endif
 #ifdef NeXT
 #include <libc.h>
@@ -214,7 +215,7 @@ extern int      access(), acct(), chdir(),
 #endif
                 setuid(), setgid(), setgid(),
 
-#if !defined(SUNOS5) && !defined(__hppa) && !defined(BSD4_4) && !defined(IRIX)
+#if !defined(SUNOS5) && !defined(__hppa) && !defined(BSD4_4) && !defined(IRIX) && !defined(linux)
                 sync(),
 #endif
 

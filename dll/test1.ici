@@ -1,3 +1,4 @@
+/*
 auto d = dll.X11.XOpenDisplay(":0.0");
 dll.X11.XBell(d, 100);
 dll.X11.XFlush(d);
@@ -7,4 +8,5 @@ dll.X11.XFlush(d);
 sys.sleep(1);
 dll.X11.XCloseDisplay(d);
 dll.c.printf("Display is 0x%08x\n", d);
-dll.c.printf("Time is %s", dll.c.ctime(&time()));
+*/
+dll.c.printf("Time is %a", dll.c.ctime(NULL));

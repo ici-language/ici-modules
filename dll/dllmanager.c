@@ -96,17 +96,27 @@ fetch_dllmanager(object_t *o, object_t *k)
     lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
     if (!valid_dll(lib))
     {
-        char        *err;
-        char const  fmt[] = "failed to load %s, %s";
+#       ifndef	_WIN32
+	if (strchr(fname, '/') == 0 && stringof(k)->s_nchars < FILENAME_MAX - 20)
+	{
+	    sprintf(fname, "lib%s.%s", stringof(k)->s_chars, ICI_DLL_EXT);
+	    lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
+	}
+	else
+#       endif
+	{
+	    char        *err;
+	    char const  fmt[] = "failed to load %s, %s";
 
-        if ((err = (char *)dlerror()) == NULL)
-            err = "dynamic link error";
-        if (ici_chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
-            strcpy(ici_buf, err);
-        else
-            sprintf(ici_buf, fmt, fname, err);
-        ici_error = ici_buf;
-        return NULL;
+	    if ((err = (char *)dlerror()) == NULL)
+		err = "dynamic link error";
+	    if (ici_chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
+		strcpy(ici_buf, err);
+	    else
+		sprintf(ici_buf, fmt, fname, err);
+	    ici_error = ici_buf;
+	    return NULL;
+	}
     }
     gotlib = 1;
     if ((v = objof(new_dll(lib))) == NULL)
