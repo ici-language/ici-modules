@@ -114,7 +114,7 @@ assign_dllmanager(object_t *o, object_t *k, object_t *v)
 static object_t *
 fetch_dllmanager(object_t *o, object_t *k)
 {
-    //char                *path;
+    /*char                *path;*/
     char                fname[FILENAME_MAX];
     dll_t               lib;
     int                 gotlib;

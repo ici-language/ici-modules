@@ -157,6 +157,17 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
     long                ret;
     char                *s;
     object_t            *o;
+#   ifdef NO_ALLOCA
+        /*
+         * This is a bit of a hack so we can at least work most of the time
+         * on systems without alloca. If the limited size becomes a problem,
+         * a more complete solution should be coded.
+         */
+        char            abuf[1024];
+        char            *ap = abuf;
+        char            *apt;
+#       define alloca(n) (void *)(apt = ap, ap += (n), ap <= &abuf[1024] ? apt : NULL)
+#   endif
 
     nargs = NARGS();
     df = dllfuncof(object);
@@ -224,6 +235,8 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
      * argument is first in array.
      */
     args = (long *)alloca(nargs * sizeof(long));
+    if (args == NULL)
+        goto alloca_fail;
     argp = &args[0];
     for (i = 0; i < NARGS(); ++i, ++argp)
     {
@@ -258,6 +271,8 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
                  * to point to.
                  */
                 p = (long *)alloca(sizeof(long));
+                if (p == NULL)
+                    goto alloca_fail;
                 *p = intof(po)->i_value;
                 *argp = (long)p;
             }
@@ -265,6 +280,8 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
 	        {
 		        char ***pargv;
 		        pargv = alloca(sizeof (char **));
+                if (pargv == NULL)
+                    goto alloca_fail;
 		        *pargv = ici_array_to_argv(arrayof(po));
 		        *argp = (long)pargv;
 	        }
@@ -307,6 +324,10 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
 	    }
     }
     return ici_int_ret(ret);
+
+alloca_fail:
+    ici_error = "dll arguments occupy too much memory";
+    return 1;
 }
 
 static unsigned long

@@ -31,6 +31,11 @@
 #define ICI_SYS_NOFLOCK
 #endif
 
+#ifdef __CYGWIN__
+#define ICI_SYS_NOFLOCK
+#define NO_ACCT
+#endif
+
 #ifdef IRIX
 #include <signal.h>
 #include <sys/param.h>
@@ -65,7 +70,7 @@
 #include <sys/param.h>
 #endif
 
-#if defined(__linux__) || defined(__sun__)
+#if defined(__linux__) || defined(__sun__) || defined(__CYGWIN__)
 #define SETPGRP_0_ARGS
 #endif
 
@@ -199,7 +204,11 @@ ici_sys_vars_init(objwsup_t *scp)
  */
 #ifndef NeXT
 
-extern int      access(), acct(), chdir(),
+#ifndef NO_ACCT
+extern int      acct();
+#endif
+
+extern int      access(), chdir(),
                 chmod(), chown(), chroot(), close(),
 #ifndef linux
                 creat(),
@@ -224,14 +233,14 @@ extern int      access(), acct(), chdir(),
                 sync(),
 #endif
 
-#if !defined(linux) && !defined(__hppa) && !defined(BSD4_4) && !defined(sun) && !defined(IRIX)
+#if !defined(linux) && !defined(__hppa) && !defined(BSD4_4) && !defined(sun) && !defined(IRIX) && !defined(__CYGWIN__)
                 umask(), alarm(), getuid(), geteuid(), getgid(), getegid(),
                 lseek(), sleep(),
 #endif
 
                 ulimit(), unlink();
 
-#if !defined(SUNOS5) && !defined(__hppa) && !defined(__USE_FIXED_PROTOTYPES__) && !defined(BSD4_4) && !defined(linux) && !defined(IRIX)
+#if !defined(SUNOS5) && !defined(__hppa) && !defined(__USE_FIXED_PROTOTYPES__) && !defined(BSD4_4) && !defined(linux) && !defined(IRIX) && !defined(__CYGWIN__)
 extern int      clock();
 #endif
 
@@ -561,7 +570,7 @@ static int ici_sys_fileno()
     return ici_int_ret(fileno((FILE *)f->f_file));
 }
 
-#ifndef _WINDOWS
+#if !defined(_WIN32) && !defined(__CYGWIN__)
 static int ici_sys_setlinebuf()
 {
     ici_file_t      *file;
@@ -572,7 +581,7 @@ static int ici_sys_setlinebuf()
         setlinebuf((FILE *)file->f_file);
     return ici_null_ret();
 }
-#endif /* _WINDOWS */
+#endif /* _WINDOWS, CYGWIN */
 
 
 static int ici_sys_mkdir()
@@ -1414,9 +1423,9 @@ static int ici_sys_wait()
     int status;
 #endif
     if ((pid = wait(&status)) < 0)
-	    return sys_ret(-1);
+        return sys_ret(-1);
     if ((s = ici_struct_new()) == NULL)
-	    return 1;
+        return 1;
     if ((i = ici_int_new(pid)) == NULL)
         goto fail;
     if (ici_assign(s, ICISO(pid), i))
@@ -1672,18 +1681,18 @@ string_to_resource(object_t *what)
     if (what == ICISO(fsize))
         return RLIMIT_FSIZE;
 #   if defined(RLIMIT_MEMLOCK)
-	if (what == ICISO(memlock))
-	    return RLIMIT_MEMLOCK;
+    if (what == ICISO(memlock))
+        return RLIMIT_MEMLOCK;
 #   endif
     if (what == ICISO(nofile))
         return RLIMIT_NOFILE;
 #   if defined(RLIMIT_NPROC)
-	if (what == ICISO(nproc))
-	    return RLIMIT_NPROC;
+    if (what == ICISO(nproc))
+        return RLIMIT_NPROC;
 #   endif
 #   if defined(RLIMIT_RSS)
-	if (what == ICISO(rss))
-	    return RLIMIT_RSS;
+    if (what == ICISO(rss))
+        return RLIMIT_RSS;
 #   endif
     if (what == ICISO(stack))
         return RLIMIT_STACK;
@@ -1807,10 +1816,10 @@ fail:
 
 static int ici_sys_sleep()
 {
-    long	t;
+    long    t;
 
     if (ici_typecheck("i", &t))
-	return 1;
+    return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
@@ -1823,10 +1832,10 @@ static int ici_sys_sleep()
 
 static int ici_sys_usleep()
 {
-    long	t;
+    long    t;
 
     if (ici_typecheck("i", &t))
-	return 1;
+    return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
@@ -1868,6 +1877,9 @@ static cfunc_t ici_sys_cfuncs[] =
     {CF_OBJ, "unlink",  ici_sys_simple, unlink, "s"}, /* should go as remove(}, is more portable */
     {CF_OBJ, "wait",    ici_sys_wait},
     {CF_OBJ, "write",   ici_sys_write},
+#   ifndef NOSIGNALS
+        {CF_OBJ, "signal",  ici_sys_simple, signal, "ii"},
+#   endif
 #   ifdef _WINDOWS
         {CF_OBJ, "spawn",   ici_sys_spawn, spawnv},
         {CF_OBJ, "spawnp",  ici_sys_spawn, spawnvp},
@@ -1876,7 +1888,6 @@ static cfunc_t ici_sys_cfuncs[] =
         /* poll */
         /* times */
         /* uname */
-        {CF_OBJ, "acct",    ici_sys_simple, acct,   "s"},
         {CF_OBJ, "alarm",   ici_sys_simple, alarm,  "i"},
         {CF_OBJ, "chmod",   ici_sys_simple, chmod,  "si"},
         {CF_OBJ, "chown",   ici_sys_simple, chown,  "sii"},
@@ -1905,23 +1916,27 @@ static cfunc_t ici_sys_cfuncs[] =
         {CF_OBJ, "rename",  ici_sys_simple, rename, "ss"},
         {CF_OBJ, "setgid",  ici_sys_simple, setgid, "i"},
         {CF_OBJ, "setitimer",ici_sys_setitimer},
-        {CF_OBJ, "setlinebuf", ici_sys_setlinebuf},
         {CF_OBJ, "setpgrp", ici_sys_setpgrp},
         {CF_OBJ, "setrlimit",ici_sys_setrlimit},
         {CF_OBJ, "setuid",  ici_sys_simple, setuid, "i"},
-        {CF_OBJ, "signal",  ici_sys_simple, signal, "ii"},
         {CF_OBJ, "sleep",   ici_sys_sleep},
         {CF_OBJ, "sync",    ici_sys_simple, sync,   ""},
         {CF_OBJ, "truncate",ici_sys_truncate},
         {CF_OBJ, "umask",   ici_sys_simple, umask,  "i"},
         {CF_OBJ, "usleep",  ici_sys_usleep},
+#       ifndef NO_ACCT
+            {CF_OBJ, "acct",    ici_sys_simple, acct,   "s"},
+#       endif
+#       if !defined(__CYGWIN__)
+            {CF_OBJ, "setlinebuf", ici_sys_setlinebuf},
+#       endif
 #       ifndef ICI_SYS_NOFLOCK
             {CF_OBJ, "flock",   ici_sys_flock},
 #       endif
-#       if !defined(linux) && !defined(BSD4_4)
+#       if !defined(linux) && !defined(BSD4_4) && !defined(__CYGWIN__)
             {CF_OBJ, "lockf",   ici_sys_simple, lockf,  "iii"},
 #       endif /* linux */
-#       if !defined(NeXT) && !defined(BSD4_4)
+#       if !defined(NeXT) && !defined(BSD4_4) && !defined(__CYGWIN__)
             {CF_OBJ, "ulimit",  ici_sys_simple, ulimit, "ii"},
 #       endif
 #   endif

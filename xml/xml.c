@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.5 2003/01/23 10:38:32 timl Exp $
+ * $Id: xml.c,v 1.6 2003/01/23 12:52:38 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -12,6 +12,12 @@
  * Complete rewrite by Andy Newman <atrn@zeta.org.au>
  *                        ^ note difference in the names, we're not related!
  * Another rewrite to make it OO in ICI 4 by Tim Long.
+ */
+
+/*
+ * The ICI xml modules provides stuff..
+ *
+ * This --intro-- formas part of the --ici-xml-- documentation.
  */
 
 #include <ici.h>
