@@ -1,5 +1,5 @@
 /*
- * $Id: ici4HTML.ici,v 1.3 2003/02/24 21:06:07 timl Exp $
+ * $Id: ici4HTML.ici,v 1.4 2003/04/15 07:06:19 atrn Exp $
  *
  *
  * HTML element classes for ICI.
@@ -16,10 +16,13 @@
  */
 static encode(s)
 {
-    s = gsub(s, #&#, "&amp;"); // nb. must do this first!
-    s = gsub(s, #<#, "&lt;");
-    s = gsub(s, #>#, "&gt;");
-    return s;
+    if (s)
+    {
+	s = gsub(s, #&#, "&amp;"); // nb. must do this first!
+	s = gsub(s, #<#, "&lt;");
+	s = gsub(s, #>#, "&gt;");
+    }
+    return s ? s : "";
 }
 
 
@@ -839,7 +842,7 @@ extern Page = [class: Element,
         else
         {
             try
-                this.page_param := cgi.query_string_to_struct();
+                this.page_param := cgi.form_data();
             onerror
                 this.page_param := struct();
         }
@@ -848,7 +851,7 @@ extern Page = [class: Element,
 
 
     /**
-     * string = page:param(string)
+     * string|array = page:param(string)
      *
      * This --topic-- forms part of the --ici-HTML-- documentation.
      */
@@ -2024,6 +2027,9 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici4HTML.ici,v $
+ * Revision 1.4  2003/04/15 07:06:19  atrn
+ * Use 0 and 1 rather than true and false.
+ *
  * Revision 1.3  2003/02/24 21:06:07  timl
  * Corrected name of HTML doc files.
  *
