@@ -1,4 +1,5 @@
 #include <ici.h>
+#undef file_t
 #include "icistr.h"
 #include <icistr-setup.h>
 
@@ -347,7 +348,7 @@ static int ici_sys_fdopen()
     long        fd;
     char        *mode;
     FILE        *stream;
-    file_t      *f;
+    ici_file_t  *f;
 
     switch (NARGS())
     {
@@ -535,7 +536,7 @@ ret:
 
 static int ici_sys_fileno()
 {
-    file_t      *f;
+    ici_file_t      *f;
 
     if (ici_typecheck("u", &f))
         return 1;
@@ -557,7 +558,7 @@ static int ici_sys_fileno()
 #ifndef _WINDOWS
 static int ici_sys_setlinebuf()
 {
-    file_t      *file;
+    ici_file_t      *file;
 
     if (ici_typecheck("u", &file))
         return 1;
@@ -1617,6 +1618,8 @@ static int ici_sys_setpgrp()
 #endif
 }
 
+#ifndef ICI_SYS_NOFLOCK
+
 static int ici_sys_flock()
 {
     long        fd, operation;
@@ -1625,6 +1628,7 @@ static int ici_sys_flock()
         return 1;
     return sys_ret(flock(fd, operation));
 }
+#endif /* ICI_SYS_NOFLOCK */
 
 static int ici_sys_truncate()
 {
@@ -1872,7 +1876,6 @@ static cfunc_t ici_sys_cfuncs[] =
         {CF_OBJ, "chown",   ici_sys_simple, chown,  "sii"},
         {CF_OBJ, "chroot",  ici_sys_simple, chroot, "s"},
         {CF_OBJ, "clock",   ici_sys_simple, clock,  ""},
-        {CF_OBJ, "flock",   ici_sys_flock},
         {CF_OBJ, "fork",    ici_sys_simple, fork,   ""},
         {CF_OBJ, "getegid", ici_sys_simple, getegid,""},
         {CF_OBJ, "geteuid", ici_sys_simple, geteuid,""},
@@ -1906,6 +1909,9 @@ static cfunc_t ici_sys_cfuncs[] =
         {CF_OBJ, "truncate",ici_sys_truncate},
         {CF_OBJ, "umask",   ici_sys_simple, umask,  "i"},
         {CF_OBJ, "usleep",  ici_sys_usleep},
+#       ifndef ICI_SYS_NOFLOCK
+            {CF_OBJ, "flock",   ici_sys_flock},
+#       endif
 #       if !defined(linux) && !defined(BSD4_4)
             {CF_OBJ, "lockf",   ici_sys_simple, lockf,  "iii"},
 #       endif /* linux */
