@@ -277,6 +277,7 @@ FUNCDEF(simple)
     return sys_ret((*CF_ARG1())(av[0], av[1], av[2], av[3]));
 }
 
+NEED_STRING(status);
 NEED_STRING(dev);
 NEED_STRING(ino);
 NEED_STRING(mode);
@@ -1421,12 +1422,18 @@ FUNC(lseek)
 }
 
 /*
- * wait()
+ * struct = wait()
  *
- * Wait for a child process to exit and return the exit status.
+ * Wait for a child process to exit and return a struct
+ * containing the process id (key of "pid") and the exit
+ * status (key of "status").
  */
 FUNC(wait)
 {
+    int         pid;
+    struct_t    *s;
+    int_t       *i;
+
 #ifdef _WINDOWS
     return not_on_win32("wait");
 #else
@@ -1436,13 +1443,38 @@ FUNC(wait)
 #else
     int	status;
 #endif
-    if (wait(&status) < 0)
+
+    NEED_STRINGS(1);
+    if ((pid = wait(&status)) < 0)
 	return sys_ret(-1);
+    if ((s = new_struct()) == NULL)
+	return 1;
+    if ((i = new_int(pid)) == NULL)
+        goto fail;
+    if (assign(s, STRING(pid), i))
+    {
+        decref(i);
+        goto fail;
+    }
+    decref(i);
 #if NeXT
-    return int_ret(status.w_retcode);
+    if ((i = new_int(status.w_retcode)) == NULL)
+        goto fail;
 #else
-    return int_ret(status);
+    if ((i = new_int(status)) == NULL)
+        goto fail;
 #endif
+    if (assign(s, STRING(status), i))
+    {
+        decref(i);
+        goto fail;
+    }
+    decref(i);
+    return ici_ret_with_decref(objof(s));
+
+fail:
+    decref(s);
+    return 1;
 #endif /* _WINDOWS */
 }
 
@@ -2115,6 +2147,37 @@ fail:
 #endif
 #endif /* #ifndef _WINDOWS */
 
+
+FUNC(sleep)
+{
+	long	t;
+
+	if (ici_typecheck("i", &t))
+		return 1;
+#ifndef NOSIGNALS
+	ici_signals_blocking_syscall(1);
+#endif
+	sleep(t);
+#ifndef NOSIGNALS
+	ici_signals_blocking_syscall(0);
+#endif
+}
+
+FUNC(usleep)
+{
+	long	t;
+
+	if (ici_typecheck("i", &t))
+		return 1;
+#ifndef NOSIGNALS
+	ici_signals_blocking_syscall(1);
+#endif
+	sleep(t);
+#ifndef NOSIGNALS
+	ici_signals_blocking_syscall(0);
+#endif
+}
+
 CFUNC3(alarm,	simple,	alarm,	"i")
 CFUNC3(acct,	simple,	acct,	"s")
 CFUNC3(chdir,	simple,	chdir,	"s")
@@ -2165,8 +2228,6 @@ CFUNC3(clock,	simple,	clock,	"")
 #if !defined(linux) && !defined(BSD4_4)
 CFUNC3(lockf,	simple,	lockf,	"iii")
 #endif /* linux */
-CFUNC3(sleep,	simple,	sleep,	"i")
-CFUNC3(usleep,	simple,	usleep,	"i")
 #endif /* _WINDOWS */
 CFUNC3(rename,	simple,	rename,	"ss")
 
