@@ -25,28 +25,28 @@
 static int
 ici_str_toupper(void)
 {
-    string_t	*str;
-    string_t	*newstr;
-    char	*buffer;
-    char	*p, *q;
+    string_t    *str;
+    string_t    *newstr;
+    char    *buffer;
+    char    *p, *q;
 
     if (ici_typecheck("o", &str))
-	return 1;
+    return 1;
     if (!isstring(objof(str)))
-	return ici_argerror(0);
+    return ici_argerror(0);
     if ((buffer = ici_nalloc(str->s_nchars)) == NULL)
-	return 1;
+    return 1;
     for
     (
-	p = str->s_chars, q = buffer;
-	p - str->s_chars < str->s_nchars;
-	++p, ++q
+    p = str->s_chars, q = buffer;
+    p - str->s_chars < str->s_nchars;
+    ++p, ++q
     )
     {
-	if (islower((int)*p))
-	    *q = toupper(*p);
-	else
-	    *q = *p;
+    if (islower((int)*p))
+        *q = toupper(*p);
+    else
+        *q = *p;
     }
     newstr = ici_str_new(buffer, str->s_nchars);
     ici_nfree(buffer, str->s_nchars);
@@ -63,28 +63,28 @@ ici_str_toupper(void)
 static int
 ici_str_tolower(void)
 {
-    string_t	*str;
-    string_t	*newstr;
-    char	*buffer;
-    char	*p, *q;
+    string_t    *str;
+    string_t    *newstr;
+    char    *buffer;
+    char    *p, *q;
 
     if (ici_typecheck("o", &str))
-	return 1;
+    return 1;
     if (!isstring(objof(str)))
-	return ici_argerror(0);
+    return ici_argerror(0);
     if ((buffer = ici_alloc(str->s_nchars)) == NULL)
-	return 1;
+    return 1;
     for
     (
-	p = str->s_chars, q = buffer;
-	p - str->s_chars < str->s_nchars;
-	++p, ++q
+    p = str->s_chars, q = buffer;
+    p - str->s_chars < str->s_nchars;
+    ++p, ++q
     )
     {
-	if (isupper((int)*p))
-	    *q = tolower(*p);
-	else
-	    *q = *p;
+    if (isupper((int)*p))
+        *q = tolower(*p);
+    else
+        *q = *p;
     }
     newstr = ici_str_new(buffer, str->s_nchars);
     ici_free(buffer);
@@ -102,9 +102,9 @@ ici_str_tolower(void)
 static int
 ici_str_error(void)
 {
-    long	code;
+    long    code;
     if (ici_typecheck("i", &code))
-	return 1;
+    return 1;
     return ici_str_ret(strerror((int)code));
 }
 
@@ -123,25 +123,25 @@ ici_str_error(void)
 static int
 ici_str_ptime(void)
 {
-    char	*fmt;
-    char	*str;
-    struct_t	*d;
-    int_t	*i;
-    struct tm	tm;
+    char    *fmt;
+    char    *str;
+    struct_t    *d;
+    int_t   *i;
+    struct tm   tm;
 
     if (ici_typecheck("ss", &str, &fmt))
-	return 1;
+    return 1;
     if (strptime(str, fmt, &tm) == NULL)
     {
-	ici_error = "failed to convert string";
-	return 1;
+    ici_error = "failed to convert string";
+    return 1;
     }
     if ((d = ici_struct_new()) == NULL)
-	return 1;
+    return 1;
 
-#define	ASSIGN(N)\
+#define ASSIGN(N)\
     if ((i = ici_int_new(tm.tm_ ## N)) == NULL || ici_assign(d, ICIS(N), i))\
-	goto fail;\
+    goto fail;\
     ici_decref(i)
 
     ASSIGN(sec);
@@ -158,12 +158,12 @@ ici_str_ptime(void)
 
 fail:
     if (i != NULL)
-	ici_decref(i);
+    ici_decref(i);
     ici_decref(d);
     return 1;
 }
 # endif
-#endif	/* #ifndef _WIN32 */
+#endif  /* #ifndef _WIN32 */
 
 /*
  * string = str.join(array [, sep])
@@ -183,17 +183,17 @@ ici_str_join(void)
     object_t            **o;
     string_t            *s;
     char                *p;
-    char		*sep = " ";
-    char		seplen = 1;
+    char        *sep = " ";
+    char        seplen = 1;
 
     if (ici_typecheck("a", &a))
     {
-	if (ici_typecheck("ao", &a, &s))
-	    return 1;
-	if (!isstring(objof(s)))
-	    return ici_argerror(1);
-	sep = s->s_chars;
-	seplen = s->s_nchars;
+    if (ici_typecheck("ao", &a, &s))
+        return 1;
+    if (!isstring(objof(s)))
+        return ici_argerror(1);
+    sep = s->s_chars;
+    seplen = s->s_nchars;
     }
     i = 0;
     for (o = a->a_base; o < a->a_top; ++o)
@@ -208,8 +208,8 @@ ici_str_join(void)
             i += stringof(*o)->s_nchars;
             break;
         }
-	if (o < (a->a_top-1))
-	    i += seplen;
+    if (o < (a->a_top-1))
+        i += seplen;
     }
     if ((s = ici_str_alloc(i)) == NULL)
         return 1;
@@ -227,11 +227,11 @@ ici_str_join(void)
             p += stringof(*o)->s_nchars;
             break;
         }
-	if (o < (a->a_top-1))
-	{
-	    memcpy(p, sep, seplen);
-	    p += seplen;
-	}
+    if (o < (a->a_top-1))
+    {
+        memcpy(p, sep, seplen);
+        p += seplen;
+    }
     }
     if ((s = stringof(ici_atom(objof(s), 1))) == NULL)
         return 1;
@@ -243,8 +243,12 @@ static cfunc_t ici_str_cfuncs[] =
     {CF_OBJ, "toupper", ici_str_toupper},
     {CF_OBJ, "tolower", ici_str_tolower},
     {CF_OBJ, "error", ici_str_error},
-    {CF_OBJ, "ptime", ici_str_ptime},
     {CF_OBJ, "join", ici_str_join},
+#if !defined _WIN32
+# if defined BSD_4 && !defined __APPLE__
+    {CF_OBJ, "ptime", ici_str_ptime},
+# endif
+#endif  /* #ifndef _WIN32 */
     {CF_OBJ}
 };
 
@@ -252,8 +256,8 @@ object_t *
 ici_str_library_init(void)
 {
     if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "str"))
-	return NULL;
+    return NULL;
     if (init_ici_str())
-	return NULL;
+    return NULL;
     return objof(ici_module_new(ici_str_cfuncs));
 }
