@@ -118,7 +118,7 @@ SOURCE=.\icisys.html
 # End Source File
 # Begin Source File
 
-SOURCE=.\test.ici
+SOURCE=".\tst-sys.ici"
 # End Source File
 # End Target
 # End Project

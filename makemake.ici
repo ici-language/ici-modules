@@ -42,9 +42,9 @@
  */
 static modules = [struct
 
-    sys     = [set "bsd", "linux", "osx", "sol2"],
-    net     = [set "bsd", "linux", "osx", "sol2"],
-    xml     = [set "bsd", "linux",        "sol2"],
+    sys     = [set "bsd", "linux", "osx", "sol2"          ],
+    net     = [set "bsd", "linux", "osx", "sol2", "cygwin"],
+    xml     = [set "bsd", "linux",        "sol2"          ],
 ];
 
 /*
@@ -103,7 +103,12 @@ static subs = [struct
      * position independent code suitable for a shared or dynamicly
      * loading library of the sort ICI needs on this system.
      */
-    PIC = [struct osx = "-dynamic -fno-common", default = "-fpic"],
+    PIC =
+        [struct
+            osx = "-dynamic -fno-common",
+            cygwin = "",
+            default = "-fpic"
+        ],
     
     /*
      * SOSUFFIX: The suffix the shared, dynamic link, dynamic load,
@@ -121,7 +126,13 @@ static subs = [struct
      * ICICFLAGS C compiler options in addition to the others already
      * mentioned here.
      */
-    ICICFLAGS = [struct bsd = "-DBSD_4", sol2 = "-DSUNOS5", default = ""],
+    ICICFLAGS =
+        [struct
+            bsd = "-DBSD_4",
+            sol2 = "-DSUNOS5",
+            cygwin = "-ansi",
+            default = ""
+        ],
 
     /*
      * ICILDFLAGS Linker options in addition to the others already
@@ -131,7 +142,8 @@ static subs = [struct
         [struct
             osx = "-flat_namespace -bundle -undefined suppress "
                 "-install_name /usr/local/lib/ici4/$(LIB)",
-            sol2 = "-G",
+	    sol2 = "-G",
+            cygwin = "-dll",
             default = "-shared",
         ],
     
@@ -143,6 +155,7 @@ static subs = [struct
     OTHERDEFS =
         [struct
             sol2 = "CC\t= gcc -pipe",
+            cygwin = "CC\t= gcc",
             default = "",
         ],
 
@@ -165,6 +178,7 @@ static flavours = [struct
     FreeBSD     = "bsd",
     NetBSD      = "bsd",
     Linux       = "linux",
+    ("CYGWIN_NT-5.0") = "cygwin",
     /*
      * SunOS 1.x and 2.x have the same uname but are different beasts
      */
