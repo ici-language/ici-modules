@@ -1,5 +1,5 @@
 /* 
- * $Id: pq.c,v 1.11 2001/11/16 20:26:33 atrn Exp $
+ * $Id: pq.c,v 1.12 2003/01/27 10:49:00 atrn Exp $
  *
  * ICI PostgreSQL inferface module.
  */
@@ -9,10 +9,33 @@
 #include "icistr.h"
 #include <icistr-setup.h>
 
+static ici_handle_t *
+new_conn(PGconn *conn)
+{
+    ici_handle_t *h;
+
+    if ((h = ici_handle_new(conn, ICIS(PGconn), NULL)) != NULL)
+        objof(h)->o_flags &= ~O_SUPER;
+    return h;
+}
+
 static void
 ici_pq_result_pre_free(ici_handle_t *h)
 {
     PQclear((PGresult *)h->h_ptr);
+}
+
+static ici_handle_t *
+new_result(PGresult *res)
+{
+    ici_handle_t *h;
+
+    if ((h = ici_handle_new(res, ICIS(PGresult), NULL)) != NULL)
+    {
+        h->h_pre_free = ici_pq_result_pre_free;
+        objof(h)->o_flags &= ~O_SUPER;
+    }
+    return h;
 }
 
 static int
@@ -154,7 +177,7 @@ ici_pq_connectdb(void)
 	PQfinish(conn);
 	return 1;
     }
-    return ici_ret_with_decref(objof(ici_handle_new(conn, ICIS(PGconn), NULL)));
+    return ici_ret_with_decref(objof(new_conn(conn)));
 }
 
 static int
@@ -172,7 +195,7 @@ ici_pq_setdbLogin(void)
     if (ici_typecheck("sssssss", &host, &port, &options, &tty, &dbname, &login, &pwd))
 	return 1;
     conn = PQsetdbLogin(host, port, options, tty, dbname, login, pwd);
-    return ici_ret_with_decref(objof(ici_handle_new(conn, ICIS(PGconn), NULL)));
+    return ici_ret_with_decref(objof(new_conn(conn)));
 }
 
 static int
@@ -182,7 +205,7 @@ ici_pq_connectStart(void)
 
     if (ici_typecheck("s", &conninfo))
 	return 1;
-    return ici_ret_with_decref(objof(ici_handle_new(PQconnectStart(conninfo), ICIS(PGconn), NULL)));
+    return ici_ret_with_decref(objof(new_conn(PQconnectStart(conninfo))));
 }
 
 static int
@@ -239,7 +262,7 @@ ici_pq_exec(void)
     }
 
     }
-    if ((r = ici_handle_new(res, ICIS(PGresult), NULL)) == NULL)
+    if ((r = new_result(res)) == NULL)
 	return 1;
     r->h_pre_free = ici_pq_result_pre_free;
     return ici_ret_with_decref(objof(r));
