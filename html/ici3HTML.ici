@@ -1,5 +1,5 @@
 /*
- * $Id: ici3HTML.ici,v 1.10 2002/05/23 00:29:26 atrn Exp $
+ * $Id: ici3HTML.ici,v 1.11 2002/05/23 00:44:40 atrn Exp $
  *
  *
  * HTML element classes for ICI.
@@ -1383,9 +1383,10 @@ extern TableRow = [class: TableElement,
 		return c;
 	}
 
-	emptycell()
+	emptycell(numspaces)
 	{
-		c := EmptyTableCell:new();
+		auto numspaces = 1;
+		c := EmptyTableCell:new(numspaces);
 		this:add(c);
 		return c;
 	}
@@ -1422,10 +1423,12 @@ extern TableCell = [class: TableElement,
  */
 extern EmptyTableCell = [class: TableCell,
 
-	new()
+	new(numspaces)
 	{
+		auto numspaces = 1;
 		this = this:^new();
-		this:add(NonBreakingSpace);
+		while (numspaces-- > 0)
+		    this:add(NonBreakingSpace);
 		return this;
 	}
 
@@ -1568,6 +1571,11 @@ extern InputImage = [class: InputElement,
 	align(a)
 	{
 		return this:attr("align", a);
+	}
+
+	border(n)
+	{
+		return this:attr("border", string(n));
 	}
 
 ];
@@ -1873,6 +1881,10 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici3HTML.ici,v $
+ * Revision 1.11  2002/05/23 00:44:40  atrn
+ * Added emptycell() method to TableRow class for simpler
+ * addition of empty cells to table rows (obviously).
+ *
  * Revision 1.10  2002/05/23 00:29:26  atrn
  * Added EmptyTableCell for simpler addition of blank cells
  *
