@@ -1,36 +1,32 @@
-INSTALL=	install
-PREFIX=		/usr/local/
-LIBICI=		$(PREFIX)lib/ici3
+#
+# This $(CF_FLAVOUR) specific makefile was automatically created by
+# processing $(CF_MAKEIN) to get $(CF_MAKEOUT).
+#
+# See the comments in configure for details.
+#
+PREFIX	= $(CF_PREFIX)
+ALL_SRC	= $(CF_ICI_DOT_ICI)
+LIBINSTALLS = $(CF_ICI_DOT_ICI)
+$(CF_OTHERDEFS)
 
-all:
+default:
 
-install:\
-	$(LIBICI)/ici3html.ici\
-	$(LIBICI)/ici3HTML.ici
+$(CF_MAKE_FRAG)
 
-$(LIBICI)/ici3html.ici:	html.ici
-	$(INSTALL) -c -m 444 html.ici $@
+$(CF_MAKE_FRAG_FLAV)
 
-$(LIBICI)/ici3HTML.ici:	ici3HTML.ici
-	$(INSTALL) -c -m 444 ici3HTML.ici $@
+ici$(CF_MOD).1: $(ALL_SRC)
+	ici ../tools/extract-doc-from-src.ici man $(ALL_SRC)
 
-uninstall:
-	rm -f $(LIBICI)/ici3html.ici
-	rm -f $(LIBICI)/ici3HTML.ici
+ici$(CF_MOD).html: $(SRC)
+	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
+clean:
 
-ici.h\
-strs.h\
-strings.h\
-cfuncs.c\
-clean\
-depend\
-clobber:
-	@: no need to do anything
+clobber: clean
 
+depend:
 
-t1.html: FORCE
-	ici3 t1.ici > t1.html || rm t1.html
-
-
-FORCE:
+install: $(LIBINSTALLS) ici$(CF_MOD).1
+	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
+	$(CF_INSTALL) ici$(CF_MOD).1 $(PREFIX)/man/man1
