@@ -64,70 +64,95 @@ static modules = [struct
  * flavour to find a value.  If the flavour is not found, the 'default' entry
  * is used.  If an entry is a string, it is used directly.
  *
- * The following defines are processed:
+ * The following defines are processed (and what it is set to in brackets).
  *
- * ICIV                 ici4 or whatever version number we are up to.
+ * CF_MAKE_FRAG         This is a special substitution. If is replaced by
+ *                      the contents of Makefile.frag in the module dir
+ *                      if it exsits. This is done before other variable
+ *                      expansions, so expansions also happen inside the
+ *                      substituted contents.
  *
- * MOD                  The name of the module (like sys, or net).
+ * CF_MAKE_FRAG_FLAV    This is a special substitution.  If is replaced by the
+ *                      contents of Makefile.frag.flavour in the module dir if
+ *                      it exsits (where flavour is the current flavour).
+ *                      This is done before other variable expansions, so
+ *                      expansions also happen inside the substituted
+ *                      contents.
  *
- * PREFIX               The install base, like /usr/local.  If the environment
+ * CF_ICIV              ici4 or whatever version number we are up to (ici4)
+ *
+ * CF_MOD               The name of the module (Like sys, net. All the keys of
+ *                      the modules struct defined below in turn).
+ *
+ * CF_PREFIX            The install base, like /usr/local. (If the environment
  *                      variable PREFIX is defined when configure is run, its
- *                      value will be used, else /usr/local.
+ *                      value will be used, else /usr/local.)
  *
- * ICISDK               The location of the ICISDK.  In particular, the
- *                      location of libici4.a for this system.
+ * CF_LIBICI_DIR        The location of libici4.a for this system.  (Same as
+ *                      CF_PREFIX above, with /lib/ici4 appended.)
  *
- * ICIOBJS              *.c in the module dir with all the .c changed to .o.
+ * CF_ICI_H_DIR         The location of ici.h for this system.  (Same as
+ *                      CF_PREFIX above, with /include appended.)
  *
- * ICISRCS              *.c in the module dir.
+ * CF_DOT_O             *.c in the module dir with all the .c changed to .o.
  *
- * LIBINSTALLS          Files to be installed in $(PREFIX)/lib/ici4.
+ * CF_DOT_C             *.c in the module dir.
  *
- * INSTALL              The command, with options, to copy files into an
- *                      install directory.
+ * CF_ICI_DOT_ICI       ici*.ici in the moduler dir.
  *
- * PIC                  Is the option to the C compiler to make it produce
+ * CF_INSTALL           The command, with options, to copy files into an
+ *                      install directory. (Varies with flavour.)
+ *
+ * CF_PIC               Is the option to the C compiler to make it produce
  *                      position independent code suitable for a shared or
  *                      dynamicly loading library of the sort ICI needs on
- *                      this system.
+ *                      this system. (Varies with flavour.)
  *
- * SOSUFFIX             The suffix the shared, dynamic link, dynamic load, or
+ * CF_OSUFFIX           The suffix the shared, dynamic link, dynamic load, or
  *                      whatever library should have to be suitable for ICI.
+ *                      (Varies with flavour.)
  *
- * OPTIM                The argument to the C compiler to turn on
- *                      optimisation.
+ * CF_OPTIM             The argument to the C compiler to turn on
+ *                      optimisation.  (Varies with flavour.)
  *
- * ICICFLAGS            C compiler options in addition to the others already
- *                      mentioned here.
+ * CF_CFLAGS            C compiler options in addition to the others already
+ *                      mentioned here.  (Varies with flavour.)
  *
- * ICILDFLAGS           Linker options in addition to the others already
- *                      mentioned here.
+ * CF_LDFLAGS           Linker options in addition to the others already
+ *                      mentioned here.  (Varies with flavour.)
  *
- * LIBS                 Any other libs that should be linked in.
+ * CF_LIBS              Any other libs that should be linked in.  (None here.
+ *                      This is a common thing to define in a
+ *                      sub-Makefile.generic.)
  *
- * OTHERDEFS            Any other make defines that should be made.
+ * CF_OTHERDEFS         Any other make defines that should be made.  (Varies
+ *                      with flavour.)
  *
- * OTHERRULES           Any other make dependancy rules that should be made.
+ * CF_OTHERRULES        Any other make dependancy rules that should be made.
+ *                      (None.)
  *
- * MAKEIN               The name of the template makefile being used.
+ * CF_MAKEIN            The name of the template makefile being used.
  *
- * MAKEOUT              The name of the actual makefile being produced.
+ * CF_MAKEOUT           The name of the actual makefile being produced.
  *
- * FLAVOUR              The local system "flavour" name.
+ * CF_FLAVOUR           The local system "flavour" name.  (Varies with
+ *                      flavour, obviously.)
  */
 static subs = [struct
 
-    ICIV = "ici4",
-    MOD(){return module;}
-    MAKEIN(){return makein;}
-    MAKEOUT(){return makeout;}
-    FLAVOUR(){return flavour;}
+    CF_ICIV = "ici4",
+    CF_MOD(){return module;}
+    CF_MAKEIN(){return makein;}
+    CF_MAKEOUT(){return makeout;}
+    CF_FLAVOUR(){return flavour;}
 
-    PREFIX(){return getenv("PREFIX") || "/usr/local";}
+    CF_PREFIX(){return getenv("PREFIX") || "/usr/local";}
 
-    ICISDK(){return (getenv("PREFIX") || "/usr/local") + "/lib/ici4";}
+    CF_LIBICI_DIR(){return (getenv("PREFIX") || "/usr/local") + "/lib/ici4";}
 
-    ICIOBJS()
+    CF_ICI_H_DIR(){return (getenv("PREFIX") || "/usr/local") + "/include";}
+
+    CF_DOT_O()
     {
         cs := dir(module, #\.c$#);
         r := strbuf();
@@ -136,7 +161,7 @@ static subs = [struct
         return r;
     }
 
-    ICISRCS()
+    CF_DOT_C()
     {
         cs := dir(module, #\.c$#);
         r := strbuf();
@@ -145,34 +170,34 @@ static subs = [struct
         return r;
     }
 
-    LIBINSTALLS()
+    CF_ICI_DOT_ICI()
     {
         cs := dir(module, #^ici4.*\.ici$#);
-        r := strbuf("$(LIB)");
+        r := strbuf();
         forall (c in cs)
-            strcat(r, " ", c);
+            strcat(r, c, " ");
         return r;
     }
 
-    INSTALL =
+    CF_INSTALL =
     [struct
         sol2 = "/usr/ucb/install -c -m 444",
         default = "install -c -m 444"
     ],
 
-    PIC =
+    CF_PIC =
     [struct
         osx = "-dynamic -fno-common",
         cygwin = "",
         default = "-fpic"
     ],
 
-    SOSUFFIX = [struct osx = "dylib", default = "so"],
+    CF_SOSUFFIX = [struct osx = "dylib", default = "so"],
 
-    OPTIM = [struct default = "-g -O2 -DNDEBUG"],
-    //OPTIM = [struct default = "-g"],
+    CF_OPTIM = [struct default = "-g -O2 -DNDEBUG"],
+    //CF_OPTIM = [struct default = "-g"],
 
-    ICICFLAGS =
+    CF_CFLAGS =
     [struct
         bsd = "-DBSD_4",
         sol2 = "-DSUNOS5",
@@ -180,7 +205,7 @@ static subs = [struct
         default = ""
     ],
 
-    ICILDFLAGS =
+    CF_LDFLAGS =
     [struct
         osx = "-flat_namespace -bundle -undefined suppress "
             "-install_name /usr/local/lib/ici4/$(LIB)",
@@ -189,16 +214,14 @@ static subs = [struct
         default = "-shared",
     ],
 
-    LIBS = "",
+    CF_LIBS = "",
 
-    OTHERDEFS =
+    CF_OTHERDEFS =
         [struct
             sol2 = "CC\t= gcc -pipe",
             cygwin = "CC\t= gcc",
             default = "",
         ],
-
-    OTHERRULES = "",
 ];
 
 /*
@@ -305,6 +328,22 @@ forall (can_do_flavs, module in modules)
     onerror
         f = fopen(makein = "Makefile.generic");
     f = getfile(f);
+    
+    /*
+     * Substitute in any Makefile.frag includes.
+     */
+    try
+        ff = getfile(sprintf("%s/Makefile.frag.%s", module, flavour));
+    onerror
+        ff = "";
+    f = gsub(f, #\$\(CF_MAKE_FRAG_FLAV\)#, ff);
+
+    try
+        ff = getfile(sprintf("%s/Makefile.frag", module));
+    onerror
+        ff = "";
+    f = gsub(f, #\$\(CF_MAKE_FRAG\)#, ff);
+
     makeout = sprintf("%s/Makefile", module);
 
     /*
@@ -331,7 +370,9 @@ forall (can_do_flavs, module in modules)
             s = s.default;
         f[i] = s;
     }
-    put(implode(f), (fo := fopen(makeout, "w")));
+    f = implode(f);
+    f = gsub(f, #(?=\n\n\n)\n#, "");
+    put(f, (fo := fopen(makeout, "w")));
     close(fo);
     printf("%s -> %s\n", makein, makeout);
 }

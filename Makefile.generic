@@ -1,16 +1,33 @@
 #
-# This $(FLAVOUR) specific makefile was automatically created by
-# processing $(MAKEIN) to get $(MAKEOUT).
+# This $(CF_FLAVOUR) specific makefile was automatically created by
+# processing $(CF_MAKEIN) to get $(CF_MAKEOUT).
 #
-# See the comments in makemake.ici for details.
+# See the comments in configure for details.
 #
-CFLAGS	= $(PIC) $(OPTIM) -I. -I$(PREFIX)/include -I. $(ICICFLAGS)
-OBJS	= $(ICIOBJS)
-LIB	= $(ICIV)$(MOD).$(SOSUFFIX)
-$(OTHERDEFS)
+PREFIX	= $(CF_PREFIX)
+CFLAGS	= $(CF_PIC) $(CF_OPTIM) $(CF_CFLAGS) -I. -I$(CF_ICI_H_DIR)
+LDFLAGS = $(CF_LDFLAGS)
+OBJS	= $(CF_DOT_O)
+C_SRC	= $(CF_DOT_C)
+ALL_SRC	= $(C_SRC) $(CF_ICI_DOT_ICI)
+LIB	= $(CF_ICIV)$(CF_MOD).$(CF_SOSUFFIX)
+LIBS	=
+LIBINSTALLS = $(LIB) $(CF_ICI_DOT_ICI)
+
+default: $(LIB)
+
+$(CF_MAKE_FRAG_FLAV)
+
+$(CF_MAKE_FRAG)
 
 $(LIB): $(OBJS)
-	$(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+ici$(CF_MOD).1: $(ALL_SRC)
+	ici ../tools/extract-doc-from-src.ici man $(ALL_SRC)
+
+ici$(CF_MOD).html: $(SRC)
+	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
 clean:
 	rm -f $(LIB) $(OBJS)
@@ -19,9 +36,8 @@ clobber: clean
 	rm -f .depend
 
 depend:
-	mkdep $(CFLAGS) $(ICISRCS)
+	mkdep $(CFLAGS) $(C_SRC)
 
-install: $(LIBINSTALLS)
-	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
-
-$(OTHERRULES)
+install: $(LIBINSTALLS) ici$(MOD).1
+	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
+	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1
