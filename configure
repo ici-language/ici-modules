@@ -49,7 +49,7 @@
 
 /*
  * The modules that this script will process, and the system
- * flavous for which it will do it.
+ * flavours for which it will do it.
  */
 static modules = [struct
 

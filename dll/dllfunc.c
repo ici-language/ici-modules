@@ -143,8 +143,9 @@ ici_array_to_argv(array_t *a)
  * Implement a function call into some dynamically chosen (by name) function
  * in a dynamically loaded DLL.
  *
- * This function is a bit Windows specific. I've used alloca(), as this is
- * known to be available on Windows.
+ * When I first wrote this I assumed it would only ever be used on Windows
+ * (pretty silly, I know) and I used alloca().  While available on most
+ * systems, it's not ANSI, which is a bit of a problem.
  */
 static int
 call_dllfunc(ici_obj_t *object, ici_obj_t *subject)

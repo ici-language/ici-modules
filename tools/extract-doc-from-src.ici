@@ -407,10 +407,10 @@ forall (file in files)
         }
         else if (text ~ #--topic--#)
         {
-            push(module.topics, item = strbuf());
             bits = text ~~~ #\s*(.*)\n\n((?s).*)$#;
             head = bits[0];
             text = bits[1];
+            push(module.topics, struct("item", item = strbuf(), "head", head));
             strcat(item, out:heading2(head));
         }
         /*
@@ -466,6 +466,7 @@ forall (file in files)
                 para = font_subs(para);
                 para = wrap_n_roll(para);
                 strcat(item, out:tagged("", para, deep));
+                last_para = "tagged";
             }
             else if (para ~ #^\S#)
             {
@@ -502,10 +503,8 @@ forall (file in files)
 static
 cmp_topics(a, b)
 {
-    for (i = 0; a[i] == b[i]; ++i)
-        ;
-    a = interval(a, i);
-    b = interval(b, i);
+    a = a.head;
+    b = b.head;
     if (a ~ #^.*=#)
         a ~~= #^.*=((?s).*)$#;
     if (b ~ #^.*=#)
@@ -524,7 +523,9 @@ forall (content, mname in docs)
     if (nels(content.topics) > 0)
     {
         put(out:topics_head(), f);
-        put(implode(sort(content.topics, cmp_topics)), f);
+        sort(content.topics, cmp_topics);
+        forall (topic in content.topics)
+            put(topic.item, f);
     }
     put(out:finish(), f);
     close(f);

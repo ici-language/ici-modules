@@ -17,6 +17,627 @@
             </HEAD>
             <BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
             <H1>The ICI sys module</H1>
-<P ALIGN="left">The ICI sys modules provides stuff..</P>
+<P ALIGN="left">The ICI <I>sys</I> module provides raw access to many
+UNIX system calls and some other useful C library functions.
+Not all system calls are supported and some are incompletely
+supported (e.g., signal). Most system call functions
+return integers, zero if the call succeeded. Errors
+are reported using ICI's usual error handling (&quot;system
+calls&quot; will never return the -1 error return value).
+If an error is raised by a system call the value of
+<I>error</I> in the error handler will be the error
+message (as returned by the ANSI C strerror() function).</P>
+<P ALIGN="left">To assist in the use of system calls, the <I>sys</I>
+module holds various defines for flags and other values
+used when calling the system calls. These variables
+are equivalent to the macros used in C. Not all systems
+support all these variables. If the C header files
+do not define a value then the <I>sys</I> module will
+not pre-define the variable.</P>
+<P ALIGN="left">The following list summarises the pre-defined values.
+See the documentation for the C macros for information
+as to their use.</P>
+<P ALIGN="left">Values for open's flags parameter:</P>
+<PRE>    sys.O_RDONLY
+    sys.O_WRONLY
+    sys.O_RDWR
+    sys.O_APPEND
+    sys.O_CREAT
+    sys.O_TRUNC
+    sys.O_EXCL
+    sys.O_SYNC
+    sys.O_NDELAY
+    sys.O_NONBLOCK
+    sys.O_BINARY        (Win32 only)</PRE>
+<P ALIGN="left">Values for access's mode parameter:</P>
+<PRE>    sys.R_OK
+    sys.W_OK
+    sys.X_OK
+    sys.F_OK</PRE>
+<P ALIGN="left">Values for lseek's whence parameter:</P>
+<PRE>    sys.SEEK_SET
+    sys.SEEK_CUR
+    sys.SEEK_END</PRE>
+<P ALIGN="left">Values for flock's op parameter:</P>
+<PRE>    sys.LOCK_SH
+    sys.LOCK_EX
+    sys.LOCK_NB
+    sys.LOCK_UN</PRE>
+<P ALIGN="left">Values for spawn's mode parameter:</P>
+<PRE>    sys._P_WAIT
+    sys._P_NOWAIT</PRE>
+<P ALIGN="left">Values returned by stat:</P>
+<PRE>    sys.S_IFMT
+    sys.S_IFCHR
+    sys.S_IFDIR
+    sys.S_IFREG
+    sys.S_IREAD
+    sys.S_IWRITE
+    sys.S_IEXEC
+    sys.S_IFIFO
+    sys.S_IFBLK
+    sys.S_IFLNK
+    sys.S_IFSOCK
+    sys.S_ISUID
+    sys.S_ISGID
+    sys.S_ISVTX
+    sys.S_IRUSR
+    sys.S_IWUSR
+    sys.S_IXUSR
+    sys.S_IRGRP
+    sys.S_IWGRP
+    sys.S_IXGRP
+    sys.S_IROTH
+    sys.S_IWOTH
+    sys.S_IXOTH</PRE>
+<H1>Details</H1>
+<H2>int = sys.access(string [, int])</H2>
+<P ALIGN="left">Call the <I>access(2)</I> function to determine the
+accessibility of a file. The first parameter is the
+pathname of the file system object to be tested. The
+second, optional, parameter is the mode (a bitwise
+combination of <I>R_OK</I>, <I>W_OK</I> and <I>X_OK</I>
+or the special value, <I>F_OK</I>). If mode is not
+passed <I>F_OK</I> is assumed. Access returns 0 if
+the file system object is accessible, else it fails.</P>
+<P ALIGN="left">Supported on Win32 platforms.</P>
+<H2>sys.acct(pathname)</H2>
+<P ALIGN="left">Enable accounting on the specified file. Not suppored
+on cygwin or Win32.</P>
+<H2>sys.alarm(int)</H2>
+<P ALIGN="left">Schedule a SIGALRM signal to be posted to the current
+process in the specified number of seconds. If the
+parameter is zero any alarm is cancelled. Not supported
+on Win32.</P>
+<H2>sys.chmod(pathname, int)</H2>
+<P ALIGN="left">Change the mode of a file system object. Not supported
+on Win32.</P>
+<H2>sys.chown(pathname, uid, gid)</H2>
+<P ALIGN="left">Use <I>chown(2)</I> to change the ownership of a file
+to new integer user and group indentifies. Not supported
+on Win32.</P>
+<H2>sys.chroot(pathname)</H2>
+<P ALIGN="left">Change root directory for process. Not supported on
+Win32.</P>
+<H2>int = sys.clock()</H2>
+<P ALIGN="left">Return the value of <I>clock(2)</I>. Not supported
+on Win32.</P>
+<H2>sys.close(int)</H2>
+<P ALIGN="left">Close a file descriptor. Also supported on WIN32 platforms.</P>
+<H2>int = sys.creat(pathname, mode)</H2>
+<P ALIGN="left">Create a new ordinary file with the given pathname
+and mode (permissions etc.) and return the file descriptor,
+open for writing, for the file.</P>
+<P ALIGN="left">Supported on Win32 platforms.</P>
+<H2>string = sys.ctime(int)</H2>
+<P ALIGN="left">Convert a time value (see time, below) to a string
+of the form</P>
+<PRE>    &quot;Sun Sep 16 01:03:52 1973 &quot;</PRE>
+<P ALIGN="left">and return that string. This is primarily of use when
+converting the time values returned by stat. Supported
+on Win32 platforms.</P>
+<H2>int = sys.dup(int [, int])</H2>
+<P ALIGN="left">Duplicate a file descriptor by calling <I>dup(2)</I>
+or <I>dup2(2)</I> and return a new descriptor. If only
+a single parameter is passed <I>dup(2)</I> is called
+otherwise <I>dup2(2)</I> is called.</P>
+<P ALIGN="left">Supported on Win32 platforms.</P>
+<H2>sys.exec(pathname, array|string...)</H2>
+<P ALIGN="left">Execute a new program in the current process. The first
+parameter to <I>exec</I> is the pathname of an executable
+file (the program). The remaining parameters are either;
+an array of strings defining the parameters to be passed
+to the program, or, a variable number of strings that
+are passed, in order, to the program as its parameters.
+The first form is similar to C's <I>execv</I> function
+and the second form to C's <I>execl</I> functions.
+Note that no searching of the user's path is performed
+and the environment passed to the program is that of
+the current process (i.e., both are implemented by
+calls to <I>execv(2)</I>). This function is available
+on Win32 platforms.</P>
+<H2>sys.exit(int)</H2>
+<P ALIGN="left">Exit the current process returning an integer exit
+status to the parent. Supported on Win32 platforms.</P>
+<H2>int = sys.fcntl(fd, what [, arg])</H2>
+<P ALIGN="left">Invoke the <I>fcntl(2)</I> (file control) function.
+The action taken depends on the value of <I>what</I>,
+which must be one of the following strings (which map
+to the given C define):</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;dupfd&quot;</I>&nbsp;</TD>
+                <TD>F_DUPFD - Dup and return the file descriptor.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;getfd&quot;</I>&nbsp;</TD>
+                <TD>F_GETFD - Read the close-on-exec flag.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;getfl&quot;</I>&nbsp;</TD>
+                <TD>F_GETFL - Read the descriptor's flags (all flags (as
+set by open(2)) are returned).</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;setfl&quot;</I>&nbsp;</TD>
+                <TD>F_SETFL - Set the descriptor's flags to the value specified
+by arg. Only O_APPEND, O_NONBLOCK and O_ASYNC may be
+set; the other flags are unaffected.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;getown&quot;</I>&nbsp;</TD>
+                <TD>F_GETOWN - Get the process ID or process group currently
+receiving SIGIO and SIGURG signals for events on file
+descriptor fd. Process groups are returned as negative
+values.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;setown&quot;</I>&nbsp;</TD>
+                <TD>F_SETOWN - Set the process ID or process group that
+will receive SIGIO and SIGURG signals for events on
+file descriptor fd.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;setlk&quot;</I>&nbsp;</TD>
+                <TD>F_SETLK - Set or clear a lock (see below).</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <P ALIGN="left">For <I>setlk</I>, the third parameter <I>arg</I> must
+be supplied. It may be a struct (or NULL) that will
+be used to populate a <I>struct flock</I> with the
+following items (a default is used for each if missing
+or NULL):</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>start</I>&nbsp;</TD>
+                <TD>An int which will be used in the <I>l_start</I> field. Default
+0.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>len</I>&nbsp;</TD>
+                <TD>An int which will be used in the <I>l_len</I> field. Default
+0.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>type</I>&nbsp;</TD>
+                <TD>Either an int giving the lock type, or one of the strings
+<I>rdlck</I>, <I>wrlck</I>, or <I>unlck</I>. Default F_RDLCK;</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <P ALIGN="left">Not suppored on Win32.</P>
+<H2>file = sys.fdopen(int [, openmode])</H2>
+<P ALIGN="left">Open a file descriptor as an (ICI) file object. This
+is analogous to fopen, sopen, mopen, popen, net.sktopen,
+etc... The openmode is a string as accepted by fopen
+and defaults to &quot;r&quot; (read only).</P>
+<H2>int = sys.fileno(file)</H2>
+<P ALIGN="left">Return the underlying file descriptor of a file opened
+with <I>fopen</I> or <I>popen</I>.</P>
+<H2>sys.flock(fd, op)</H2>
+<P ALIGN="left">Invoke <I>flock(2)</I> on the given file descriptor
+with the given operation. See the introduction for
+values for <I>op</I>. Not available on some systems.</P>
+<H2>int = sys.fork()</H2>
+<P ALIGN="left">Create a new process. In the parent this returns the
+process identifier for the newly created process. In
+the newly created process it returns zero. Not supported
+on Win32.</P>
+<H2>int = sys.getegid()</H2>
+<P ALIGN="left">Get the effective group identifier of the owner of
+the current process. Not supported on Win32.</P>
+<H2>int = sys.geteuid()</H2>
+<P ALIGN="left">Get the effective user identifier of the owner of the
+current process. Not supported on Win32.</P>
+<H2>int = sys.getgid()</H2>
+<P ALIGN="left">Get the real group identifier of the owner of the current
+process. Not supported on Win32.</P>
+<H2>struct = sys.getitimer(which)</H2>
+<P ALIGN="left">Invokes <I>getitimer(2)</I> where <I>which</I> is a
+string with one of the values:</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;real&quot;</I>&nbsp;</TD>
+                <TD>ITIMER_REAL - The real-time timer.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;virtual&quot;</I>&nbsp;</TD>
+                <TD>ITIMER_VIRTUAL - The user CPU time timer.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;prof&quot;</I>&nbsp;</TD>
+                <TD>ITIMER_PROF - The system and use CPU time timer.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <P ALIGN="left">Returns a struct with the keys <I>interval</I> and
+<I>value</I>, each of which are struct with the keys
+<I>sec</I> and <I>usec</I> being the second and microsecond
+values of the requested timer.</P>
+<P ALIGN="left">Not supported on Win32 platforms.</P>
+<H2>string = sys.getpass([prompt])</H2>
+<P ALIGN="left">Use the <I>getpass(3)</I> function to read a password
+(without echo). <I>prompt</I> is a string (if present).</P>
+<P ALIGN="left">Not supported on Win32.</P>
+<H2>int = sys.getpgrp()</H2>
+<P ALIGN="left">Get the current process group identifier. Not supported
+on Win32.</P>
+<H2>int = sys.getpid()</H2>
+<P ALIGN="left">Get the process identifier for the current process.
+Not supported on Win32.</P>
+<H2>int = sys.getppid()</H2>
+<P ALIGN="left">Get the process identifier for the parent process.
+Not supported on Win32.</P>
+<H2>struct = sys.getrlimit(resource)</H2>
+<P ALIGN="left">Use <I>getrlimit(2)</I> to return th current and maximum
+values of a set of system parameters identified by
+<I>resource</I>. <I>resource</I> may be an int, or
+one of the strings:</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;core&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_CORE - max core file size.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;cpu&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_CPU - CPU time in seconds.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;data&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_DATA - max data size.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;fsize&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_FSIZE - maximum filesize.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;memlock&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_MEMLOCK - max locked-in-memory address space.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;nofile&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_NOFILE - max number of open files.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;nproc&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_NPROC - max number of processes.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;rss&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_RSS - max resident set size.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;stack&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_STACK - max stack size.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>&quot;sbsize&quot;</I>&nbsp;</TD>
+                <TD>RLIMIT_SBSIZE - max socket buffer size.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <P ALIGN="left">The returned struct has two integer fields, <I>cur</I>
+and <I>max</I>.</P>
+<P ALIGN="left">Not supported on Win32.</P>
+<H2>struct = sys.gettimeofday()</H2>
+<P ALIGN="left">Returns the result of <I>gettimeofday(2)</I> as a struct
+as described in <I>sys.getitimer</I>.</P>
+<P ALIGN="left">Not supported on Win32 platforms.</P>
+<H2>int = sys.getuid()</H2>
+<P ALIGN="left">Get the real user identifier of the owner of the current
+process. Not supported on Win32.</P>
+<H2>int = sys.isatty(fd)</H2>
+<P ALIGN="left">Returns 1 if the int <I>fd</I> is the open file descriptor
+of a &quot;tty&quot;. Not supported on Win32.</P>
+<H2>sys.kill(int, int)</H2>
+<P ALIGN="left">Post the signal specified by the second argument to
+the process with process ID given by the first argument.
+Not supported on Win32.</P>
+<H2>sys.link(oldpath, newpath)</H2>
+<P ALIGN="left">Create a link to an existing file. Not supported on
+Win32.</P>
+<H2>int = sys.lockf(fd, cmd, len)</H2>
+<P ALIGN="left">Invoked <I>lockf(3)</I> on a file.</P>
+<P ALIGN="left">Not supported on Linux, BDS, Cygwin, Win32.</P>
+<H2>int = sys.lseek(int, int [, int])</H2>
+<P ALIGN="left">Set the read/write position for an open file. The first
+parameter is the file descriptor associated with the
+file system object, the second parameter the offset.
+The third is the whence value which determines how
+the new file position is calculated. The whence value
+may be one of SEEK_SET, SEEK_CUR or SEEK_END and defaults
+to SEEK_SET if not specified. supported on WIN32 platforms.</P>
+<H2>struct = sys.lstat(pathname)</H2>
+<P ALIGN="left">Same as <I>sys.stat</I> except the argument must be
+a string, and if it refers to a symbolic link, information
+on the link is returned rather than the file it refers
+to. Not supported in Win32 platforms.</P>
+<H2>sys.mkdir(pathname, int)</H2>
+<P ALIGN="left">Create a directory with the specified mode. Supported
+on Win32 platforms.</P>
+<H2>sys.mkfifo(path, mode)</H2>
+<P ALIGN="left">Make a &quot;named pipe&quot; with the given mode (an
+int). Not supported on Win32.</P>
+<H2>sys.mknod(pathname, int, int)</H2>
+<P ALIGN="left">Create a special file with mode given by the second
+argument and device type given by the third. Not supported
+on Win32.</P>
+<H2>sys.nice(int)</H2>
+<P ALIGN="left">Change the nice value of a process. Not supported on
+Win32.</P>
+<H2>int = sys.open(pathname, int [, int])</H2>
+<P ALIGN="left">Open the named file for reading or writing depending
+upon the value of the second parameter, flags, and
+return a file descriptor. The second parameter is a
+bitwise combination of the various O_ values (see above)
+and if this set includes the O_CREAT flag a third parameter,
+mode, must also be supplied. Returns the file descriptor
+(an int).</P>
+<P ALIGN="left">Supported on Win32 platforms.</P>
+<H2>struct|array = sys.passwd([int | string])</H2>
+<P ALIGN="left">The <I>sys.passwd()</I> function accesses the Unix
+password file (which may or may not be an actual file
+according to the local system configuration). With
+no parameters <I>sys.passwd()</I> returns an array
+of all password file entries, each entry is a struct.
+With a parameter <I>sys.passwd()</I> returns the entry
+for the specific user id., int parameter, or user name,
+string parameter. A password file entry is a struct
+with the following keys and values:</P>
+<TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>name</I>&nbsp;</TD>
+                <TD>The user's login name, a string.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>passwd</I>&nbsp;</TD>
+                <TD>The user's encrypted password, a string. Note that
+some systems protect this (shadow password files) and
+this field may not be an actual encrypted password.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>uid</I>&nbsp;</TD>
+                <TD>The user id., an int.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>gid</I>&nbsp;</TD>
+                <TD>The user's default group, an int.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>gecos</I>&nbsp;</TD>
+                <TD>The so-called gecos field, a string.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>dir</I>&nbsp;</TD>
+                <TD>The user's home directory, a string.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0>
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=120><I>shell</I>&nbsp;</TD>
+                <TD>The user's shell (initial program), a string.</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            <P ALIGN="left">Not supported on Win32.</P>
+<H2>sys.pause()</H2>
+<P ALIGN="left">Wait until a signal is delivered to the process. Not
+supported on Win32.</P>
+<H2>array = sys.pipe()</H2>
+<P ALIGN="left">Create a pipe and return an array containing two, integer,
+file descriptors used to refer to the input and output
+endpoints of the pipe.</P>
+<H2>string = sys.read(fd, len)</H2>
+<P ALIGN="left">Read up to <I>len</I> bytes from the given file descriptor
+using <I>read(2)</I>, and return the result as a string.</P>
+<H2>string = sys.readlink(path)</H2>
+<P ALIGN="left">Return and return the contents of a symbolic link <I>path</I>.
+Not supported on Win32.</P>
+<H2>sys.rmdir(pathname)</H2>
+<P ALIGN="left">Remove a directory. Supported on Win32 platforms.</P>
+<H2>sys.setgid(int)</H2>
+<P ALIGN="left">Set the real and effective group identifier for the
+current process. Not supported on Win32.</P>
+<H2>struct = sys.setitimer([which ,] struct)</H2>
+<P ALIGN="left">Sets the interval timer named by <I>which</I> (see
+<I>sys.getitimer</I>), or <I>ITIMER_VIRTUAL</I> by
+default to the values given in the struct parameter.
+These are a time value as described in <I>sys.getitimer</I>.
+Returns the old value of the timer.</P>
+<P ALIGN="left">Not supported on Win32 platforms.</P>
+<H2>sys.setlinebuf(file)</H2>
+<P ALIGN="left">Set line buffering mode as per <I>setlinebuf(3)</I>
+of a file that uses stdio as its underlying implementation
+(which includes files opened with <I>fopen</I>. Other
+file types are ignored.</P>
+<P ALIGN="left">Not supported on Win32 or Cygwin.</P>
+<H2>sys.setpgrp()</H2>
+<P ALIGN="left">Set the process group.</P>
+<P ALIGN="left">Not supported on Win32.</P>
+<H2>sys.setrlimit(resource, value)</H2>
+<P ALIGN="left">Use <I>setrlimit(2)</I> to set a resouce limit. <I>resource</I>
+identifies which (as per <I>sys.getrlimit</I>. <I>value</I>
+may be an int, the string &quot;infinity&quot;, or
+a struct ints in fields <I>cur</I> and <I>max</I>.</P>
+<P ALIGN="left">Not supported on Win32.</P>
+<H2>sys.setuid(int)</H2>
+<P ALIGN="left">Set the real and effective user identifier for the
+current process. Not supported on Win32.</P>
+<H2>sys.signal(int, int)</H2>
+<P ALIGN="left">Control signal handling in the process. Note at present
+handlers cannot be installed so signals are of limited
+use in ici programs. Not supported on Win32.</P>
+<H2>sys.sleep(int)</H2>
+<P ALIGN="left">Suspend the process for the specified number of seconds.</P>
+<H2>int = sys.spawn([mode, ] string, array|string...)</H2>
+<P ALIGN="left">Spawn a sub-process. The parameters, other than mode,
+are as for exec - the string is the name of the executable
+and the remaining parameters form the command line
+arguments passed to the executable. The mode parameter
+controls whether or not the parent process waits for
+the spawned process to termiante. If mode is _P_WAIT
+the call to spawn returns when the process terminates
+and the result of spawn is the process exit status.
+If mode is not passed or is _P_NOWAIT the call to spawn
+returns prior to the process terminating and the result
+is the Win32 process handle for the new process.</P>
+<P ALIGN="left">This function is only available on Win32 platforms.</P>
+<H2>int = sys.spawnp([mode, ] string, array|string...)</H2>
+<P ALIGN="left">As for <I>sys.spawn</I> except it will search the directories
+listed in the PATH environment variable for the executable
+program.</P>
+<P ALIGN="left">This function is only available on Win32 platforms.</P>
+<H2>struct = sys.stat(pathname|int|file)</H2>
+<P ALIGN="left">Obtain information on the named file system object,
+file descriptor or file underlying an ici file object
+and return a struct containing that information. If
+the parameter is a file object that file object must
+refer to a file opened with ici's fopen function. The
+returned struct contains the following keys (which
+have the same names as the fields of the UNIX statbuf
+structure with the leading &quot;st_&quot; prefix removed):</P>
+<PRE>    dev
+    ino
+    mode
+    nlink
+    uid
+    gid
+    rdev
+    size
+    atime
+    mtime
+    ctime
+    blksize
+    blocks</PRE>
+<P ALIGN="left">All values are integers. Supported on Win32 platforms.</P>
+<H2>sys.symlink(oldpath, newpath)</H2>
+<P ALIGN="left">Creates a symbolic link <I>newpath</I> that referes
+to <I>oldpath</I>. Not supported on Win32.</P>
+<H2>sys.sync()</H2>
+<P ALIGN="left">Schedule in-memory file data to be written to disk.
+Not supported on Win32.</P>
+<H2>int = sys.time()</H2>
+<P ALIGN="left">Return the time since 00:00:00 GMT, Jan. 1, 1970, measured
+in seconds. Note that ICI ints are signed 32 bit quantities,
+but routines in the <I>sys</I> module that work with
+times interpret the 32 bit value as an unsigned value.
+Supported on Win32 platforms.</P>
+<H2>sys.truncate(int|string, len)</H2>
+<P ALIGN="left">Use <I>truncate(2)</I> or <I>ftrunctate(2)</I> to truncate
+a file to <I>len</I> bytes.</P>
+<P ALIGN="left">Not supported on Win32.</P>
+<H2>sys.ulimit\(int, int)</H2>
+<P ALIGN="left">Get and set user limits. Not supported on Win32, NeXT,
+some BSD, or Cygwin.</P>
+<H2>sys.umask(int)</H2>
+<P ALIGN="left">Set file creation mask. Not supported on Win32.</P>
+<H2>sys.unlink(pathname)</H2>
+<P ALIGN="left">Unlink a file. Supported on WIN32 platforms.</P>
+<H2>sys.usleep(int)</H2>
+<P ALIGN="left">Suspend the process for the specified number of milliseconds.</P>
+<H2>struct = sys.wait()</H2>
+<P ALIGN="left">Wait for a child process to exit and return a struct
+containing the process id (key of &quot;pid&quot;)
+and the exit status (key of &quot;status&quot;).</P>
+<H2>int = sys.write(fd, string|mem [, len)</H2>
+<P ALIGN="left">Write a string or mem object to the given file descriptor
+using <I>write(2)</I>. If <I>len</I> is given, and
+it is less than the size in bytes of the data, that
+<I>len</I> will be used. Returns the actual number
+of bytes written.</P>
 </BODY>
 </HTML>
