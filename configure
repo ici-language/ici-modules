@@ -59,9 +59,11 @@ static modules = [struct
     html    = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     net     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     path    = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    pdf     = [set "bsd", "linux"                                ],
     pq      = [set "bsd", "linux"                                ],
     str     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    uuid    = [set "bsd", "linux"                                ],
     xml     = [set "bsd", "linux",        "sol2", "cygwin", "w32"],
 ];
 
