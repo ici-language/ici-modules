@@ -446,7 +446,7 @@ forall (target in targs)
         if (!can_do_flavs[flavour])
             continue;
         if (flavour == "w32")
-            printf(m, "\tcd %s\n\tnmake %s\n\tcd ..\n", module, target == "all" ? "" : target);
+            printf(m, "\tcd %s\n\tnmake /nologo %s\n\tcd ..\n", module, target == "all" ? "" : target);
         else
             printf(m, "\tcd %s; make %s\n", module, target == "all" ? "" : target);
     }
@@ -454,6 +454,7 @@ forall (target in targs)
     {
         printf(m, "\tici tools/mk-nsis-installer.ici\n");
         printf(m, "\tmakensis /v2 ici4-modules-install.nsi\n");
+        printf(m, "\t.\\ici4-modules-install.exe\n");
     }
     printf(m, "\n");
 }
