@@ -4,7 +4,11 @@
 #
 # See the comments in configure for details.
 #
-ALL_SRC	= $(CF_ICI_DOT_ICI)
+PREFIX	= $(CF_PREFIX)
+MOD	= $(CF_MOD)
+ALL_SRC	= $(CF_ICI_STAR_DOT_ICI)
+LIBINSTALLS = $(CF_ICI_STAR_DOT_ICI)
+$(CF_OTHERDEFS)
 
 default:
 
@@ -12,18 +16,20 @@ $(CF_MAKE_FRAG)
 
 $(CF_MAKE_FRAG_FLAV)
 
-ici$(CF_MOD).1: $(ALL_SRC)
+doc: ici$(MOD).1 ici$(MOD).html
+
+ici$(MOD).1: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici man $(ALL_SRC)
 
-ici$(CF_MOD).html: $(SRC)
+ici$(MOD).html: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
-
+	
 clean:
 
 clobber: clean
 
 depend:
 
-install: $(LIBINSTALLS) ici$(CF_MOD).1
+install: $(LIBINSTALLS) ici$(MOD).1
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
-	$(CF_INSTALL) ici$(CF_MOD).1 $(PREFIX)/man/man1
+	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1

@@ -25,12 +25,12 @@ $(CF_MAKE_FRAG_FLAV)
 $(ICIMOD): $(OBJS)
 	$(CC) $(CF_LD_OUT_NAME_OPT) $(OBJS) $(LIBS) $(LDFLAGS) 
 
-doc: ici$(CF_MOD).1 ici$(CF_MOD).html
+doc: ici$(MOD).1 ici$(MOD).html
 
-ici$(CF_MOD).1: $(ALL_SRC)
+ici$(MOD).1: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici man $(ALL_SRC)
 
-ici$(CF_MOD).html: $(SRC)
+ici$(MOD).html: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
 clean:
@@ -42,6 +42,6 @@ clobber: clean
 depend:
 	mkdep $(CFLAGS) $(C_SRC)
 
-install: $(LIBINSTALLS) ici$(CF_MOD).1
+install: $(LIBINSTALLS) ici$(MOD).1
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
-	$(CF_INSTALL) ici$(CF_MOD).1 $(PREFIX)/man/man1
+	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1
