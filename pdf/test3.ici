@@ -7,7 +7,7 @@ if (npages < 1)
 p := PDF.Document:new("test3.pdf");
 for (i := 0; i < npages; ++i)
 {
-    p:begin_page(PDF.pt(210), PDF.pt(297));
+    p:begin_page(PDF.mm_to_pts(210), PDF.mm_to_pts(297));
     p:end_page();
 }
 p:close();
