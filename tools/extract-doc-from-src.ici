@@ -3,14 +3,82 @@
  * the source files given on the command line, into one of a number
  * of document formats. It is specificly designed to generate documentation
  * on the external interface of ICI extension modules (as opposed, for
- * example, documenting the code).
+ * example, to documenting the code itself).
  *
- * The extracted comments are marked up with formatting commands
- * based on their strict adherance to layout conventions. This
+ * The extracted comments are automatically marked up with formatting commands
+ * based on simple layout conventions. This
  * script generally tries to avoid special markup tags in the source
  * comments. But does want you to use a particular format.
  *
- * No tabs, only spaces.
+ * Basically, simple un-indented block comments like this one are
+ * examined. If they contain the text --intro-- they will contribute
+ * to the introductory part of the documentation. Alternatively, if they
+ * contain the text --topic-- they will contribute to the detailed
+ * (sorted) section of the documentation. In this case, the first
+ * paragraph should be a one line heading for the topic.
+ *
+ * The module a comment belongs to is indicated by the string
+ * --ici-xxx-- in each comment, where xxx is the module name. Normally
+ * the last line of a comment will be either:
+ *
+ * This --intro-- is part of the --ici-xxx-- documentation.
+ *
+ * or
+ *
+ * This --topic-- is part of the --ici-xxx-- documentation.
+ *
+ * But the English is only for the reader and to help remember.
+ * Any lines containing these tags are removed.
+ *
+ * No tabs please. You will be warned if a comment contains tabs.
+ *
+ * Now, each comment is stripped of its leading " * "s and broken into
+ * paragraphs based on blank lines. The paragraphs are then classified
+ * into one of:
+ *
+ * Tagged paragraphs    If the first line is not indented, but there
+ *                      is a bunch of spaces in the middle, or, the
+ *                      first line ends in a : and the next line is
+ *                      indented, this must be a tagged paragraph like
+ *                      the one you are reading now.
+ *
+ *                      Also, if the last paragraph was a tagged paragraph
+ *                      and the next one is indented, it must be a
+ *                      continuation, like the one you are reading now.
+ *
+ *                      There are two depths of indentation generated in
+ *                      the output, designed to correspond with nominal
+ *                      indentations at column 25 (like this one)
+ *                      and at column 13. Basicly, if the first indent is
+ *                      > 17, the deep form is used.
+ *
+ * Code "paragraphs"    If the first line is indented, the paragraph is
+ *                      assumed to be pre-formatted code. Most code starts
+ *                      indented just one extra space from the normal position.
+ *
+ *                      Also, if the last paragraph was a code paragraph
+ *                      and this one is also indented, it must be a
+ *                      continuation of it.
+ *
+ * Body paragraphs      Failing any of those, it must be a simple body
+ *                      paragraph.
+ *
+ * In body and tagged paragraphs, literal text may be enclosed in single
+ * quote marks to make it 'italic' (or some similar font change). This is
+ * typically used for parameter names. Only paired single quotes on the
+ * same line, with non-word characters just outside the potential italic
+ * phrase are eligible. Thus you typically don't have to worry about
+ * apostrophes. Don't use these in heading or the subjects of tagged
+ * paragraphs. They are typically given special font treatment anyway.
+ *
+ * 'intro' comments are accumulated in the order seen. Thus the order of
+ * files on the command line can be significant.
+ *
+ * 'topic' comments are accumulated and sorted before output (bit of
+ * heuristics in the sort comparison).
+ *
+ * If a comment has the --ici-xxx-- tag, but no --intro-- or --topic-- tag, it
+ * is taken to be a continuation of the last one that did.
  */
 static myname = rpop(argv);
 static mydir = dirname(myname);
@@ -67,7 +135,7 @@ static html = [class
     
     intro_head(module)
     {
-        return sprintf("<H1>The ICI %s module - Introduction</H1>\n", module);
+        return sprintf("<H1>The ICI %s module</H1>\n", module);
     }
 
     topics_head() {return sprintf("<H1>Details</H1>\n");}
@@ -214,7 +282,7 @@ static man = [class
     tagged(subject, body, deep)
     {
         body = gsub(body, #'# /*'*/, "\\'");
-        if (subject!= "")
+        if (subject != "")
             return sprintf(".TP %d\n\\fB%s\\fP\n%s\n", 8 + deep * 8, subject, body);
         else
             return sprintf(".IP \"\" %d\n%s\n", 8 + deep * 8, body);
@@ -240,7 +308,7 @@ for (;;)
         verbose = 1;
         continue;
         
-    case "-o":
+    case "-o": /* Not used yet */
         if ((out_file = rpop(argv)) == NULL)
             usage();
         continue;
@@ -253,17 +321,6 @@ out = [struct man = man, html = html, mml = mml][a];
 if (out == NULL)
     usage();
 files = argv;
-
-/*
- * Like strcat(), but does printf formatting at the same time.
- */
-static
-strcatf(str)
-{
-    auto vargs;
-    
-    return strcat(str, call(sprintf, vargs));
-}
 
 static
 font_subs(s)
@@ -278,14 +335,13 @@ font_subs(s)
 }
 
 /*
- * Neaten up a block of text by reducing all sequences of white space
- * to a single space, and re-wrapping all lines. After this, there is
+ * Neaten up a block of text by rolling all sequences of white space
+ * into a single space, and re-wrapping all lines. After this, there is
  * *no* leading or trailing white-space.
  */
 static
-trim_off_space(s)
+wrap_n_roll(s)
 {
-    //s = s ~~ #(?s)\s*(.*?)\s*$#;
     s = gsub(s, #\s+#, " ");
     s = gsub(s, #((?s).{50}.*?) #, "\\1\n");
     s = s ~~ #\s*((?s).*?)\s*$#;
@@ -304,7 +360,7 @@ forall (file in files)
         continue;
     }
     /*
-     * The following line retrieves all the slash-star comment that start
+     * The following line retrieves all non-indented slash-star comments.
      * Note the in-pattern setting of the DOTALL options with (?s) to allow
      * matching of newlines in slash-star comments and the use of ? to
      * minimise .* (i.e. make it non-greedy and match the first comment
@@ -379,7 +435,7 @@ forall (file in files)
                 /*
                  * Hmm. First line not indented at all, but a big white-space
                  * gap (3 or more space). Or, ends in a : and next line is
-                 * indented 3 or more.
+                 * indented 3 or more. Must be a tagged paragraph.
                  */
                 if (para ~ #^.*:\n#)
                 {
@@ -393,8 +449,8 @@ forall (file in files)
                     subject := interval(para, 0, indent);
                     para = interval(para, indent);
                 }
-                subject = trim_off_space(subject);
-                para = trim_off_space(para);
+                subject = wrap_n_roll(subject);
+                para = wrap_n_roll(para);
                 para = font_subs(para);
                 deep := indent > 17;
                 strcat(item, out:tagged(subject, para, deep));
@@ -407,13 +463,16 @@ forall (file in files)
                  * This looks like a continuation.
                  */
                 para = font_subs(para);
-                para = trim_off_space(para);
+                para = wrap_n_roll(para);
                 strcat(item, out:tagged("", para, deep));
             }
             else if (para ~ #^\S#)
             {
+                /*
+                 * Not indented, but not a tagged paragraph. Must be body.
+                 */
                 para = font_subs(para);
-                para = trim_off_space(para);
+                para = wrap_n_roll(para);
                 strcat(item, out:body(para));
                 last_para = "body";
             }
@@ -422,7 +481,7 @@ forall (file in files)
                 /*
                  * This must be pre-formatted text.
                  */
-                if (tag != "CodeIn1cm")
+                if (last_para != "code")
                 {
                     /*
                      * First in a possible sequence. Work out the prevailing

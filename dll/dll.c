@@ -5,6 +5,16 @@
 #include "dll.h"
 #include "dllfunc.h"
 
+/*
+ * dll.xxx.DECL(func-name, ...)
+ *
+ * 'DECL' allows the explicit declaration of functions that, for some
+ * reason, can't be relied on to deduce their interface from the actual
+ * paraeters. For example, returning a C style nul terminated string
+ * rather than the default 32 bit integer.
+ *
+ * This --topic-- forms part of the --ici-dll-- documentation.
+ */
 static int
 dll_decl(ici_obj_t *o)
 {

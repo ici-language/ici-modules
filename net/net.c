@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.18 2003/01/15 01:44:51 timl Exp $
+ * $Id: net.c,v 1.19 2003/01/26 09:16:57 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -26,7 +26,7 @@
  * the ICI environment.
  *
  * The sockets extension introduces a new type, 'socket', to hold socket
- * objects.  The new intrinsic function, 'socket()', returns a 'socket'
+ * objects.  The function, 'net.socket()', returns a 'socket'
  * object.
  *
  * This --intro-- forms part of the --ici-net-- documentation.
