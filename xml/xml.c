@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.7 2003/01/27 05:52:32 timl Exp $
+ * $Id: xml.c,v 1.8 2003/03/02 03:46:03 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -15,13 +15,44 @@
  */
 
 /*
- * The module provides a direct ICI interface to Jame Clark's expat XML parser. It doesn't try to
- * do much more than wrap the C functions and make them usable from
- * ICI. Function names are kept the same (with the ``XML_'') and calling
- * conventions are kept as close to those of the C API as possible.
- * Additional functionality is provided in the ici portion of the module.
- * Functions are provided to read an XML stream into memory, process it
- * and write it back out.
+ * The ICI xml module provides an ICI interface to James Clark's expat XML
+ * parser.  If may be used in a manner equivalent to the C functions that
+ * provided callbacks as different items in the XML stream are encounted, or
+ * alternatively an XML stream can be read into, and written out from, an ICI
+ * data structure.
+ *
+ * When used in the callback mode of the low level expat module, function
+ * names are kept the same (with the 'XML_' becomming 'xml.').  Calling
+ * conventions are kept as close to those of the C API as possible. The basic
+ * operation in this mode is to sub-class the 'XML_Parser' class and supply
+ * any callback methods you wish. For example:
+ *
+ *  MyXML_Parser := [class:xml.XML_Parser,
+ *
+ *      start_element(name, attr)
+ *      {
+ *          ...
+ *      }
+ *
+ *      end_element(name)
+ *      {
+ *          ...
+ *      }
+ *  ];
+ *
+ *  parser = MyXMLParser:new();
+ *
+ * Then successive text segments from the XML stream can be supplied by
+ * repeated calls such as:
+ *
+ *  parser:Parse(str);
+ *
+ * which will result in calls to the 'start_element' and 'end_element' as
+ * necessary. Other callback methods you may supply are 'character_data',
+ * 'processing_instruction' and 'default_handler'.
+ *
+ * The alternative method of loading the whole XML stream into an ICI
+ * data structure is 
  *
  * This --intro-- formas part of the --ici-xml-- documentation.
  */
@@ -63,8 +94,16 @@ ici_xml_error(XML_Parser p)
 }
 
 /*
- * Generic callback function called by Expat. This in turn calls the specific
- * user callback on the ICI side.
+ * inst:start_element(name, attr)
+ *
+ * This is a method that you may supply in your sub-class of the XML_Parser class
+ * (there is a default implementation that does nothing). It is called at the
+ * start of each element that is encounted by the Parse method. The 'name'
+ * is a string (the name of the element). 'attr' is a struct with keys and
+ * values being the attributes of the element (all strings). There will be a
+ * matching call to 'end_element' at the end of the element.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static void
 start_element(void *udata, const char *name, const char **atts)
@@ -118,8 +157,13 @@ start_element(void *udata, const char *name, const char **atts)
 }
 
 /*
- * Generic callback function called by expat. This in turn calls the specific
- * user callback on the ICI side.
+ * inst:end_element(name)
+ *
+ * This is a method that you may supply in your sub-class of the XML_Parser class
+ * (there is a default implementation that does nothing). It is called at the
+ * end of each element that is encounted by the Parse method.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static void
 end_element(void *udata, const char *name)
@@ -131,6 +175,15 @@ end_element(void *udata, const char *name)
     ici_method(objof(h), ICIS(end_element), "s", name);
 }
 
+/*
+ * inst:character_data(data)
+ *
+ * This is a method that you may supply in your sub-class of the XML_Parser class
+ * (there is a default implementation that does nothing). It is called with
+ * each section of character data that is encounted by the Parse method.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
+ */
 static void
 character_data(void *udata, const XML_Char *str, int len)
 {
@@ -146,6 +199,23 @@ character_data(void *udata, const XML_Char *str, int len)
     }
 }
 
+/*
+ * inst:default_handler(data)
+ *
+ * This is a method that you may supply in your sub-class of the XML_Parser
+ * class (there is a default implementation that does nothing).  It is called
+ * with any characters in the XML document for which there is no applicable
+ * handler.  This includes both characters that are part of markup which is of
+ * a kind that is not reported (comments, markup declarations), or characters
+ * that are part of a construct which could be reported but for which no
+ * handler has been supplied.  The characters are passed exactly as they were
+ * in the XML document except that they will be encoded in UTF-8.  Line
+ * boundaries are not normalized.  There are no guarantees about how
+ * characters are divided between calls to the default handler: for example, a
+ * comment might be split between multiple calls.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
+ */
 static void
 default_handler(void *udata, const XML_Char *str, int len)
 {
@@ -160,6 +230,17 @@ default_handler(void *udata, const XML_Char *str, int len)
     ici_decref(s);
 }
 
+/*
+ * inst:processing_instruction(target, data)
+ *
+ * This is a method that you may supply in your sub-class of the XML_Parser class
+ * (there is a default implementation that does nothing). It is called with
+ * each processing instruction that is encounted by the Parse method.
+ *
+ * Both 'target' and 'data' are strings.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
+ */
 static void
 processing_instruction(void *udata, const XML_Char *targ, const XML_Char *data)
 {
@@ -190,10 +271,12 @@ ici_xml_pre_free(ici_handle_t *h)
     XML_ParserFree((XML_Parser)h->h_ptr);
 }
 
-/**
- * ParserCreate - create a new XML parser object.
+/*
+ * inst = xml.XML_Parser:new()
  *
- * ICI->C parser_class:new -> ici_xml_parser_new
+ * Create and return a new XML_Parser instance.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_parser_new(objwsup_t *klass)
@@ -221,10 +304,13 @@ ici_xml_parser_new(objwsup_t *klass)
     return ici_ret_with_decref(objof(h));
 }
 
-/**
- * Parse - parse an XML stream
+/*
+ * inst:Parse(str [, isfinal])
  *
- * ICI->C parser_class:Parse -> ici_xml_Parse
+ * Parse some XML source given by 'str' in the XML_Parser instance 'inst'.
+ * If 'isfinal' (an int) is true, this is the last segment of input.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_Parse(object_t *inst)
@@ -232,7 +318,7 @@ ici_xml_Parse(object_t *inst)
     string_t            *s;
     long                is_final;
     XML_Parser          p;
-    ici_handle_t            *h;
+    ici_handle_t        *h;
 
     if (ici_handle_method_check(inst, ICIS(XML_Parser), &h, &p))
         return 1;
@@ -256,10 +342,12 @@ ici_xml_Parse(object_t *inst)
     return ici_error != NULL ? 1 : ici_null_ret();
 }
 
-/**
- * GetErrorCode - return the current error code from an XML parser object
+/*
+ * str = inst:GetErrorCode()
  *
- * ICI->C parser_class:GetErrorCode -> ici_xml_GetErrorCode
+ * Return the current error code from an XML_Parser instance 'inst'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_GetErrorCode(object_t *inst)
@@ -271,10 +359,12 @@ ici_xml_GetErrorCode(object_t *inst)
     return ici_int_ret(XML_GetErrorCode(p));
 }
 
-/**
- * ErrorString - return the current error string from an XML parser object
+/*
+ * str = inst:ErrorString()
  *
- * ICI->C parser_class:ErrorString -> ici_xml_ErrorString
+ * Return the current error string from an XML_Parser instance 'inst'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_ErrorString(object_t *inst)
@@ -286,10 +376,12 @@ ici_xml_ErrorString(object_t *inst)
     return ici_str_ret((char*)XML_ErrorString(XML_GetErrorCode(p)));
 }
 
-/**
- * GetCurrentLineNumber - return the current line number
+/*
+ * int = inst:GetCurrentLineNumber()
  *
- * ICI->C parser_class:GetCurrentLineNumber -> ici_xml_GetCurrentLineNumber
+ * Return the current line number of the XML_Parser instance 'inst'.
+ *
+ * This --topic-- formas part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_GetCurrentLineNumber(object_t *inst)
@@ -301,10 +393,12 @@ ici_xml_GetCurrentLineNumber(object_t *inst)
     return ici_int_ret(XML_GetCurrentLineNumber(p));
 }
 
-/**
- * GetCurrentColumnNumber - return the current column number
+/*
+ * int = inst:GetCurrentColumnNumber()
  *
- * ICI->C parser_class:GetCurrentColNumber -> ici_xml_GetCurrentColNumber
+ * Return the current column number of the XML_Parser instance 'inst'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_GetCurrentColumnNumber(object_t *inst)
@@ -316,10 +410,12 @@ ici_xml_GetCurrentColumnNumber(object_t *inst)
     return ici_int_ret(XML_GetCurrentColumnNumber(p));
 }
 
-/**
- * GetCurrentByteIndex - return the current byte index
+/*
+ * int = inst:GetCurrentByteIndex()
  *
- * ICI->C parser_class:GetCurrentByteIndex -> ici_xml_GetCurrentByteIndex
+ * Return the current byte index of the XML_Parser instance 'inst'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_GetCurrentByteIndex(object_t *inst)
@@ -331,10 +427,14 @@ ici_xml_GetCurrentByteIndex(object_t *inst)
     return ici_int_ret(XML_GetCurrentByteIndex(p));
 }
 
-/**
- * SetBase
+/*
+ * inst:SetBase(str)
  *
- * ICI->C parser_class:SetBase -> ici_xml_SetBase
+ * Sets the base to be used for resolving relative URIs in system identifiers
+ * in declarations of the XML_Parser instance 'inst'.  Resolving relative
+ * identifiers is left to the application.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 static int
 ici_xml_SetBase(object_t *inst)
@@ -381,6 +481,8 @@ ici_xml_library_init(void)
     if ((ici_xml_parser_class = ici_class_new(ici_xml_parser_cfuncs, ici_xml_module)) == NULL)
         goto fail;
     if (ici_assign_base(ici_xml_module, ICIS(parser_class), ici_xml_parser_class))
+        goto fail;
+    if (ici_assign_base(ici_xml_module, ICIS(XML_Parser), ici_xml_parser_class))
         goto fail;
     ici_decref(ici_xml_parser_class);
     return objof(ici_xml_module);

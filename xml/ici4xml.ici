@@ -1,49 +1,51 @@
 /*
- * $Id: icixml.ici,v 1.2 2000/07/14 10:15:51 atrn Exp $
+ * $Id: ici4xml.ici,v 1.1 2002/04/06 01:45:50 timl Exp $
+ */
+
+/*
+ * The alternative method of loading the whole XML stream into an ICI
+ * data structure is provided by the 'xml.read' function. 
  *
- * A simple XML interface for ici. This module provides three functions
- * layered atop the expat interface in the C code. The read() function
- * reads an XML stream and returns an in-memory representation as a
- * single ici object. The process() function traverses the in-memory
- * representation, calling user-defined functions for elements with
- * particular tags. Finally, the write() function outputs the in-memory
- * version as an XML stream. When combined these three operations provide
- * a minimal set of functions for processing XML-encoded data. Other
- * methods are of course possible. This was enough for my purposes and
- * seems relatively general and flexible. And it is small enough to make
- * it easy to modify.
+ * The 'xml.read()' function reads an XML stream and returns an in-memory
+ * representation as a single ICI object.  The 'xml.process()' function
+ * traverses the in-memory representation, calling user-defined functions for
+ * elements with particular tags.  Finally, the 'xml.write()' function outputs
+ * the in-memory version as an XML stream.  When combined these three
+ * operations provide a minimal set of functions for processing XML-encoded
+ * data.  Other methods are of course possible.  This was enough for my
+ * purposes and seems relatively general and flexible.  And it is small enough
+ * to make it easy to modify.
  *
- * The stream is returned as an ordered collection of objects. Each
- * is either an element of some kind or character data. Elements
- * themselves contain an ordered collections of nested elements.
- * There is no limit to nesting. Elements also contain a number of
- * attributes which are stored as key/value pairs with both keys and
- * values being strings.
+ * The stream is returned as an ordered collection of objects.  Each is either
+ * an element of some kind or character data.  Elements themselves contain an
+ * ordered collections of nested elements.  There is no limit to nesting.
+ * Elements also contain a number of attributes which are stored as key/value
+ * pairs with both keys and values being strings.
  *
- * Each element is represented as a struct object with a number of
- * key/value pairs. Element attributes appear as string keys that
- * map to strings storing the value of the attribute as presented
- * in the stream. Element meta-data is stored using special string keys
- * to avoid clashes with the data stream's choice of names. The
- * keys are:
+ * Each element is represented as a struct object with a number of key/value
+ * pairs.  Element attributes appear as string keys that map to strings
+ * storing the value of the attribute as presented in the stream.  Element
+ * meta-data is stored using special integer keys to avoid clashes with the
+ * data stream's choice of names.  The integer values are available as:
  *
- *      ELEMENTS        Maps to an array of nested elements. Each
- *                      is a struct.
+ * xml.ELEMENTS         Maps to an array of nested elements.  Each is a
+ *                      struct.
  *
- *      TAG             Maps to the string XML tag for this element.
+ * xml.TAG              Maps to the string XML tag for this element.
  *
- *      ID              Maps to a parser assigned identifier number
- *                      for this element. Each element is assigned a
- *                      number, unique for the XML stream being
- *                      parsed. This is not used in any way by this
- *                      module but may be of use by users (it was
- *                      added during debugging and never removed).
+ * xml.ID               Maps to a parser assigned identifier number for this
+ *                      element.  Each element is assigned a number, unique
+ *                      for the XML stream being parsed.  This is not used in
+ *                      any way by this module but may be of use by users (it
+ *                      was added during debugging and never removed).
  *
- * Additionally the "super" of a nested element struct is set to the
- * parent element allowing programs to traverse upwards as well as
- * downwards. Programs need to be careful when setting element
- * attributes that they do not follow the super-struct chain,
- * the assign() function may be used in this case, see start() below.
+ * Additionally the "super" of a nested element struct is set to the parent
+ * element allowing programs to traverse upwards as well as downwards.
+ * Programs need to be careful when setting element attributes that they do
+ * not follow the super-struct chain, the assign() function may be used in
+ * this case, see start() below.
+ *
+ * This --intro-- formas part of the --ici-xml-- documentation.
  */
 
 /*
@@ -181,13 +183,16 @@ static loader_class = [class: parser_class,
     }
 ];
 
-/**
- * read - read a data structure from an XML stream into memory
+/*
+ * els = xml.read(file)
  *
  * Reads an XML data stream from a file and return an in-memory
- * representation of that stream as an ici object. The data
+ * representation of that stream as an ICI object. The data
  * structure retains enough information to be able to output
- * the stream in a compatible manner.
+ * the stream in a compatible manner. See the introduction for
+ * details on how this stream is structured.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 extern
 read(file)
@@ -198,17 +203,20 @@ read(file)
     while (s = getline(file))
         loader:Parse(s + "\n", 0);
     loader:Parse("");
-    return loader.root[ELEMENTS];
+    return loader.root[loader.ELEMENTS];
 }
 
-/**
- * process - process an in-memory XML structure
+/*
+ * els = xml.process(els, map, uarg)
  *
- * This function traverses the in-memory data structure applying user
- * defined functions to particular elements. Functions are specified
- * using a struct object that maps element tag names to functions that
- * are to process those elements. Each function is called with two
- * parameters, the element and a user-defined parameter.
+ * This function traverses the in-memory data structure 'els' as returned by
+ * 'xml.read()' applying user defined functions to particular elements.
+ * Functions are specified using a struct object that maps element tag names
+ * to functions that are to process those elements.  Each function is called
+ * with two parameters, the element and a user-defined parameter 'uarg'.
+ * Returns the given 'els'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 extern
 process(els, map, uarg)
@@ -228,13 +236,14 @@ process(els, map, uarg)
     return els;
 }
 
-/**
- * write - output an in-memory XML data structure to a stream
+/*
+ * xml.write(els [, file])
  *
- * Output the in-memory representation of an XML data object to
- * a stream, by default stdout. The document is output using
- * indentation to show the structure of the data. Spacing is
- * preserved.
+ * Output the in-memory representation of an XML data object 'els' as returned
+ * by 'xml.read()' to a stream, by default stdout.  The document is output
+ * using indentation to show the structure of the data.  Spacing is preserved.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 extern
 write(els, f_out, ind)
@@ -274,12 +283,14 @@ write(els, f_out, ind)
     }
 }
 
-
 /*
- * traverse - traverse the in-memory XML document
+ * xml.traverse(els, func, uarg)
  *
- * This function is similar to process but simply
- * calls a function on each node.
+ * This function traverses the in-memory data structure 'els' as returned by
+ * 'xml.read()' calling the given function 'func' on each elements. The function
+ * is called with the element and 'uarg'.
+ *
+ * This --topic-- forms part of the --ici-xml-- documentation.
  */
 extern
 traverse(els, fn, uarg)
@@ -296,6 +307,8 @@ traverse(els, fn, uarg)
         }
     }
 }
+
+/* ### Things below here still need to be documented. ### */
 
 extern
 tag_of(element)
