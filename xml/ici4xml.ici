@@ -1,5 +1,5 @@
 /*
- * $Id: ici4xml.ici,v 1.1 2002/04/06 01:45:50 timl Exp $
+ * $Id: ici4xml.ici,v 1.2 2003/03/02 07:00:27 timl Exp $
  */
 
 /*
@@ -42,8 +42,8 @@
  * Additionally the "super" of a nested element struct is set to the parent
  * element allowing programs to traverse upwards as well as downwards.
  * Programs need to be careful when setting element attributes that they do
- * not follow the super-struct chain, the assign() function may be used in
- * this case, see start() below.
+ * not follow the super-struct chain, the 'assign()' function may be used in
+ * this case.
  *
  * This --intro-- formas part of the --ici-xml-- documentation.
  */

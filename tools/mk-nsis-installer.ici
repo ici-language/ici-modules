@@ -1,3 +1,10 @@
+static
+text(f)
+{
+    return gettoken(f, "]");
+}
+
+static head = [text
 ;
 ; This is a script to generate a Win32 ICI self-extracting install exe
 ; using NSIS - the free Nullsoft Installer System for Windows. See:
@@ -58,50 +65,19 @@ StrCpy $0 "Yes docs"
 CreateDirectory "$SMPROGRAMS\ICI Programming Language"
 SectionEnd
 
-!macro install_doc MOD
-    StrCmp $0 "No docs" no_${MOD}_doc
+!macro install_doc DIR NAME
+    StrCmp $0 "No docs" no_${NAME}_doc
         SetOutPath "$INSTDIR"
         pop $R1
-        File /oname=ici${MOD}.html ..\${MOD}\ici${MOD}.html
-        CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI ${MOD} module doc.lnk"\
-            "$INSTDIR\ici${MOD}.html"
-    no_${MOD}_doc:
+        File /oname=ici${NAME}.html ${DIR}\ici${NAME}.html
+        CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI ${NAME} module doc.lnk"\
+            "$INSTDIR\ici${NAME}.html"
+    no_${NAME}_doc:
 !macroend
 
+];
 
-Section "xml - Expat based XML parser"
-SetOutPath "$SYSDIR\ici"
-File "/oname=ici4xml.dll" "..\xml\Release\ici4xml.dll"
-File "/oname=ici4xml.ici" "..\xml\ici4xml.ici"
-!insertmacro install_doc xml
-SectionEnd
-
-Section "net - Sockets based networking"
-SetOutPath "$SYSDIR\ici"
-File "/oname=ici4net.dll" "..\net\Release\ici4net.dll"
-File "/oname=ici4net.ici" "..\net\ici4net.ici"
-!insertmacro install_doc net
-SectionEnd
-
-Section "sys - System calls and related"
-SetOutPath "$SYSDIR\ici"
-File "/oname=ici4sys.dll" "..\sys\Release\ici4sys.dll"
-File "/oname=ici4sys.ici" "..\sys\ici4sys.ici"
-!insertmacro install_doc sys
-SectionEnd
-
-Section "dll - Call DLL functions directly"
-SetOutPath "$SYSDIR\ici"
-File "/oname=ici4dll.dll" "..\dll\Release\ici4dll.dll"
-!insertmacro install_doc dll
-SectionEnd
-
-Section "html - HTML element classes"
-SetOutPath "$SYSDIR\ici"
-File "/oname=ici4html.ici" "..\html\ici4html.ici"
-!insertmacro install_doc html
-SectionEnd
-
+static mid = [text
 ;----------------------------------------------------------------------
 ; Uninstall stuff. Note that this stuff is logically seperate from the
 ; install stuff above (for obvious reasons). This runs when the user does
@@ -111,36 +87,41 @@ UninstallText "This will uninstall ${NAME} from your system"
 
 Section Uninstall
 Delete "$INSTDIR\ici-modules-uninst.exe"
+];
 
-;
-; Remove extension modules...
-;
-Delete "$SYSDIR\ici\ici4xml.dll"
-Delete "$SYSDIR\ici\ici4xml.ici"
-Delete "$SYSDIR\ici\ici4net.dll"
-Delete "$SYSDIR\ici\ici4net.ici"
-Delete "$SYSDIR\ici\ici4sys.dll"
-Delete "$SYSDIR\ici\ici4sys.ici"
-Delete "$SYSDIR\ici\ici4dll.dll"
-Delete "$SYSDIR\ici\ici4html.ici"
-RMDir  "$SYSDIR\ici"
-
-;
-; Remove documentation...
-;
-Delete "$INSTDIR\icidll.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI dll module doc.lnk"
-Delete "$INSTDIR\icixml.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI xml module doc.lnk"
-Delete "$INSTDIR\icinet.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI net module doc.lnk"
-Delete "$INSTDIR\icisys.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"
-Delete "$INSTDIR\icihtml.html"
-Delete "$SMPROGRAMS\ICI Programming Language\ICI html module doc.lnk"
+static tail = [text
 RMDir  "$SMPROGRAMS\ICI Programming Language"
 RMDir  "$PROGRAMFILES\ICI"
 
 DeleteRegKey HKLM "SOFTWARE\${NAME}"
 DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${NAME}"
 SectionEnd
+];
+
+
+bits = gettokens(fopen("install-bits.txt", "r"), "\n", "");
+sort(bits);
+install = array();
+uninstall = array();
+prev = "";
+forall (b in bits)
+{
+    if (b == prev)
+        continue;
+    prev = b;
+    if (b ~ #^I#)
+        push(install, b ~~ #^I;[^;]*;[0-9];(.*)$#);
+    else
+        push(uninstall, b ~~ #^U;[^;]*;[0-9];(.*)$#);
+}
+
+f = fopen("ici4-modules-install.nsi", "w");
+printf(f, "%s", head);
+forall (line in install)
+    printf(f, "%s\n", line);
+
+printf(f, "%s", mid);
+forall (line in uninstall)
+    printf(f, "%s\n", line);
+
+printf(f, "%s", tail);

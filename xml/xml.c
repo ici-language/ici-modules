@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.8 2003/03/02 03:46:03 timl Exp $
+ * $Id: xml.c,v 1.9 2003/03/02 07:00:28 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -50,9 +50,6 @@
  * which will result in calls to the 'start_element' and 'end_element' as
  * necessary. Other callback methods you may supply are 'character_data',
  * 'processing_instruction' and 'default_handler'.
- *
- * The alternative method of loading the whole XML stream into an ICI
- * data structure is 
  *
  * This --intro-- formas part of the --ici-xml-- documentation.
  */
