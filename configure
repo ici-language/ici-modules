@@ -53,11 +53,17 @@
  */
 static modules = [struct
 
-    sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
-    net     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
-    xml     = [set "bsd", "linux",        "sol2", "cygwin", "w32"],
+    cgi     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     dll     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    env     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    html    = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    net     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    path    = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    pq      = [set "bsd", "linux"                                ],
     str     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    xml     = [set "bsd", "linux",        "sol2", "cygwin", "w32"],
+
 ];
 
 /*
@@ -389,7 +395,7 @@ forall (can_do_flavs, module in modules)
     f = gsub(f, #(?=\n\n\n)\n#, "");
     put(f, (fo := fopen(makeout, "w")));
     close(fo);
-    printf("%s -> %s\n", makein, makeout);
+    printf("%-8s: %s -> %s\n", module, makein, makeout);
 }
 
 /*
