@@ -124,7 +124,7 @@ static subs = [struct
      */
     INSTALL =
         [struct
-            sol2 = "install -m 444",
+            sol2 = "/usr/ucb/install -c -m 444",
             default = "install -c -m 444"
         ],
 
