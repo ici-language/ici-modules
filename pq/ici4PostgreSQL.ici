@@ -1,5 +1,5 @@
 /*
- * $Id: PostgreSQL.ici,v 1.15 2001/09/11 08:10:17 atrn Exp $
+ * $Id: ici4PostgreSQL.ici,v 1.1 2003/01/27 10:49:00 atrn Exp $
  */
 
 /*
@@ -125,7 +125,8 @@ Connection = [class
 
     exec(stmt)
     {
-	return Result:new(pq.exec(conn, stmt));
+	r := Result:new(pq.exec(conn, stmt));
+        return r;
     }
 
     tuples(res)
@@ -180,9 +181,11 @@ Connection = [class
 	    valuespec
 	);
 	result = this:exec(sql);
-	if (result:status() != COMMAND_OK)
-	    result:failed();
-	result:clear();
+        try
+	    if (result:status() != COMMAND_OK)
+                result:failed();
+        onerror
+            fail("failed getting result status");
     }
 
     update(table, fields, values)
@@ -197,7 +200,6 @@ Connection = [class
 	result = this:exec(sql);
 	if (result:status() != COMMAND_OK)
 	    result:failed();
-	result:clear();
     }
 
 ];
@@ -232,9 +234,7 @@ Result = [class
 
     failed()
     {
-	err = this:sstatus();
-	this:clear();
-	fail(err);
+	fail(this:sstatus());
     }
 
     cmd_status()
@@ -312,9 +312,4 @@ Result = [class
 	return pq.getisnull(result, tup, fld);
     }
 
-    clear()
-    {
-	pq.clear(result);
-    }
-    
 ];

@@ -1,7 +1,11 @@
 /* 
- * $Id: pq.c,v 1.12 2003/01/27 10:49:00 atrn Exp $
- *
+ * $Id: pq.c,v 1.13 2003/01/27 13:06:57 atrn Exp $
+ */
+
+/*
  * ICI PostgreSQL inferface module.
+ *
+ * --intro-- --ici-pq--
  */
 
 #include <libpq-fe.h>
@@ -12,11 +16,7 @@
 static ici_handle_t *
 new_conn(PGconn *conn)
 {
-    ici_handle_t *h;
-
-    if ((h = ici_handle_new(conn, ICIS(PGconn), NULL)) != NULL)
-        objof(h)->o_flags &= ~O_SUPER;
-    return h;
+    return ici_handle_new(conn, ICIS(PGconn), NULL);
 }
 
 static void
@@ -31,10 +31,7 @@ new_result(PGresult *res)
     ici_handle_t *h;
 
     if ((h = ici_handle_new(res, ICIS(PGresult), NULL)) != NULL)
-    {
         h->h_pre_free = ici_pq_result_pre_free;
-        objof(h)->o_flags &= ~O_SUPER;
-    }
     return h;
 }
 
@@ -209,13 +206,6 @@ ici_pq_connectStart(void)
 }
 
 static int
-cleared_result()
-{
-    ici_error = "attempt to use result after clearing";
-    return 1;
-}
-
-static int
 glue_i_r(void)
 {
     ici_handle_t *res;
@@ -223,8 +213,6 @@ glue_i_r(void)
 
     if (ici_typecheck("h", ICIS(PGresult), &res))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     pf = CF_ARG1();
     return ici_int_ret((*pf)((PGresult *)res->h_ptr));
 }
@@ -264,7 +252,6 @@ ici_pq_exec(void)
     }
     if ((r = new_result(res)) == NULL)
 	return 1;
-    r->h_pre_free = ici_pq_result_pre_free;
     return ici_ret_with_decref(objof(r));
 }
 
@@ -286,8 +273,6 @@ glue_s_r(void)
 
     if (ici_typecheck("h", ICIS(PGresult), &res))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     pf = CF_ARG1();
     return ici_str_ret((*pf)((PGresult *)res->h_ptr));
 }
@@ -300,8 +285,6 @@ ici_pq_fname(void)
 
     if (ici_typecheck("hi", ICIS(PGresult), &res, &idx))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     return ici_str_ret(PQfname((PGresult *)res->h_ptr, idx));
 }
 
@@ -313,8 +296,6 @@ ici_pq_fnumber(void)
 
     if (ici_typecheck("hs", ICIS(PGresult), &res, &fname))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     return ici_int_ret(PQfnumber((PGresult *)res->h_ptr, fname));
 }
 
@@ -327,8 +308,6 @@ glue_i_ri(void)
 
     if (ici_typecheck("hi", ICIS(PGresult), &res, &arg))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     pf = CF_ARG1();
     return ici_int_ret((*pf)((PGresult *)res->h_ptr, arg));
 }
@@ -342,8 +321,6 @@ ici_pq_getvalue(void)
 
     if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     return ici_str_ret(PQgetvalue((PGresult *)res->h_ptr, tup, fld));
 }
 
@@ -356,8 +333,6 @@ ici_pq_getlength(void)
 
     if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     return ici_int_ret(PQgetlength((PGresult *)res->h_ptr, tup, fld));
 }
 
@@ -370,23 +345,7 @@ ici_pq_getisnull(void)
 
     if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
     return ici_int_ret(PQgetisnull((PGresult *)res->h_ptr, tup, fld));
-}
-
-static int
-ici_pq_clear(void)
-{
-    ici_handle_t	*res;
-
-    if (ici_typecheck("h", ICIS(PGresult), &res))
-	return 1;
-    if (objof(res)->o_flags & H_CLOSED)
-	return cleared_result();
-    PQclear((PGresult *)res->h_ptr);
-    objof(res)->o_flags |= H_CLOSED;
-    return ici_null_ret();
 }
 
 
@@ -643,7 +602,6 @@ static cfunc_t ici_pq_cfuncs[] =
     {CF_OBJ, "getvalue", ici_pq_getvalue},
     {CF_OBJ, "getlength", ici_pq_getlength},
     {CF_OBJ, "getisnull", ici_pq_getisnull},
-    {CF_OBJ, "clear", ici_pq_clear},
     {CF_OBJ, "print", ici_pq_print},
     {CF_OBJ, "trace", ici_pq_trace},
     {CF_OBJ}
