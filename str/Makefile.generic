@@ -1,0 +1,34 @@
+#
+# This $(FLAVOUR) specific makefile was automatically created by
+# processing $(MAKEIN) to get $(MAKEOUT).
+#
+# See the comments in makemake.ici for details.
+#
+CFLAGS	= $(PIC) $(OPTIM) -I. -I$(PREFIX)/include -I. $(ICICFLAGS)
+OBJS	= $(ICIOBJS)
+LIB	= $(ICIV)$(MOD).$(SOSUFFIX)
+LIBS	=
+$(OTHERDEFS)
+
+$(LIB): $(OBJS)
+	$(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	
+doc: $(ICISRCS) ici4str.ici
+	ici ../tools/extract-doc-from-src.ici man $(ICISRCS) ici4str.ici
+	ici ../tools/extract-doc-from-src.ici html $(ICISRCS) ici4str.ici
+
+clean:
+	rm -f $(LIB) $(OBJS)
+
+clobber: clean
+	rm -f .depend ici$(MOD).1 ici$(MOD).html
+
+depend:
+	mkdep $(CFLAGS) $(ICISRCS)
+
+install: $(LIBINSTALLS) doc
+	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
+	$(INSTALL) ici$(MOD).1 $(PREFIX)/man/man1
+	
+
+$(OTHERRULES)
