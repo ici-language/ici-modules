@@ -65,9 +65,9 @@ static modules = [struct
     str     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     xml     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
-    pdf     = [set "bsd", "linux"                                ],
+//    pdf     = [set "bsd", "linux"                                ],
     pq      = [set "bsd", "linux"                                ],
-    uuid    = [set "bsd", "linux"                                ],
+//    uuid    = [set "bsd", "linux"                                ],
     widb    = [set                                          "w32"],
 ];
 
