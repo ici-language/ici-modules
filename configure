@@ -53,6 +53,7 @@
  */
 static modules = [struct
 
+    bignum  = [set "bsd"                                         ],
     cgi     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     dll     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
     env     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
