@@ -10,12 +10,10 @@
  *	env.LD_LIBRARY_PATH += ":/usr/local/lib/ici";
  *	etc...
  *
- * The env global is a struct object with a modified assign function.
+ * The env global is a struct object with a modified ici_assign function.
  */
 
-#include "struct.h"
-#include "str.h"
-#include "buf.h"
+#include <ici.h>
 
 static int
 assign_env(object_t *o, object_t *k, object_t *v)
@@ -24,52 +22,52 @@ assign_env(object_t *o, object_t *k, object_t *v)
 
     if (!isstring(k))
     {
-	error = "attempt to use non-string key with environment";
+	ici_error = "attempt to use non-string key with environment";
 	return 1;
     }
     if (!isstring(v))
     {
-	error = "attempt to assign non-string value to environment";
+	ici_error = "attempt to ici_assign non-string value to environment";
 	return 1;
     }
-    prev = fetch(o, k);
-    incref(prev);
-    if (struct_type.t_assign(o, k, v))
+    prev = ici_fetch(o, k);
+    ici_incref(prev);
+    if (ici_types[TC_STRUCT]->t_assign(o, k, v))
 	goto fail;
-    if (chkbuf(stringof(k)->s_nchars + stringof(v)->s_nchars + 1))
+    if (ici_chkbuf(stringof(k)->s_nchars + stringof(v)->s_nchars + 1))
     {
 	if (prev == objof(&o_null))
 	{
-	    unassign_struct(structof(o), k);
-	    NEXT_VSVER;
+	    ici_struct_unassign(structof(o), k);
+	    ++ici_vsver;
 	}
-	else if ((*struct_type.t_assign)(o, k, prev))
-	    error = "environment incoherency, out of memory";
+	else if ((*ici_types[TC_STRUCT]->t_assign)(o, k, prev))
+	    ici_error = "environment incoherency, out of memory";
 	goto fail;
     }
-    sprintf(buf, "%s=%s", stringof(k)->s_chars, stringof(v)->s_chars);
-    if (putenv(buf))
+    sprintf(ici_buf, "%s=%s", stringof(k)->s_chars, stringof(v)->s_chars);
+    if (putenv(ici_buf))
     {
 	if (prev == objof(&o_null))
 	{
-	    unassign_struct(structof(o), k);
-	    NEXT_VSVER;
+	    ici_struct_unassign(structof(o), k);
+	    ++ici_vsver;
 	}
-	else if ((*struct_type.t_assign)(o, k, prev))
-	    error = "environment incoherency, out of memory";
+	else if ((*ici_types[TC_STRUCT]->t_assign)(o, k, prev))
+	    ici_error = "environment incoherency, out of memory";
 	goto fail;
     }
     return 0;
 
 fail:
-    decref(prev);
+    ici_decref(prev);
     return 1;
 }
 
 object_t *
 ici_env_library_init(void)
 {
-    static type_t 	env_type;
+    static ici_type_t 	env_type;
     extern char 	**environ;
     struct_t		*e;
     char		**p;
@@ -77,38 +75,49 @@ ici_env_library_init(void)
     char		*t;
     string_t		*k;
 
-    if ((e = new_struct()) == NULL)
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "env"))
+        return NULL;
+
+    if ((e = ici_struct_new()) == NULL)
 	return NULL;
     for (p = environ; *p != NULL; ++p)
     {
 	t = strchr(*p, '=');
-	assert(t != NULL);
-	if ((k = new_name(*p, t - *p)) == NULL)
-	    goto fail;
-	if ((s = new_cname(t+1)) == NULL)
+	if (t == NULL)
 	{
-	    decref(k);
+	    ici_error = "mal-formed environ";
+	    return NULL;
+	}
+	if ((k = ici_str_new(*p, t - *p)) == NULL)
+	    goto fail;
+	if ((s = ici_str_new_nul_term(t+1)) == NULL)
+	{
+	    ici_decref(k);
 	    goto fail;
 	}
-	if (assign(e, k, s))
+	if (ici_assign(e, k, s))
 	{
-	    decref(k);
-	    decref(s);
+	    ici_decref(k);
+	    ici_decref(s);
 	    goto fail;
 	}
-	decref(s);
-	decref(k);
+	ici_decref(s);
+	ici_decref(k);
     }
     /*
      * Now we've set up the struct trap assignments to it and
      * vector them through our code that sets the real environment.
      */
-    env_type = struct_type;
+    env_type = *ici_types[TC_STRUCT];
     env_type.t_assign = assign_env;
-    e->o_head.o_type = &env_type;
+    if (!ici_register_type(&env_type))
+    {
+	return NULL;
+    }
+
     return objof(e);
 
 fail:
-    decref(e);
+    ici_decref(e);
     return NULL;
 }

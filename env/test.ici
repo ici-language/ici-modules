@@ -3,8 +3,11 @@ auto k;
 forall (k in sort(keys(env)))
      printf("%s=%s\n", k, env[k]);
 
-printf("%s\n", string(env.FOO));
+printf("\nSetting\n");
+printf("Current FOO == %s\n", string(env.FOO));
 env.FOO = "Bar";
-printf("%s\n", string(env.FOO));
+printf("Following env.FOO = Bar\nFOO == %s\n", string(env.FOO));
 
-system("echo %FOO%");
+printf("\nRunning echo in a shell\n");
+flush();
+system("echo $FOO");
