@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.19 2003/01/26 09:16:57 timl Exp $
+ * $Id: net.c,v 1.20 2003/01/27 00:33:04 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -106,7 +106,7 @@ ici_isset(object_t *o)
 
 #if defined(sun) && __STDC__
 /*
- * SunOS 4.x doesn't prototypes many things.
+ * SunOS 4.x doesn't prototype many things.
  */
 int close(int);
 int socket(int, int, int);
@@ -135,20 +135,27 @@ int shutdown(int, int);
 #endif
 
 /*
- * Format a message into the ICI error string. The formatted message
- * must fit within 256 characters.
+ * Set the error string using a static message or a formatted message.
+ * If fmt is NULL then the fallback string is used to set the ici error
+ * string.  If fmt is non-NULL it is used to format a message using
+ * sprintf and any actual parameters.  The formatted message must fit
+ * within 256 characters. If ici_buf cannot size itself to contain the
+ * formatted message the fallback message is used to set error.
  */
 static int
-seterror(char *fmt, ...)
+seterror(char *fallback, char *fmt, ...)
 {
     va_list     va;
 
-    if (ici_chkbuf(256))
-        return 1;
-    va_start(va, fmt);
-    vsprintf(ici_buf, fmt, va);
-    va_end(va);
-    ici_error = ici_buf;
+    if (fmt == NULL || ici_chkbuf(256))
+        ici_error = fallback;
+    else
+    {
+        va_start(va, fmt);
+        vsprintf(ici_buf, fmt, va);
+        va_end(va);
+        ici_error = ici_buf;
+    }
     return 1;
 }
 
@@ -169,7 +176,7 @@ socket_prefree(ici_handle_t *h)
 static ici_handle_t *
 new_netsocket(SOCKET fd)
 {
-    ici_handle_t            *h;
+    ici_handle_t *h;
 
     if ((h = ici_handle_new((void *)fd, ICIS(socket), NULL)) == NULL)
         return NULL;
@@ -266,6 +273,7 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
     {
         seterror
         (
+            "network address string too long",
             "network address string too long: \"%.32s\"",
             raddr
         );
@@ -307,7 +315,7 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
             memcpy(&hostaddr, hostent->h_addr, sizeof hostaddr);
         else
         {
-            seterror("unknown host: \"%.32s\"", host);
+            seterror("unknown host", "unknown host: \"%.32s\"", host);
             return NULL;
         }
         saddr->sin_addr.s_addr = hostaddr;
@@ -320,7 +328,7 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
             *proto++ = 0;
         if ((servent = getservbyname(ports, proto)) == NULL)
         {
-            seterror("unknown service: \"%s\"", ports);
+            seterror("unknown service", "unknown service: \"%s\"", ports);
             return NULL;
         }
         port = ntohs(servent->s_port);
@@ -399,7 +407,7 @@ struct sockaddr_in *addr;
 static int
 ici_net_socket()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     string_t            *proto;
     int                 type;
     SOCKET              fd;
@@ -437,7 +445,8 @@ ici_net_socket()
     {
         return seterror
         (
-            "unsupported protocol or family: %s", proto->s_chars
+            "unsupported protocol or address family",
+            "unsupported protocol or address family: %s", proto->s_chars
         );
     }
     if ((fd = socket(PF_INET, type, 0)) == -1)
@@ -460,7 +469,7 @@ ici_net_socket()
 static int
 ici_net_close()
 {
-    ici_handle_t            *skt;
+    ici_handle_t *skt;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -485,8 +494,8 @@ ici_net_close()
 static int
 ici_net_listen()
 {
-    ici_handle_t    *skt;
-    long        backlog = 5;    /* ain't tradition grand */
+    ici_handle_t *skt;
+    long         backlog = 5;    /* ain't tradition grand */
 
     switch (NARGS())
     {
@@ -526,9 +535,9 @@ ici_net_listen()
 static int
 ici_net_accept()
 {
-    ici_handle_t    *skt;
-    SOCKET      fd;
-    exec_t      *x;
+    ici_handle_t  *skt;
+    SOCKET        fd;
+    exec_t        *x;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -568,7 +577,7 @@ ici_net_accept()
 static int
 ici_net_connect()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     char                *addr;
     object_t            *arg;
     struct sockaddr_in  saddr;
@@ -635,7 +644,7 @@ ici_net_connect()
 static int
 ici_net_bind()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     char                *addr;
     struct sockaddr_in  saddr;
 
@@ -774,23 +783,23 @@ ici_net_select()
     exec_t              *x;
 
     if (NARGS() == 0)
-        return seterror("incorrect number of arguments for net.select()");
+        return seterror("incorrect number of arguments for net.select()", NULL);
     for (i = 0; i < NARGS(); ++i)
     {
         if (isint(ARG(i)))
         {
             if (timeout != -1)
-                return seterror("too many timeout parameters passed to net.select");
+                return seterror("too many timeout parameters passed to net.select", NULL);
             timeout = intof(ARG(i))->i_value;
             if (timeout < 0)
-                return seterror("-ve timeout passed to net.select");
+                return seterror("-ve timeout passed to net.select", NULL);
         }
         else if (ici_isset(ARG(i)) || isnull(ARG(i)))
         {
             int j;
 
             if (++whichset > 2)
-                return seterror("too many set/NULL params to select()");
+                return seterror("too many set/NULL params to select()", NULL);
             if (ici_isset(ARG(i)))
             {
                 fd_set *fs = 0;
@@ -820,7 +829,7 @@ ici_net_select()
                     if (!ishandleof(sl->sl_key, ICIS(socket)))
                         continue;
                     if (isclosed(handleof(sl->sl_key)))
-                        return seterror("attempt to use a closed socket in net.select");
+                        return seterror("attempt to use a closed socket in net.select", NULL);
                     k = (SOCKET)handleof(sl->sl_key)->h_ptr;
                     FD_SET(k, fs);
                     if (k > dtabsize)
@@ -853,7 +862,7 @@ ici_net_select()
         }
     }
     if (rfds == NULL && wfds == NULL && efds == NULL)
-        return seterror("nothing to select, all socket sets are empty");
+        return seterror("nothing to select, all socket sets are empty", NULL);
     if (timeout == -1)
         tv = NULL;
     else
@@ -917,11 +926,13 @@ fail:
 }
 
 /*
- * net.sendto(skt, msg, address)
+ * int = net.sendto(skt, msg, address)
  *
  * Send a 'msg' (a string) to a specific 'address'.  This may be used even if
  * 'skt' is not connected.  If the host portion of the address is missing the
  * local host address is used.
+ *
+ * Returns the count of the number of bytes transferred.
  *
  * This --topic-- forms part of the --ici-net-- documentation.
  */
@@ -931,7 +942,7 @@ ici_net_sendto()
     char                *addr;
     string_t            *msg;
     int                 n;
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     struct sockaddr_in  sockaddr;
 
     if (ici_typecheck("hos", ICIS(socket), &skt, &msg, &addr))
@@ -952,13 +963,8 @@ ici_net_sendto()
         sizeof sockaddr
     );
     if (n < 0)
-        return ici_get_last_errno("sendto", NULL);
-    if (n != msg->s_nchars)
-    {
-        ici_error = "short write";
-        return 1;
-    }
-    return ici_null_ret();
+        return ici_get_last_errno("net.sendto", NULL);
+    return ici_int_ret(n);
 }
 
 #if 0
@@ -996,7 +1002,7 @@ char *flag;
 static int
 ici_net_recvfrom()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     int                 len;
     int                 nb;
     char                *msg;
@@ -1008,13 +1014,12 @@ ici_net_recvfrom()
 
     if (ici_typecheck("hi", ICIS(socket), &skt, &len))
         return 1;
+    if (isclosed(skt))
+        return 1;
+    if (len < 0)
+        return seterror("negative transfer count", NULL);
     if ((msg = ici_nalloc(len + 1)) == NULL)
         return 1;
-    if (isclosed(skt))
-    {
-        ici_nfree(msg, len + 1);
-        return 1;
-    }
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
@@ -1069,25 +1074,27 @@ ici_net_recvfrom()
 
 fail:
     if (msg != NULL)
-        ici_free(msg);
+        ici_nfree(msg, len + 1);
     ici_decref(result);
     return 1;
 }
 
 /*
- * net.send(skt, string)
+ * int = net.send(skt, string)
  *
  * Send the message 'string' on the socket 'skt'. The socket must
  * be connected.
+ *
+ * Returns the count of the number of bytes transferred.
  *
  * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_send()
 {
-    ici_handle_t    *skt;
-    int         len;
-    string_t    *msg;
+    ici_handle_t *skt;
+    int          len;
+    string_t     *msg;
 
     if (ici_typecheck("ho", ICIS(socket), &skt, &msg))
         return 1;
@@ -1095,15 +1102,10 @@ ici_net_send()
         return ici_argerror(1);
     if (isclosed(skt))
         return 1;
-    if ((len = send((SOCKET)skt->h_ptr, msg->s_chars, msg->s_nchars, 0)) != msg->s_nchars)
-    {
-        return seterror
-        (
-            "sent fewer bytes (%d) than expected (%d) in net.send()",
-             len, msg->s_nchars
-        );
-    }
-    return ici_null_ret();
+    len = send((SOCKET)skt->h_ptr, msg->s_chars, msg->s_nchars, 0);
+    if (len < 0)
+        return ici_get_last_errno("net.send", NULL);
+    return ici_int_ret(len);
 }
 
 /*
@@ -1111,6 +1113,9 @@ ici_net_send()
  *
  * Receive data from a socket 'skt' and return it as a string.  The 'int'
  * parameter gives the maximum size of message that will be received.
+ * The actual number of bytes transferred may be determined from the 
+ * length of the returned string. If the connection is closed NULL is
+ * returned.
  *
  * This may block, but will allow thread switching while blocked.
  *
@@ -1119,17 +1124,19 @@ ici_net_send()
 static int
 ici_net_recv()
 {
-    ici_handle_t    *skt;
-    int         len;
-    int         nb;
-    char        *msg;
-    string_t    *s;
-    exec_t      *x;
+    ici_handle_t *skt;
+    int          len;
+    int          nb;
+    char         *msg;
+    string_t     *s;
+    exec_t       *x;
 
     if (ici_typecheck("hi", ICIS(socket), &skt, &len))
         return 1;
     if (isclosed(skt))
         return 1;
+    if (len < 0)
+        return seterror("negative transfer count", NULL);
     if ((msg = ici_nalloc(len + 1)) == NULL)
         return 1;
 #ifndef NOSIGNALS
@@ -1247,7 +1254,7 @@ sockopt(char *opt, int *level)
 static int
 ici_net_getsockopt()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     char                *opt;
     int                 o;
     char                *optval;
@@ -1305,7 +1312,7 @@ ici_net_getsockopt()
 #ifndef NDEBUG
         abort();
 #endif
-        return seterror("internal ici error in skt.c:sockopt()");
+        return seterror("internal ici error in net.c:sockopt()", NULL);
     }
 
     if (isclosed(skt))
@@ -1330,7 +1337,7 @@ ici_net_getsockopt()
     return ici_int_ret(intvar);
 
 bad:
-    return seterror("bad socket option \"%s\"", opt);
+    return seterror("bad socket option", "bad socket option \"%s\"", opt);
 }
 
 /*
@@ -1408,7 +1415,7 @@ ici_net_setsockopt()
 #ifndef NDEBUG
         abort();
 #endif
-        return seterror("internal ici error in skt.c:sockopt()");
+        return seterror("internal ici error in net.c:sockopt()", NULL);
     }
 
     if (isclosed(skt))
@@ -1418,7 +1425,7 @@ ici_net_setsockopt()
     return ici_ret_no_decref(objof(skt));
 
 bad:
-    return seterror("bad socket option \"%s\"", opt);
+    return seterror("bad socket option", "bad socket option \"%s\"", opt);
 }
 
 /*
@@ -1500,7 +1507,7 @@ ici_net_getpeername()
 {
     struct sockaddr_in  addr;
     int                 len = sizeof addr;
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -1523,7 +1530,7 @@ ici_net_getsockname()
 {
     struct sockaddr_in  addr;
     int                 len = sizeof addr;
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -1546,7 +1553,7 @@ ici_net_getportno()
 {
     struct sockaddr_in  addr;
     int                 len = sizeof addr;
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -1577,7 +1584,7 @@ ici_net_gethostbyname()
     if (ici_typecheck("s", &name))
         return 1;
     if ((hostent = gethostbyname(name)) == NULL)
-        return seterror("no such host: \"%.32s\"", name);
+        return seterror("no such host", "no such host: \"%.32s\"", name);
     memcpy(&addr, *hostent->h_addr_list, sizeof addr);
     return ici_str_ret(inet_ntoa(addr));
 }
@@ -1609,9 +1616,9 @@ ici_net_gethostbyaddr()
     else if (ici_typecheck("s", &s))
         return 1;
     else if ((addr = inet_addr(s)) == 0xFFFFFFFF)
-        return seterror("invalid IP address: %32s", s);
+        return seterror("invalid IP address", "invalid IP address: %32s", s);
     if ((hostent = gethostbyaddr((char *)&addr, sizeof addr, AF_INET)) == NULL)
-        return seterror(s != NULL ? "unknown host: %32s" : "unkown host", s);
+        return seterror("unknown host", s != NULL ? "unknown host: %32s" : "unkown host", s);
     return ici_str_ret((char *)hostent->h_name);
 }
 
@@ -1625,7 +1632,7 @@ ici_net_gethostbyaddr()
 static int
 ici_net_sktno()
 {
-    ici_handle_t            *skt;
+    ici_handle_t *skt;
 
     if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
@@ -1651,10 +1658,10 @@ enum
 
 typedef struct
 {
-    ici_handle_t    *sf_socket;
-    char        sf_buf[SF_BUFSIZ];
-    char        *sf_bufp;
-    int         sf_nbuf;
+    ici_handle_t *sf_socket;
+    char         sf_buf[SF_BUFSIZ];
+    char         *sf_bufp;
+    int          sf_nbuf;
     int         sf_pbchar;
     int         sf_flags;
 }
@@ -1817,7 +1824,7 @@ skt_open(ici_handle_t *s, char *mode)
             sf->sf_flags = SF_WRITE;
             break;
         default:
-            seterror("bad open mode, \"%s\", for socket", mode);
+            seterror("bad open mode for socket", "bad open mode, \"%s\", for socket", mode);
             return NULL;
         }
     }
@@ -1847,7 +1854,7 @@ skt_open(ici_handle_t *s, char *mode)
 static int
 ici_net_sktopen()
 {
-    ici_handle_t            *skt;
+    ici_handle_t        *skt;
     char                *mode;
     file_t              *f;
     skt_file_t          *sf;
