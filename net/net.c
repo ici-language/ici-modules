@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.16 2002/04/06 01:43:26 timl Exp $
+ * $Id: net.c,v 1.17 2003/01/04 11:13:48 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -98,25 +98,25 @@ int close(int);
 int socket(int, int, int);
 int socketpair(int, int, int, int *);
 int listen(int, int);
+#ifndef SUNOS5
 int accept(int, struct sockaddr *, int *);
 int connect(int, struct sockaddr *, int);
 int bind(int, struct sockaddr *, int);
-#ifndef SUNOS5
 int sendto(int, char *, int, int, struct sockaddr *, int);
 #endif
 #ifndef SUNOS5
 int send(int, char *, int, int);
 #endif
+#ifndef SUNOS5
 int recvfrom(int, char *, int, int, struct sockaddr *, int *);
 int recv(int, char *, int, int);
 int getsockopt(int, int, int, char *, int *);
-#ifndef SUNOS5
 int setsockopt(int, int, int, char *, int);
+int getpeername(int, struct sockaddr *, int *);
+int getsockname(int, struct sockaddr *, int *);
 #endif
 int gethostname(char *, int);
 int getuid(void);
-int getpeername(int, struct sockaddr *, int *);
-int getsockname(int, struct sockaddr *, int *);
 int shutdown(int, int);
 #endif
 
