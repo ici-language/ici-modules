@@ -32,7 +32,7 @@ ici$(CF_MOD).1: $(ALL_SRC)
 
 ici$(CF_MOD).html: $(SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
-	
+
 clean:
 	rm -f $(ICIMOD) $(OBJS)
 
