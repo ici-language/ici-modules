@@ -171,11 +171,11 @@ prompt(vs)
                 ss := top(vs);
                 while (d-- > 0 && ss != NULL)
                     ss = super(ss);
-                forall (v, k in ss)
+                forall (k in sort(keys(ss)))
                 {
                     if (!typeof(k) == "string")
                         continue;
-                    printf("%15s: %a\n", k, v);
+                    printf("%15s: %a\n", k, ss[k]);
                 }
                 continue;
             }
