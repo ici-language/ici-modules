@@ -20,7 +20,7 @@ f_assert(void)
 	if (ici_typecheck("is", &expr, &message))
 	    return 1;
     }
-    if (expr)
+    if (expr == 0)
     {
 	error = message;
 	return 1;
