@@ -1,0 +1,471 @@
+/*
+ * This script extracts and converts suitably marked comments from
+ * the source files given on the command line, into one of a number
+ * of document formats. It is specificly designed to generate documentation
+ * on the external interface of ICI extension modules (as opposed, for
+ * example, documenting the code).
+ *
+ * The extracted comments are marked up with formatting commands
+ * based on their strict adherance to layout conventions. This
+ * script generally tries to avoid special markup tags in the source
+ * comments. But does want you to use a particular format.
+ *
+ * No tabs, only spaces.
+ */
+static myname = rpop(argv);
+static mydir = dirname(myname);
+static out; /* The output document formatter class. */
+static docs = [struct];
+
+/*
+ * Read bulk text until one of the chars in 'terms' from the current
+ * parse stream. Strip off leading white-space from each line.
+ * Return the text.
+ */
+static
+inline_text(term)
+{
+    t := gettokens(currentfile(), "", term)[0];
+    t = gsub(t, #^\s*#, "");
+    return gsub(t, #(^|\n) *#, "\\1");
+}
+
+static html = [class
+
+    in_dl = 0,
+    
+    fname(module) {return sprintf("ici%s.html", module);}
+
+    start(module)
+    {
+        auto head = inline_text("*");
+            <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+            <HTML>
+            <HEAD>
+                <TITLE>The ICI %s module</TITLE>
+                <STYLE TYPE="text/css" TITLE="Bright Colours">
+                    BODY {color: black}
+                    P {font-size: 12pt}
+                    H1 {font-size: 14pt; font-family: Arial;
+                        font-weight: bold}
+                    H2 {font-size: 12pt; font-family: Arial;
+                        font-style: italic; font-weight: bold}
+                    PRE {background: aliceblue}
+                </STYLE>
+                <META NAME="Generator" CONTENT="extract-doc-from-src.ici">
+                <META NAME="Keywords" CONTENT="ICI">
+                <META NAME="Description" CONTENT="ICI extension module documentation">
+            </HEAD>
+            <BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
+            *
+       return sprintf(head, module);
+    }
+    
+    finish() {return "</BODY>\n</HTML>\n";}
+    
+    italic(str) {return sprintf("<I>%s</I>", str);}
+    
+    intro_head(module)
+    {
+        return sprintf("<H1>The ICI %s module - Introduction</H1>\n", module);
+    }
+
+    topics_head() {return sprintf("<H1>Details</H1>\n");}
+    
+    heading2(str) {return sprintf("<H2>%s</H2>\n", str);}
+    
+    code(text)
+    {
+        /*
+         * Indent the code block by 4 spaces, and use <PRE> format.
+         */
+        return sprintf("<PRE>%s</PRE>\n",
+            gsub(text, #(^|\n)(.*)#, "\\1    \\2"));
+    }
+    
+    index(entry, sub_entry) {return "";}
+
+    esc(t)
+    {
+        t = gsub(t, #&#, "&amp;");
+        t = gsub(t, #<#, "&lt;");
+        t = gsub(t, #>#, "&gt;");
+        t = gsub(t, #"#, "&quot;"); /*"*/
+        return t;
+    }
+
+    body(text) {return sprintf("<P ALIGN=\"left\">%s</P>\n", text);}
+
+    tagged(subject, body, deep)
+    {
+        auto table = inline_text("*");
+            <TABLE ALIGN="left" BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH="100%%">
+            <TR ALIGN="left" VALIGN="top">
+                <TD WIDTH=%d><I>%s</I></TD>
+                <TD>%s</TD>
+            </TR>
+            </TABLE>
+            <P>&nbsp;<BR></P>
+            *
+        return sprintf(table, 60 + 60 * deep, subject, body);
+    }    
+];
+
+static mml = [class
+
+    fname(module) {return sprintf("ici%s.mml");}
+
+    start(title) {return "";}
+    
+    finish() {return "";}
+
+    italic(str) {return sprintf("<italic>%s<noitalic>", str);}
+    
+    intro_head(module) {return sprintf("<Heading1>Introduction\n");}
+    
+    topics_head() {return sprintf("<Heading1>Details\n");}
+    
+    heading2(str) {return sprintf("<Heading2>%s\n", str);}
+    
+    code(text)
+    {
+        text = gsub(text, # #, "\\ ");
+        text = gsub(text, #\n#, "<HardReturn>\n");
+        text = gsub(text, #<HardReturn>\n$#, "\n"); /* But not at end. */
+        return sprintf("<CodeIn1cm>\\ %s", text);
+    }
+    
+    index(entry, sub_entry)
+    {
+        return sprintf("<Marker <MType 2> <MText `%s, %s'> >", entry, sub_entry);
+    }
+    
+    esc(t)
+    {
+        t = gsub(t, #([<>])#, "\\\1");
+        return t;
+    }
+    
+    body(text) {return sprintf("<Body>%s", body);}
+    
+    tagged(subject, body, deep)
+    {
+        if (deep)
+            tag := "TagIn2cm";
+        else
+            tag := "TagIn4cm";
+        return sprintf("<%s><italic>%s<noitalic><Tab>%s", tag, subject, body);
+    }
+];
+
+static man = [class
+
+    fname(module) {return sprintf("ici%s.1", module);}
+
+    start(title)
+    {
+        return sprintf
+        (
+            ".TH ici%s 1 \"The ICI Programming Language\" "
+                "\"\" \"The ICI Programming Language\"\n",
+            title
+        );
+    }
+
+    finish() {return "";}
+
+    italic(str) {return sprintf("\\fI%s\\fP", str);}
+    
+    intro_head(module)
+    {
+        return sprintf
+        (
+            ".SH \"NAME\"\nici%s - The ICI %s module\n"
+            ".SH \"DESCRIPTION\"\n",
+            module,
+            module
+        );
+    }
+
+    topics_head() {return ".SH \"DETAILS\"\n";}
+
+    heading2(str) {return sprintf(".SS \"%s\"\n", str);}
+    
+    code(text)
+    {
+        text = gsub(text, #'# /*'*/, "\\'");
+        return sprintf(".P\n.RS 5\n.nf\n%s\n.fi\n.RE 1\n", text);
+    }
+    
+    index(entry, sub_entry) {return "";}
+    
+    esc(t)
+    {
+        t = gsub(t, #\\#, "\\\\");
+        return t;
+    }
+    
+    body(text)
+    {
+        text = gsub(text, #'# /*'*/, "\\'");
+        return sprintf(".P\n%s\n", text);
+    }
+    
+    tagged(subject, body, deep)
+    {
+        body = gsub(body, #'# /*'*/, "\\'");
+        if (subject!= "")
+            return sprintf(".TP %d\n\\fB%s\\fP\n%s\n", 8 + deep * 8, subject, body);
+        else
+            return sprintf(".IP \"\" %d\n%s\n", 8 + deep * 8, body);
+    }
+
+];
+
+static
+usage()
+{
+    printf(stderr, "usage: ici %s man|html|mml source-files...\n", myname);
+    exit(1);
+}
+
+/*
+ * Process the command line...
+ */
+for (;;)
+{
+    switch (a = rpop(argv))
+    {
+    case "-v":
+        verbose = 1;
+        continue;
+        
+    case "-o":
+        if ((out_file = rpop(argv)) == NULL)
+            usage();
+        continue;
+    }
+    break;
+}
+if (a == NULL)
+    usage();
+out = [struct man = man, html = html, mml = mml][a];
+if (out == NULL)
+    usage();
+files = argv;
+
+/*
+ * Like strcat(), but does printf formatting at the same time.
+ */
+static
+strcatf(str)
+{
+    auto vargs;
+    
+    return strcat(str, call(sprintf, vargs));
+}
+
+static
+font_subs(s)
+{
+    /*
+     * <non-word>'...'<non-word> changes ... to italic and removes the 's.
+     */
+    s = smash(s, #(^|\n|\W)'([^']+)'(?=(\W|\n|$))#, "\\0", "\\1", "\\2", 1);
+    for (i = 2; i < nels(s); i += 3)
+        s[i] = out:italic(s[i]);
+    return implode(s);
+}
+
+/*
+ * Neaten up a block of text by reducing all sequences of white space
+ * to a single space, and re-wrapping all lines. After this, there is
+ * *no* leading or trailing white-space.
+ */
+static
+trim_off_space(s)
+{
+    //s = s ~~ #(?s)\s*(.*?)\s*$#;
+    s = gsub(s, #\s+#, " ");
+    s = gsub(s, #((?s).{50}.*?) #, "\\1\n");
+    s = s ~~ #\s*((?s).*?)\s*$#;
+    return s;
+}
+
+forall (file in files)
+{
+    src := getfile(file);
+    if (src !~ #--ici-#)
+    {
+        /*
+         * This is not strictly necessary, but skip early if there are
+         * no suitbale comments in this file.
+         */
+        continue;
+    }
+    /*
+     * The following line retrieves all the slash-star comment that start
+     * Note the in-pattern setting of the DOTALL options with (?s) to allow
+     * matching of newlines in slash-star comments and the use of ? to
+     * minimise .* (i.e. make it non-greedy and match the first comment
+     * end that comes along).
+     */
+    src = smash(src, #(^|\n)((?s)/\*.*?\*/)#, "\\2");
+    while (text = rpop(src))
+    {
+        /*
+         * Extract the module this comment applies to, skip the whole
+         * grusome business if there isn't one.
+         */
+        if ((module = (text ~~ #--ici-(\w+)--#)) == NULL)
+            continue;
+        if (text ~ #\t#)
+            printf("Warning: tabs in comments of module %s.\n", module);
+        /*
+         * Strip the comment text down to its body. This is defined as
+         * the lines that start with space then a star, minus the space,
+         * the star, and any single following space. We also strip
+         * trailing spaces on lines. Finally, escape special chars
+         * as required by the output format.
+         */
+        text = implode(smash(text, # +\* ?(.*?) *\n#, "\\1\n"));
+        text = out:esc(text);
+
+        if (docs[module] == NULL)
+        {
+            /*
+             * This is our first item for this module.
+             */
+            docs[module] = struct
+            (
+                "title", out:start(module),
+                "intro", array(),
+                "topics", array(),                
+            );           
+        }
+        module = docs[module];
+        if (text ~ #--intro--#)
+        {
+            push(module.intro, item = strbuf());
+        }
+        else if (text ~ #--topic--#)
+        {
+            push(module.topics, item = strbuf());
+            bits = text ~~~ #\s*(.*)\n\n((?s).*)$#;
+            head = bits[0];
+            text = bits[1];
+            strcat(item, out:heading2(head));
+        }
+        /*
+         * Remove the api indicator lines.
+         */
+        text = gsub(text, #.*--ici-.*\n#, "");
+
+        /*
+         * Break the text into paragraphs. (?s) to dot newlines, .*? to
+         * make non-greedy.
+         */
+        paras = smash(text, #((?s).*?\n)\n#, "\\1", 1);
+        tag = "";
+        forall (para in paras)
+        {
+            if
+            (
+                para ~ #^\S.* {3} *\S#
+                ||
+                para ~ #^\S.*:\n {3} *\S#
+            )
+            {
+                /*
+                 * Hmm. First line not indented at all, but a big white-space
+                 * gap (3 or more space). Or, ends in a : and next line is
+                 * indented 3 or more.
+                 */
+                if (para ~ #^.*:\n#)
+                {
+                    indent := nels(para ~~ #^.*:\n( +)\S#);
+                    subject = para ~~ #^(.*):#;
+                    para = para ~~ #^.*:\n((?s).*)$#;
+                }
+                else
+                {
+                    indent := nels(para ~~ #^(\S.* {3} *)\S#);
+                    subject := interval(para, 0, indent);
+                    para = interval(para, indent);
+                }
+                subject = trim_off_space(subject);
+                para = trim_off_space(para);
+                para = font_subs(para);
+                deep := indent > 17;
+                strcat(item, out:tagged(subject, para, deep));
+                last_para = "tagged";
+            }
+            else if (para ~ #^ {3}# && last_para == "tagged")
+            {
+                /*
+                 * Indented, and last paragraph was a tagged paragraph.
+                 * This looks like a continuation.
+                 */
+                para = font_subs(para);
+                para = trim_off_space(para);
+                strcat(item, out:tagged("", para, deep));
+            }
+            else if (para ~ #^\S#)
+            {
+                para = font_subs(para);
+                para = trim_off_space(para);
+                strcat(item, out:body(para));
+                last_para = "body";
+            }
+            else
+            {
+                /*
+                 * This must be pre-formatted text.
+                 */
+                if (tag != "CodeIn1cm")
+                {
+                    /*
+                     * First in a possible sequence. Work out the prevailing
+                     * indent.
+                     */
+                    indent := para ~~ #(^ *)#; 
+                }
+                para = gsub(para, #\s*$#, "");
+                para = gsub(para, regexp("(^|\\n)" + indent), "\\1");
+                strcat(item, out:code(para));
+                last_para = "code";
+            }
+        }
+    }
+}
+
+static
+cmp_topics(a, b)
+{
+    for (i = 0; a[i] == b[i]; ++i)
+        ;
+    a = interval(a, i);
+    b = interval(b, i);
+    if (a ~ #^.*=#)
+        a ~~= #^.*=((?s).*)$#;
+    if (b ~ #^.*=#)
+        b ~~= #^.*=((?s).*)$#;
+    a ~~= #\s*((?s).*)$#;
+    b ~~= #\s*((?s).*)$#;
+    return cmp(a, b);
+}
+
+forall (content, mname in docs)
+{
+    f := fopen(out:fname(mname), "w");
+    put(content.title, f);
+    put(out:intro_head(mname), f);
+    put(implode(content.intro), f);
+    if (nels(content.topics) > 0)
+    {
+        put(out:topics_head(), f);
+        put(implode(sort(content.topics, cmp_topics)), f);
+    }
+    put(out:finish(), f);
+    close(f);
+}
