@@ -7,6 +7,7 @@
 CFLAGS	= $(PIC) $(OPTIM) -I$(ICISDK) -I. $(ICICFLAGS)
 OBJS	= $(ICIOBJS)
 LIB	= $(ICIV)$(MOD).$(SOSUFFIX)
+$(OTHERDEFS)
 
 $(LIB): $(OBJS)
 	$(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
@@ -19,3 +20,5 @@ clobber: clean
 
 depend:
 	mkdep $(CFLAGS) $(ICISRCS)
+
+$(OTHERRULES)

@@ -121,7 +121,7 @@ static subs = [struct
      * ICICFLAGS C compiler options in addition to the others already
      * mentioned here.
      */
-    ICICFLAGS = [struct bsd = "-DBSD_4", default = ""],
+    ICICFLAGS = [struct bsd = "-DBSD_4", sol2 = "-DSUNOS5", default = ""],
 
     /*
      * ICILDFLAGS Linker options in addition to the others already
@@ -139,6 +139,12 @@ static subs = [struct
      * LIBS Any other libs that should be linked in.
      */
     LIBS = "",
+    
+    OTHERDEFS =
+        [struct
+            sol2 = "CC\t= gcc -pipe",
+            default = "",
+        ],
     
     MAKEIN = [func(){return makein;}],
     MAKEOUT = [func(){return makeout;}],

@@ -58,13 +58,15 @@
 #include <sys/param.h>
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__sun__)
 #define SETPGRP_0_ARGS
 #endif
+
 #ifdef  BSD4_4
 #define SETPGRP_2_ARGS
 #endif
-#if defined __linux__ && BSD4_4
+
+#if defined(__linux__) && defined(BSD4_4)
 #error __linux__ or BSD4_4 for setpgrp(), not both
 #endif
 
@@ -1659,14 +1661,20 @@ string_to_resource(object_t *what)
         return RLIMIT_DATA;
     if (what == ICISO(fsize))
         return RLIMIT_FSIZE;
-    if (what == ICISO(memlock))
-        return RLIMIT_MEMLOCK;
+#   if defined(RLIMIT_MEMLOCK)
+	if (what == ICISO(memlock))
+	    return RLIMIT_MEMLOCK;
+#   endif
     if (what == ICISO(nofile))
         return RLIMIT_NOFILE;
-    if (what == ICISO(nproc))
-        return RLIMIT_NPROC;
-    if (what == ICISO(rss))
-        return RLIMIT_RSS;
+#   if defined(RLIMIT_NPROC)
+	if (what == ICISO(nproc))
+	    return RLIMIT_NPROC;
+#   endif
+#   if defined(RLIMIT_RSS)
+	if (what == ICISO(rss))
+	    return RLIMIT_RSS;
+#   endif
     if (what == ICISO(stack))
         return RLIMIT_STACK;
 
