@@ -1,5 +1,5 @@
 /*
- * $Id: ici3HTML.ici,v 1.8 2002/01/27 20:54:18 atrn Exp $
+ * $Id: ici3HTML.ici,v 1.9 2002/03/13 04:40:28 atrn Exp $
  *
  *
  * HTML element classes for ICI.
@@ -1411,6 +1411,20 @@ extern TableCell = [class: TableElement,
 
 
 /**
+ * HTML.EmptyTableCell  --  a cell containing a non-breaking space
+ */
+extern EmptyTableCell = [class: TableCell,
+
+	new()
+	{
+		this = this:^new();
+		this:add(NonBreakingSpace);
+		return this;
+	}
+
+];
+
+/**
  * HTML.TableHeader  --  a table heading cell.
  */
 extern TableHeader = [class: TableElement,
@@ -1852,6 +1866,9 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici3HTML.ici,v $
+ * Revision 1.9  2002/03/13 04:40:28  atrn
+ * Add trademark entities
+ *
  * Revision 1.8  2002/01/27 20:54:18  atrn
  * Added support for other types of lists, a method to get all the query
  * string parameters, add a character encoding spec. to the document
