@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.6 2003/01/23 12:52:38 timl Exp $
+ * $Id: xml.c,v 1.7 2003/01/27 05:52:32 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -15,7 +15,13 @@
  */
 
 /*
- * The ICI xml modules provides stuff..
+ * The module provides a direct ICI interface to Jame Clark's expat XML parser. It doesn't try to
+ * do much more than wrap the C functions and make them usable from
+ * ICI. Function names are kept the same (with the ``XML_'') and calling
+ * conventions are kept as close to those of the C API as possible.
+ * Additional functionality is provided in the ici portion of the module.
+ * Functions are provided to read an XML stream into memory, process it
+ * and write it back out.
  *
  * This --intro-- formas part of the --ici-xml-- documentation.
  */
