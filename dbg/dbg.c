@@ -2,12 +2,12 @@
 #include <icistr.h>
 #include <icistr-setup.h>
 
-static ici_obj_t	*dbg_module;
-static int		dbg_funcs_got;
-static ici_obj_t	*dbg_error_func;
-static ici_obj_t	*dbg_src_func;
-static ici_obj_t	*dbg_fncall_func;
-static ici_obj_t	*dbg_fnresult_func;
+static ici_obj_t        *dbg_module;
+static int              dbg_funcs_got;
+static ici_obj_t        *dbg_error_func;
+static ici_obj_t        *dbg_src_func;
+static ici_obj_t        *dbg_fncall_func;
+static ici_obj_t        *dbg_fnresult_func;
 
 /*
  * Get the pointers to the ICI coded functions. We have to do this
@@ -19,15 +19,15 @@ dbg_get_funcs(void)
 {
     if
     (
-	(dbg_error_func = ici_fetch(dbg_module, ICISO(dbg_error))) == NULL
-	||
-	(dbg_src_func = ici_fetch(dbg_module, ICISO(dbg_src))) == NULL
-	||
-	(dbg_fncall_func = ici_fetch(dbg_module, ICISO(dbg_fncall))) == NULL
-	||
-	(dbg_fnresult_func = ici_fetch(dbg_module, ICISO(dbg_fnresult))) == NULL
+        (dbg_error_func = ici_fetch(dbg_module, ICISO(dbg_error))) == NULL
+        ||
+        (dbg_src_func = ici_fetch(dbg_module, ICISO(dbg_src))) == NULL
+        ||
+        (dbg_fncall_func = ici_fetch(dbg_module, ICISO(dbg_fncall))) == NULL
+        ||
+        (dbg_fnresult_func = ici_fetch(dbg_module, ICISO(dbg_fnresult))) == NULL
     )
-	return 1;
+        return 1;
     dbg_funcs_got = 1;
     return 0;
 }
@@ -52,13 +52,13 @@ ici_debug_error(char *err, ici_src_t *src)
     ici_debug_enabled = 0;
     if (!dbg_funcs_got && dbg_get_funcs())
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     if (ici_func(dbg_error_func, "soi", ici_error, src->s_filename, src->s_lineno))
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     ici_debug_enabled = 1;
 }
@@ -75,26 +75,26 @@ ici_debug_error(char *err, ici_src_t *src)
 static void
 ici_debug_fncall(ici_obj_t *o, ici_obj_t **ap, int nargs)
 {
-    ici_array_t		*a;
+    ici_array_t         *a;
 
     ici_debug_enabled = 0;
     if (!dbg_funcs_got && dbg_get_funcs())
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     if ((a = ici_array_new(nargs)) == NULL)
     {
         dbg_fail();
-	return;
+        return;
     }
     while (nargs-- > 0)
-	*a->a_top++ = *ap--;
+        *a->a_top++ = *ap--;
     if (ici_func(dbg_fncall_func, "oo", o, a))
     {
-	ici_decref(a);
-	dbg_fail();
-	return;
+        ici_decref(a);
+        dbg_fail();
+        return;
     }
     ici_decref(a);
     ici_debug_enabled = 1;
@@ -110,16 +110,17 @@ ici_debug_fncall(ici_obj_t *o, ici_obj_t **ap, int nargs)
 static void
 ici_debug_fnresult(ici_obj_t *o)
 {
+
     ici_debug_enabled = 0;
     if (!dbg_funcs_got && dbg_get_funcs())
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     if (ici_func(dbg_fnresult_func, "o", o))
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     ici_debug_enabled = 1;
 }
@@ -137,13 +138,13 @@ ici_debug_src(ici_src_t *src)
     ici_debug_enabled = 0;
     if (!dbg_funcs_got && dbg_get_funcs())
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     if (ici_func(dbg_src_func, "oi", src->s_filename, src->s_lineno))
     {
-	dbg_fail();
-	return;
+        dbg_fail();
+        return;
     }
     ici_debug_enabled = 1;
 }
@@ -206,7 +207,7 @@ ici_dbg_library_init(void)
         /*
         {CF_OBJ, "break",       f_debug_break      },
         {CF_OBJ, "view",        f_WIDB_view_object },
-	*/
+        */
         {CF_OBJ}
     };
 

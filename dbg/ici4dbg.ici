@@ -49,7 +49,7 @@ summary_line(fname, lineno, vs)
     lines := files[fname];
     if ((st := lines[lineno - 1]) == NULL)
         st := "?";
-    //st = st ~~ #\s*(.*)#;
+    st = gsub(dt, #\s+#, " ");
 
     /*
      * -sl:15-|-st:?-|-bt:?-
