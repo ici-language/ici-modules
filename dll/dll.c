@@ -6,7 +6,7 @@
 #include "dllfunc.h"
 
 /*
- * dll.xxx.DECL(func-name, ...)
+ * dll.xxx:DECL(func-name, ...)
  *
  * 'DECL' allows the explicit declaration of functions that, for some
  * reason, can't be relied on to deduce their interface from the actual

@@ -13,38 +13,6 @@ int                     dllfunc_tcode;
 #endif
 
 /*
- * Argument translation
- *
- * The linkage function will follow simple rules to translate actual
- * arguments made in the ICI call into actual arguments passed to the
- * library function.
- *
- * int                  Will be passed as a 32 bit integer.
- *
- * string               Will be passed as a pointer to the internal
- *                      character data of the string. If the string
- *                      is atomic (as almost all strings are), the
- *                      function must not modify the content in any way.
- *                      If the string is non-atomic (as created by
- *                      'strbuf()') it may be modified within its
- *                      length constraints. Note that the internal
- *                      representation of ICI strings have a guard
- *                      nul character just beyond their known length,
- *                      and thus can be used as C nul-terminated strings.
- *                      But they may also have internal nul characters
- *                      of course.
- *
- * NULL                 A 32 bit 0 will be passed.
- *
- * array of strings     XXXmore
- *
- * Up to 8 32 bit words worth of arguments may be passed to the
- * library function.
- *
- * This --topic-- forms part of the --ici-dll-- documentation.
- */
-
-/*
  * Call the function at addr, which has the function style given by ct,
  * with the nargs 32 bit words of arguments stored in args and return
  * the 32 bit word the function returned.
@@ -264,6 +232,47 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
         ici_free(s);
     }
     /*
+     * 1. Argument translation
+     *
+     * The linkage function will follow simple rules to translate actual
+     * arguments made in the ICI call into actual arguments passed to the
+     * library function.
+     *
+     * Up to 8 32 bit words worth of arguments may be passed to the
+     * library function.
+     *
+     * int                  Will be passed as a 32 bit integer.
+     *
+     * string               Will be passed as a pointer to the internal
+     *                      character data of the string. If the string
+     *                      is atomic (as almost all strings are), the
+     *                      function must not modify the content in any way.
+     *                      If the string is non-atomic (as created by
+     *                      'strbuf()') it may be modified within its
+     *                      length constraints. Note that the internal
+     *                      representation of ICI strings have a guard
+     *                      nul character just beyond their known length,
+     *                      and thus can be used as C nul-terminated strings.
+     *                      But they may also have internal nul characters
+     *                      of course.
+     *
+     * NULL                 A 32 bit 0 will be passed.
+     *
+     * array of strings     Will be conveted to an argv style NULL
+     *                      terminated array of nul terminated strings
+     *                      and passed to the function.
+     *
+     * &int                 A pointer to an int will be passed as
+     *                      a pointer to a 32 bit integer value, where
+     *                      that value may be updated by the called
+     *                      function. Upon return, the updated value will
+     *                      be converted to an ICI integer and the pointed
+     *                      to ICI value updated.
+     *
+     * This --topic-- forms part of the --ici-dll-- documentation.
+     */
+ 
+    /*
      * Allocate and build an array of arguments as 32 bit words. Left-most
      * argument is first in array.
      */
@@ -328,6 +337,14 @@ call_dllfunc(ici_obj_t *object, ici_obj_t *subject)
             *argp = (long)memof(o)->m_base;
         }
     }
+    /*
+     * 1. Return value translation
+     *
+     * Currently the return value is assumed to be a 32 bit int and
+     * is returned as an ICI int.
+     *
+     * This --topic-- forms part of the --ici-dll-- documentation.
+     */
     ret = call_long(df->df_calltype, df->df_addr, nargs, args);
     /*
      * Re-scan our arguments for any pointers (to int) and update the
@@ -377,6 +394,35 @@ free_dllfunc(ici_obj_t *o)
 {
     ici_tfree(o, dllfunc_t);
 }
+
+/*
+ * 1. Calling conventions - CALLTYPE
+ *
+ * Even within a single archietcture and operating system, there
+ * are sometimes different calling conventions (meaning such things
+ * as the manner of packing parameters onto the stack and how the
+ * return value is passed back).
+ *
+ * By default, for any particular function, the 'dll' module will
+ * in assume the normal calling convention that an unadorned C
+ * declaration will produce unless the name is "decorated" in a manner
+ * that indicates otherwise.
+ *
+ * In cases where even this fails (Windows API calls) it is possible
+ * to "declare" that all the functions in a given library have a
+ * certain calling convention by assigning that convention to the
+ * 'CALLTYPE' field of the library. For example:
+ *
+ *  dll.user32.CALLTYPE = "winapi";
+ *  dll.kernel32.CALLTYPE = "winapi";
+ *  dll.advapi32.CALLTYPE = "winapi";
+ *
+ * This is currently only necessary for Windows. The values that can
+ * be assigned are: 'stdcall' or 'winapi', which are equivalent,
+ * 'fastcall', or 'cdecl'. 'cdecl' is the default.
+ *
+ * This --topic-- forms part of the --ici-dll-- documentation.
+ */
 
 /*
  * Make a new ICI func object.  The address of the actual function is not

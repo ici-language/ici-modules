@@ -42,7 +42,7 @@ clobber: clean
 depend:
 	mkdep $(CFLAGS) $(C_SRC)
 
-test:
+test tst:
 	ici tst-$(MOD).ici
 
 install: $(LIBINSTALLS) ici$(MOD).1 ici$(MOD).html

@@ -30,9 +30,9 @@ clobber: clean
 
 depend:
 
-test:
+test tst:
 	ici tst-$(MOD).ici
 
-install: $(LIBINSTALLS) ici$(MOD).1
+install: $(LIBINSTALLS) ici$(MOD).1 ici$(MOD).html
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
 	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1

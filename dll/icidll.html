@@ -44,11 +44,20 @@ and a special internal linkage function created. This
 is assigned to that field of the loaded library object.
 Thus subsequent references to the same function name
 reference the created linkage function.</P>
+<P ALIGN="left">Of course actual calls to the function must have arguments
+and return values translated between ICI values and
+the native forms. By default, the <I>dll</I> module
+will use a set of standard conventions for such translatations.
+However for cases where the defaults are not sufficient,
+a mechanisn for pre-declaring the calling conventions
+of the function exists.</P>
 <H1>Details</H1>
 <H2>Argument translation</H2>
 <P ALIGN="left">The linkage function will follow simple rules to translate
 actual arguments made in the ICI call into actual arguments
 passed to the library function.</P>
+<P ALIGN="left">Up to 8 32 bit words worth of arguments may be passed
+to the library function.</P>
 <DT>int</DT>
 <DD CLASS="DefnIn4cm">Will be passed as a 32 bit integer.
 </DD>
@@ -68,11 +77,42 @@ of course.
 <DD CLASS="DefnIn4cm">A 32 bit 0 will be passed.
 </DD>
 <DT>array of strings</DT>
-<DD CLASS="DefnIn4cm">XXXmore
+<DD CLASS="DefnIn4cm">Will be conveted to an argv style NULL terminated array
+of nul terminated strings and passed to the function.
 </DD>
-<P ALIGN="left">Up to 8 32 bit words worth of arguments may be passed
-to the library function.</P>
-<H2>dll.xxx.DECL(func-name, ...)</H2>
+<DT>&amp;int</DT>
+<DD CLASS="DefnIn4cm">A pointer to an int will be passed as a pointer to
+a 32 bit integer value, where that value may be updated
+by the called function. Upon return, the updated value
+will be converted to an ICI integer and the pointed
+to ICI value updated.
+</DD>
+<H2>Calling conventions - CALLTYPE</H2>
+<P ALIGN="left">Even within a single archietcture and operating system,
+there are sometimes different calling conventions (meaning
+such things as the manner of packing parameters onto
+the stack and how the return value is passed back).</P>
+<P ALIGN="left">By default, for any particular function, the <I>dll</I>
+module will in assume the normal calling convention
+that an unadorned C declaration will produce unless
+the name is &quot;decorated&quot; in a manner that
+indicates otherwise.</P>
+<P ALIGN="left">In cases where even this fails (Windows API calls)
+it is possible to &quot;declare&quot; that all the
+functions in a given library have a certain calling
+convention by assigning that convention to the <I>CALLTYPE</I>
+field of the library. For example:</P>
+<PRE>    dll.user32.CALLTYPE = &quot;winapi&quot;;
+    dll.kernel32.CALLTYPE = &quot;winapi&quot;;
+    dll.advapi32.CALLTYPE = &quot;winapi&quot;;</PRE>
+<P ALIGN="left">This is currently only necessary for Windows. The values
+that can be assigned are: <I>stdcall</I> or <I>winapi</I>,
+which are equivalent, <I>fastcall</I>, or <I>cdecl</I>.
+<I>cdecl</I> is the default.</P>
+<H2>Return value translation</H2>
+<P ALIGN="left">Currently the return value is assumed to be a 32 bit
+int and is returned as an ICI int.</P>
+<H2>dll.xxx:DECL(func-name, ...)</H2>
 <P ALIGN="left"><I>DECL</I> allows the explicit declaration of functions
 that, for some reason, can't be relied on to deduce
 their interface from the actual paraeters. For example,

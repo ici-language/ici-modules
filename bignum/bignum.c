@@ -87,7 +87,7 @@ ici_bignum_bignum(void)
 /* 
  * bignum = bignum.create(ndigits)
  *
- * Create a bignum with room to store ndigits digits.
+ * Create a bignum with room to store 'ndigits' digits.
  *
  * This --topic-- forms part of the --ici-bignum-- documentation.
  */
@@ -111,6 +111,8 @@ ici_bignum_create(void)
 
 /* 
  * string = bignum.tostring(bignum)
+ *
+ * Return a textual representation of 'bignum'.
  *
  * This --topic-- forms part of the --ici-bignum-- documentation.
  */
@@ -161,6 +163,8 @@ glue_NN_N(void)
 /*
  * bignum = bignum.div(bignum, bignum)
  *
+ * Return the bignum floor of dividing the first bignum by the second.
+ *
  * This --topic-- forms part of the --ici-bignum-- documentation.
  */
 static int
@@ -184,6 +188,9 @@ ici_bignum_div(void)
 /*
  * int = bignum.compare(bignum, bignum)
  *
+ * Return -1, 0, or 1 depending if the first bignum is less than,
+ * equal to, or greater than the second.
+ *
  * This --topic-- forms part of the --ici-bignum-- documentation.
  */
 static int
@@ -205,46 +212,66 @@ static cfunc_t ici_bignum_cfuncs[] =
     {CF_OBJ, "div",      ici_bignum_div},
     {CF_OBJ, "compare",  ici_bignum_compare},
 
-/*
- * bignum = bignum.negate(bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bignum = bignum.negate(bignum)
+     *
+     * Return the negative of the given bignum.
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "negate",   glue_N_N,  BzNegate},
 
-/*
- * bignum = bignum.abs(bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bignum = bignum.abs(bignum)
+     *
+     * Return the absolute value of the given bignum.
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "abs",      glue_N_N,  BzAbs},
 
-/*
- * bignum = bignum.add(bignum, bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bignum = bignum.add(bignum, bignum)
+     *
+     * Return the sum of the two bignums.
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "add",      glue_NN_N, BzAdd},
 
-/*
- * bignum = bignum.sub(bignum, bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bignum = bignum.sub(bignum, bignum)
+     *
+     * Return the bignum result of subtracting the second bignum
+     * from the first.
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "sub",      glue_NN_N, BzSubtract},
 
-/*
- * bignum = bignum.mult(bignum, bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bignum = bignum.mult(bignum, bignum)
+     *
+     * Return the product of the two bignums.
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "mult",     glue_NN_N, BzMultiply},
 
-/*
- * bignum = bignum.mod(bignum, bignum)
- *
- * This --topic-- forms part of the --ici-bignum-- documentation.
- */
+    /*
+     * bnr = bignum.mod(bna, bnb)
+     *
+     * Return the positive remainder from dividing the bignum 'bna'
+     * by the bignum 'bnb'. That is:
+     *
+     *  0 <= bignum.mod(bna, bnb) < |bnb|
+     *
+     * and
+     *
+     *  bna == bignum.div(bna, bnb) * bnb + bignum.mod(bna, bnb)
+     *
+     * This --topic-- forms part of the --ici-bignum-- documentation.
+     */
     {CF_OBJ, "mod",      glue_NN_N, BzMod},
     {CF_OBJ}
 };

@@ -35,6 +35,13 @@ int                     dllmanager_tcode;
  * loaded library object. Thus subsequent references to the same function
  * name reference the created linkage function.
  *
+ * Of course actual calls to the function must have arguments and
+ * return values translated between ICI values and the native forms.
+ * By default, the 'dll' module will use a set of standard conventions
+ * for such translatations. However for cases where the defaults are
+ * not sufficient, a mechanisn for pre-declaring the calling conventions
+ * of the function exists.
+ *
  * This --intro-- and --synopsis-- are part of --ici-dll-- documentation.
  */
  
