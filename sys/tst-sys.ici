@@ -6,9 +6,6 @@
 t := sys.time();
 if (typeof(t) != "int")
     fail("sys.time() didn't return an int");
-x := sys.stat("c:\\autoexec.bat");
-if (x.mtime >= t)
-    fail("sys.stat().mtime > now");
 
 sys.chdir(".");
 
@@ -32,7 +29,7 @@ sys.close(f);
 remove("junk-test-file");
 
 
-if (ver() !~ #Win32#)
+if (version() !~ #Win32#)
 {
     
 }
