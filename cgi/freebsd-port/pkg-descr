@@ -1,4 +1,0 @@
-The ICI CGI module provides a number of utility functions
-for creating CGI programs for use with HTTP servers. The
-functions simplify form processing and processing of
-encoded data.
