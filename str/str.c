@@ -256,8 +256,8 @@ object_t *
 ici_str_library_init(void)
 {
     if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "str"))
-    return NULL;
+        return NULL;
     if (init_ici_str())
-    return NULL;
+        return NULL;
     return objof(ici_module_new(ici_str_cfuncs));
 }
