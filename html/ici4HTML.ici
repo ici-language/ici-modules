@@ -1,5 +1,5 @@
 /*
- * $Id: ici4HTML.ici,v 1.1 2003/01/27 10:51:03 atrn Exp $
+ * $Id: ici4HTML.ici,v 1.2 2003/01/30 13:00:59 timl Exp $
  *
  *
  * HTML element classes for ICI.
@@ -62,7 +62,7 @@ static encode(s)
  * complete page or complex document structure and the use of embedded
  * functions simplifies the dynamic generation of content.
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Element = [class
 
@@ -75,7 +75,7 @@ extern Element = [class
      * element is created with the given tag and body text and no
      * attributes or children.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(tag, text)
     {
@@ -106,7 +106,7 @@ extern Element = [class
      *
      * The method returns the instance to allow method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output(file)
     {
@@ -126,7 +126,7 @@ extern Element = [class
      *
      * Output the element's start tag and attributes.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_head(file)
     {
@@ -141,7 +141,7 @@ extern Element = [class
      *
      * Output the element's attributes for use in a HTML tag.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_attr(file)
     {
@@ -163,7 +163,7 @@ extern Element = [class
      *
      * Output the element's body and children to the given file.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_body(file)
     {
@@ -187,7 +187,7 @@ extern Element = [class
      *
      * Output the element's end tag.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_tail(file)
     {
@@ -203,7 +203,7 @@ extern Element = [class
      * Return the element's body text.  If the element has
      * no body text an empty string is returned.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     get_text()
     {
@@ -217,7 +217,7 @@ extern Element = [class
      * Set the element's body text to the given string.
      * Returns the instance for method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     text(text)
     {
@@ -231,7 +231,7 @@ extern Element = [class
      *
      * Define the class of an element.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     klass(str)
     {
@@ -245,7 +245,7 @@ extern Element = [class
      *
      * Define the id of an element.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     id(str)
     {
@@ -259,7 +259,7 @@ extern Element = [class
      *
      * Define a style attribute for an element.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     style(str)
     {
@@ -273,7 +273,7 @@ extern Element = [class
      *
      * Append the given string to the element's body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     add_text(text)
     {
@@ -291,7 +291,7 @@ extern Element = [class
      *
      * Returns the element instance for method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     add()
     {
@@ -312,7 +312,7 @@ extern Element = [class
      *
      * Return the array storing the element's children.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     children()
     {
@@ -328,7 +328,7 @@ extern Element = [class
      * it is overwritten, if it does not exist it is created.
      * Returns the element instance for method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     attr(name, val)
     {
@@ -343,7 +343,7 @@ extern Element = [class
      * Return the value of the named attribute.  Returns NULL
      * if there is no such attribute for this element.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     get_attr(name)
     {
@@ -360,7 +360,7 @@ extern Element = [class
  * so no end tag is generated for type of this element.  All other behaviour is
  * the same as HTML.Element.
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 static NoEndTagElement = [class: Element,
 
@@ -380,7 +380,7 @@ static NoEndTagElement = [class: Element,
  * the output stream.  The intent is to allow any HTML content
  * to be used with this class hierarchy.
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Markup = [class: NoEndTagElement,
 
@@ -392,7 +392,7 @@ extern Markup = [class: NoEndTagElement,
      * during output.  Markup elements allow arbitrary
      * data to be embedded within a document.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -405,7 +405,7 @@ extern Markup = [class: NoEndTagElement,
      *
      * Override Element:output_head() to do nothing.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_head(file)
     {
@@ -421,7 +421,7 @@ extern Markup = [class: NoEndTagElement,
      * (although we inherit it, the behaviour is nullified
      * by not outputting any child elements).
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_body(file)
     {
@@ -441,7 +441,7 @@ extern Markup = [class: NoEndTagElement,
  * tag and implements "output_tail()" to generate the "<p>".
  * Body output is done by HTML.Element.
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern P = [class: Element,
 
@@ -453,7 +453,7 @@ extern P = [class: Element,
      * as its body.  If no argument is passed the body is the
      * empty string.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -466,7 +466,7 @@ extern P = [class: Element,
      *
      * Override Element:output_head to do nothing.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_head(file)
     {
@@ -479,7 +479,7 @@ extern P = [class: Element,
      * Implement Element:output_tail() to output the
      * trailing paragraph tag.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_tail(file)
     {
@@ -492,7 +492,7 @@ extern P = [class: Element,
 /**
  * HTML.Big  --  wrapper element that displays its body text in a larger font
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Big = [class: Element,
 
@@ -507,7 +507,7 @@ extern Big = [class: Element,
 /**
  * HTML.Small  --  wrapper element that displays its body text in a smaller font
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Small = [class: Element,
 
@@ -522,7 +522,7 @@ extern Small = [class: Element,
 /**
  * HTML.Cite  --  wrapper element that displays its body text as a citation
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Cite = [class: Element,
 
@@ -537,7 +537,7 @@ extern Cite = [class: Element,
 /**
  * HTML.Code  --  wrapper element that displays its body text as program code
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Code = [class: Element,
 
@@ -552,7 +552,7 @@ extern Code = [class: Element,
 /**
  * HTML.Kbd  --  wrapper element that displays its body text as keyboard entered text
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Kbd = [class: Element,
 
@@ -567,7 +567,7 @@ extern Kbd = [class: Element,
 /**
  * HTML.Strike  --  wrapper element that displays its body text in a strikeout font
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Strike = [class: Element,
 
@@ -582,7 +582,7 @@ extern Strike = [class: Element,
 /**
  * HTML.Strong  --  wrapper element that displays its body text in a strong style
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Strong = [class: Element,
 
@@ -597,7 +597,7 @@ extern Strong = [class: Element,
 /**
  * HTML.Typewriter  --  wrapper element that displays its body text in a fixed width font
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Typewriter = [class: Element,
 
@@ -612,7 +612,7 @@ extern Typewriter = [class: Element,
 /**
  * HTML.Underline  -- wrapper element that displsus its body text with an underline
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Underline = [class: Element,
 
@@ -631,7 +631,7 @@ extern Underline = [class: Element,
  * used by any child elements.  It is a wrapper element
  * to control the presentation of its children.
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Font = [class: Element,
 
@@ -640,7 +640,7 @@ extern Font = [class: Element,
      *
      * Create a new Font element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -654,7 +654,7 @@ extern Font = [class: Element,
      * Set the typeface used with a Font element.
      * Returns the element instance to allow for method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     face(face)
     {
@@ -669,7 +669,7 @@ extern Font = [class: Element,
      * The size may be given as a integer or string.
      * Returns the element instance to allow for method chaining.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     size(size)
     {
@@ -683,7 +683,7 @@ extern Font = [class: Element,
      * Set the color used when drawing characters with a
      * font element.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     color(c)
     {
@@ -697,7 +697,7 @@ extern Font = [class: Element,
  * HTML.Bold  --  embolden child element text
  *
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Bold = [class: Element,
 
@@ -706,7 +706,7 @@ extern Bold = [class: Element,
      *
      * Create a new Bold element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -720,7 +720,7 @@ extern Bold = [class: Element,
 /**
  * HTML.Italic  --  italicise child element text
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Italic = [class: Element,
 
@@ -729,7 +729,7 @@ extern Italic = [class: Element,
      *
      * Create a new Italic element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -743,7 +743,7 @@ extern Italic = [class: Element,
 /**
  * HTML.Address  --  wrapper element that displays its body as an address
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Address = [class: Element,
 
@@ -752,7 +752,7 @@ extern Address = [class: Element,
      *
      * Create a new Address element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -765,7 +765,7 @@ extern Address = [class: Element,
 /**
  * HTML.Em  --  wrapper element that displays its body in a emphasised style
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Em = [class: Element,
 
@@ -774,7 +774,7 @@ extern Em = [class: Element,
      *
      * Create a new Em element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -787,7 +787,7 @@ extern Em = [class: Element,
 /**
  * HTML.Blockquote  --  wrapper element that displays its body as a quote
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Blockquote = [class: Element,
 
@@ -796,7 +796,7 @@ extern Blockquote = [class: Element,
      *
      * Create a new Blockquote element with the given body text.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(text)
     {
@@ -809,7 +809,7 @@ extern Blockquote = [class: Element,
 /**
  * HTML.Page  -  a HTML page
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Page = [class: Element,
 
@@ -823,7 +823,7 @@ extern Page = [class: Element,
      * under some HTTP server.  If the flag is passed as false no CGI
      * output is generated.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     new(title, docgi)
     {
@@ -850,7 +850,7 @@ extern Page = [class: Element,
     /**
      * string = page:param(string)
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     param(key)
     {
@@ -861,7 +861,7 @@ extern Page = [class: Element,
     /**
      * struct = page:params()
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     params()
     {
@@ -874,7 +874,7 @@ extern Page = [class: Element,
      *
      * Disable or enable output of CGI headers.  They are enabled by default.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     nocgi(flag)
     {
@@ -888,7 +888,7 @@ extern Page = [class: Element,
      *
      * Set the page title.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     title(title)
     {
@@ -906,7 +906,7 @@ extern Page = [class: Element,
      * third argument the default color of links and the final argument
      * the default color of visited links.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     colors(bgcolor, text, link, vlink)
     {
@@ -926,7 +926,7 @@ extern Page = [class: Element,
      *
      * Define the page background color.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     bgcolor(c)
     {
@@ -942,7 +942,7 @@ extern Page = [class: Element,
      * color of text within anchors and the third argument the color
      * of visited links.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     text_colors(text, link, vlink)
     {
@@ -962,7 +962,7 @@ extern Page = [class: Element,
      * between the <head> and </head> tags.  This is used to add meta tags
      * and the like.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     add_header(h)
     {
@@ -974,7 +974,7 @@ extern Page = [class: Element,
     /**
      * page = page:style(text)
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     style(text)
     {
@@ -990,7 +990,7 @@ extern Page = [class: Element,
      * Element instance.  This outputs the headers defined by
      * by user.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_head(file)
     {
@@ -1020,7 +1020,7 @@ extern Page = [class: Element,
     /**
      * page = page:add_cgi_header(name, value)
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     add_cgi_header(nom, val)
     {
@@ -1037,7 +1037,7 @@ extern Page = [class: Element,
      * end of page tag following the </body> our superclass
      * outputs.
      *
-     * This --topic-- forms part of the --ici-html-- documentation.
+     * This --topic-- forms part of the --ici-HTML-- documentation.
      */
     output_tail(file)
     {
@@ -1051,7 +1051,7 @@ extern Page = [class: Element,
 /**
  * HTML.Style  --  page header style element
  *
- * This --topic-- forms part of the --ici-html-- documentation.
+ * This --topic-- forms part of the --ici-HTML-- documentation.
  */
 extern Style = [class: Element,
 
@@ -2024,6 +2024,9 @@ extern RegisteredTrademarkSymbol = Entity:new("reg");
 
 /*
  * $Log: ici4HTML.ici,v $
+ * Revision 1.2  2003/01/30 13:00:59  timl
+ * Added comment tags in html module and upgraded the Win32 installer.
+ *
  * Revision 1.1  2003/01/27 10:51:03  atrn
  * First cut at conversion for ici 4 and new configure
  *
