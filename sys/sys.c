@@ -188,7 +188,7 @@
  *  sys.S_IWOTH
  *  sys.S_IXOTH
  *
- * This --intro-- formas part of the --ici-sys-- documentation.
+ * This --intro-- forms part of the --ici-sys-- documentation.
  */
 
 /*

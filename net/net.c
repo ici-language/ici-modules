@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.21 2003/01/27 02:13:53 atrn Exp $
+ * $Id: net.c,v 1.22 2003/03/08 06:48:05 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -182,6 +182,7 @@ new_netsocket(SOCKET fd)
 
     if ((h = ici_handle_new((void *)fd, ICIS(socket), NULL)) == NULL)
         return NULL;
+    objof(h)->o_flags &= ~H_CLOSED;
     h->h_pre_free = socket_prefree;
     /*
      * Turn off super support. This means you can't assign or fetch

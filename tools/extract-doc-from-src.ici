@@ -260,7 +260,10 @@ static man = [class:base_class,
         );
     }
 
-    finish() {return "";}
+    finish()
+    {
+        return ".SH \"SEE ALSO\"\nici(1), iciex(1)\n";
+    }
 
     italic(str) {return sprintf("\\fI%s\\fP", str);}
     
