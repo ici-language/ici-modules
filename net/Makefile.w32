@@ -1,53 +1,27 @@
+#
+# Makefile for net module under Win32 using MS C. Assumes the
+# ICI SDK (i.e. ici?.lib and ici.h) has been installed where it
+# will be found.
+#
+ICIVER		= 4
 MODULE_NAME	= net
-TOOLS		= ..\tools
-ICI_SRC		= ..\..\src
-ICI_INST	= c:\ici
-ICI_EXE		= $(ICI_INST)\ici3
-FLAVOUR		= w32
-CONFIG  	= conf-$(FLAVOUR).h
-ICI_DEFS	= -DCONFIG_FILE=\"$(CONFIG)\" /D_WINDOWS /DICI_DLL
-INCS		= -I$(ICI_INST)\include -I.
-DEFS		= $(ICI_DEFS)
-OPTIM		= -MDd -Zi -GB -O2p-
-CC		= cl /nologo
+DEFS		= 
+#OPTIM		= -MDd -Zi -Od
+OPTIM		= -MDd -Zi -O2p- -GB
+CC			= cl /nologo
 CFLAGS		= $(OPTIM) $(INCS) $(DEFS)
-LIBS		= $(ICI_INST)\ici3.lib wsock32.lib 
+LIBS		= ici$(ICIVER).lib wsock32.lib
 
-all : ici3net.dll
+ici$(ICIVER)$(MODULE_NAME).dll: net.obj
+	$(CC) /LD /Fe$@ net.obj $(LIBS) /link /export:ici_$(MODULE_NAME)_library_init
 
-ici3net.dll: net.obj strings.obj cfuncs.obj
-	$(CC) /LD /Fe$@ net.obj strings.obj cfuncs.obj $(LIBS) /link /export:ici_net_library_init
-
-net.obj:	strs.h ici.h
-
-strs.h strings.c : net.c
-	$(ICI_EXE) $(TOOLS)\mk-strings.ici $(MODULE_NAME) < net.c
-
-cfuncs.c : net.c
-	$(ICI_EXE) $(TOOLS)\mk-cfuncs.ici $(MODULE_NAME) < net.c
-	$(ICI_EXE) fix-cfuncs
-
-ici.h: strs.h
-	$(ICI_EXE) $(TOOLS)\mk-ici-dot-h.ici $(MODULE_NAME)
-
-install: ici3net.dll
-	copy ici3net.dll $(ICI_INST)
-	copy ici3net.lib $(ICI_INST)
-	copy ici3net.exp $(ICI_INST)
-	copy icinet.ici $(ICI_INST)\ici3net.ici
+net.obj:	icistr.h
 
 clean:
-	-del *.dll >nul:
-	-del *.obj >nul:
-	-del icinet.lib >nul:
-	-del icinet.exp >nul:
-	-del *.pdb >nul:
+	-del net.obj >nul:
+	-del ici$(ICIVER)$(MODULE_NAME).dll >nul:
+	-del ici$(ICIVER)$(MODULE_NAME).exp >nul:
+	-del net.pdb >nul:
 
 clobber: clean
-	-del cfuncs.c >nul:
-	-del strs.h >nul:
-	-del strings.c >nul:
-	-del ici.h >nul:
-
-depend:
-	mkdep $(CFLAGS) *.c
+	-del ici$(ICIVER)$(MODULE_NAME).dll >nul:

@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.14 2001/09/04 07:16:26 atrn Exp $
+ * $Id: net.c,v 1.15 2001/09/14 05:32:33 atrn Exp $
  *
  * net module - ici sockets interface
  *
@@ -18,86 +18,50 @@
  *
  */
 
-#include "ici.h"
-#include "net.h"
-#include "null.h"
+#include <ici.h>
+#include "icistr.h"
+#include <icistr-setup.h>
+
+#ifdef  _WIN32
+#define USE_WINSOCK /* Else use UNIX style sockets. */
+#endif
 
 /*
- * Forward declare this utility here so all code can use it.
+ * Substitute a function "ici_isset" for ICI's macro, because it
+ * conflicts with the isset macro in sys/param.h.
  */
-static int	seterror(char *, char *, ...);
-
-#ifdef _WINDOWS
-
-/*
- * To use sockets under WIN32 requires explicit initialisation.
- * Here's the code and data to do that and a macro to call the
- * initialisation routine if it hasn't already been called. For
- * the BSD/Unix implementation the macro is empty.
- *
- * N.B We can refer to WINSOCK defined things here as skt.h includes
- * winsock.h so it can get the definition of SOCKET.
- */
-
-static WSADATA		mywsadata;
-static int		need_init_winsock = 1;
-
 static int
-init_winsock(void)
+ici_isset(object_t *o)
 {
-    if (WSAStartup(MAKEWORD(1,1), &mywsadata))
-    {
-	/* error = "failed to initialise WINSOCK"; */
-	seterror
-	(
-	    "failed to initialise WINSOCK",
-	    "failed to initialise WINSOCK: error = %d",
-	    GetLastError()
-	);
-	return 1;
-    }
-    need_init_winsock = 0;
-    return 0;
+    return isset(o);
 }
+#undef isset
 
-#define	INITWINSOCK()	if (need_init_winsock && init_winsock()) return 1
-
+#ifdef  USE_WINSOCK
+/*
+ * Windows uses a special type to represent its SOCKET descriptors.
+ * For correctness we include winsock.h here. Other platforms (i.e.,
+ * BSD) are easier and use integers.
+ */
+#include <winsock.h>
 /*
  * The f_hostname() function needs to know how long a host name may
  * be. WINSOCK doesn't seem to want to tell us.
  */
 #define MAXHOSTNAMELEN (64)
 
-#define	ici_isset(x)	isset(x)
-
-#else	/* #ifdef _WINDOWS */
-
-/*
- * BSD has its own isset which interferes with ici's. Bow out to
- * the system.  We use isset a few times and modern compilers will
- * inline such a simple function (if told to do so).
- */
-
-#undef isset
-
-static int
-ici_isset(object_t *o)
-{
-    return o->o_tcode == TC_SET;
-}
-
-#include <sys/param.h>
+#else /* USE_WINSOCK */
 
 /*
  * For ease of compatibility with WINSOCK we use its definitions and
  * emulate them on Unix. Luckily such emulation is rather trivial.
  */
-#define	SOCKET		int
-#define	closesocket	close
-#define	INITWINSOCK()
-#define	SOCKET_ERROR	(-1)
+#define SOCKET          int
+#define closesocket     close
+#define SOCKET_ERROR    (-1)
 
 #include <errno.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -114,27 +78,10 @@ ici_isset(object_t *o)
 #include <libc.h>
 #endif
 #if sun
-#define	bzero(p,n)	(memset((p), 0, (n)))
+#define bzero(p,n)      (memset((p), 0, (n)))
 #endif
-#endif	/* #ifdef _WINDOWS */
 
-#include "buf.h"
-#include "exec.h"
-#include "op.h"
-#include "func.h"
-#include "int.h"
-#include "set.h"
-#include "struct.h"
-#include "str.h"
-#include "primes.h"
-#include "file.h"
-
-NEED_STRING(n);
-NEED_STRING(read);
-NEED_STRING(write);
-NEED_STRING(except);
-NEED_STRING(msg);
-NEED_STRING(addr);
+#endif /* USE_WINSOCK else */
 
 #if defined(ULTRIX) || defined(BSD4_4) && !defined(INADDR_LOOPBACK)
 /*
@@ -173,155 +120,69 @@ int getsockname(int, struct sockaddr *, int *);
 int shutdown(int, int);
 #endif
 
-
 /*
- * seterror - set the global error string
- *
+ * Format a message into the ICI error string. The formatted message
+ * must fit within 256 characters.
  */
 static int
-seterror(char *defmsg, char *fmt, ...)
+seterror(char *fmt, ...)
 {
-    char	msgbuf[256];
-    va_list	va;
-    int		n;
+    va_list     va;
 
-    error = defmsg;
-    if (fmt != NULL)
-    {
-	va_start(va, fmt);
-	n = vsprintf(msgbuf, fmt, va);
-	va_end(va);
-	if (!chkbuf(n+1))
-	{
-	    memcpy(buf, msgbuf, n+1);
-	    error = buf;
-	}
-    }
+    if (ici_chkbuf(256))
+        return 1;
+    va_start(va, fmt);
+    vsprintf(ici_buf, fmt, va);
+    va_end(va);
+    ici_error = ici_buf;
     return 1;
 }
 
 /*
- * Definitions to make a new type, socket, for representing network connections
- */
-
-/*
- * Mark this and referenced unmarked objects, return memory costs.
- * See comments on t_mark() in object.h.
- */
-static unsigned long
-mark_netsocket(object_t *o)
-{
-    o->o_flags |= O_MARK;
-    return sizeof (net_skt_t);
-}
-
-/*
- * Free this object and associated memory (but not other objects).
- * See the comments on t_free() in object.h.
+ * The handle representing our socket it about to be freed. Close the
+ * socket if it isn't already.
  */
 static void
-free_netsocket(object_t *o)
+socket_prefree(ici_handle_t *h)
 {
-    if (!netsktof(o)->s_closed)
-	closesocket(netsktof(o)->s_skt);
-    ici_free(o);
-}
-
-/*
- * Return a hash sensitive to the value of the object.
- * See the comment on t_hash() in object.h
- */
-static unsigned long
-hash_netsocket(object_t *o)
-{
-    return netsktof(o)->s_skt * SKT_PRIME;
-}
-
-/*
- * Returns 0 if these objects are equal, else non-zero.
- * See the comments on t_cmp() in object.h.
- */
-static int
-cmp_netsocket(object_t *o1, object_t *o2)
-{
-    return netsktof(o1)->s_skt != netsktof(o2)->s_skt
-    	|| netsktof(o1)->s_closed != netsktof(o2)->s_closed;
-}
-
-type_t	net_netsocket_type =
-{
-    mark_netsocket,
-    free_netsocket,
-    hash_netsocket,
-    cmp_netsocket,
-    copy_simple,
-    assign_simple,
-    fetch_simple,
-    "socket"
-};
-
-/*
- * Lookup a socket with a given descriptor in the atom table. If it exists
- * we use it as sockets are defined to be atomic.
- */
-static net_skt_t *
-atom_skt(SOCKET fd)
-{
-    register object_t	*o;
-    register object_t	**po;
-
-    for
-    (
-	po = &atoms[ici_atom_hash_index((unsigned long)fd * SKT_PRIME)];
-	(o = *po) != NULL;
-	--po < atoms ? po = atoms + atomsz - 1 : NULL
-    )
-    {
-	if (isnetskt(o) && netsktof(o)->s_skt == fd && !netsktof(o)->s_closed)
-	    return netsktof(o);
-    }
-    return NULL;
+    if ((objof(h)->o_flags & H_CLOSED) == 0)
+        closesocket((SOCKET)h->h_ptr);
 }
 
 /*
  * Create a new socket object with the given descriptor.
  */
-static net_skt_t *
+static ici_handle_t *
 new_netsocket(SOCKET fd)
 {
-    net_skt_t	*s;
+    ici_handle_t            *h;
 
-    if ((s = atom_skt(fd)) != NULL)
-    {
-	incref(s);
-	return s;
-    }
-    if ((s = talloc(net_skt_t)) == NULL)
-	return NULL;
-    objof(s)->o_type = &net_netsocket_type;
-    objof(s)->o_tcode = TC_OTHER;
-    objof(s)->o_flags = 0;
-    objof(s)->o_nrefs = 1;
-    s->s_skt = fd;
-    s->s_closed = 0;
-    rego(s);
-    return netsktof(atom(objof(s), 1));
+    if ((h = ici_handle_new((void *)fd, ICIS(socket), NULL)) == NULL)
+        return NULL;
+    h->h_pre_free = socket_prefree;
+    /*
+     * Turn off super support. This means you can't assign or fetch
+     * values in a socket.
+     */
+    objof(h)->o_flags &= ~O_SUPER;
+    return h;
 }
 
 /*
  * Is a socket closed? Set error if so.
  */
 static int
-isclosed(net_skt_t *s)
+isclosed(ici_handle_t *skt)
 {
-    if (s->s_closed)
-	return seterror("attempt to use closed socket", NULL);
-    return 0;
+    if (!(objof(skt)->o_flags & H_CLOSED))
+        return 0;
+    ici_error = "attempt to use closed socket";
+    return 1;
 }
 
 /*
  * Parse an IP address in the format "service[@host]" where service is a
- * port number of service name (in the form "name[/proto]" where name is
+ * port number or service name (in the form "name[/proto]" where name is
  * the name of the service and, the optional, proto is either "tcp" or
  * "udp"). The host part is optional and if not specified defaults to
  * the defhost parameter. The host may be specified as an IP address
@@ -344,7 +205,6 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
     char *ports;
     short port;
 
-
     /*
      * Initialise address so if we fail to find a host or port
      * in the string passed in we don't have to deal with it.
@@ -360,37 +220,36 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
 
     if (strlen(raddr) > sizeof addr - 1)
     {
-	seterror
-	(
-	    "network address string too long",
-	    "network address string too long: \"%.32s\"",
-	    raddr
-	);
-	return NULL;
+        seterror
+        (
+            "network address string too long: \"%.32s\"",
+            raddr
+        );
+        return NULL;
     }
     strcpy(addr, raddr);
     if ((host = strchr(addr, '@')) != NULL)
     {
-	ports = addr;
-	*host++ = '\0';
+        ports = addr;
+        *host++ = '\0';
     }
     else if ((ports = strchr(addr, ':')) != NULL)
     {
-	if (ports != addr)
-	{
-	    host = addr;
-	    *ports++ = '\0';
-	}
+        if (ports != addr)
+        {
+            host = addr;
+            *ports++ = '\0';
+        }
     }
     else
     {
-	host = NULL;
-	ports = addr;
+        host = NULL;
+        ports = addr;
     }
     if (host != NULL)
     {
         struct hostent *hostent;
-        long		hostaddr;
+        long            hostaddr;
 
         if (!strcmp(host, "."))
             hostaddr = htonl(INADDR_LOOPBACK);
@@ -398,26 +257,26 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
             hostaddr = htonl(INADDR_ANY);
         else if (!strcmp(host, "*"))
             hostaddr = htonl(INADDR_BROADCAST);
-	else if ((hostaddr = inet_addr(host)) != (unsigned long)-1)
-	    /* NOTHING */ ;
-	else if ((hostent = gethostbyname(host)) != NULL)
+        else if ((hostaddr = inet_addr(host)) != (unsigned long)-1)
+            /* NOTHING */ ;
+        else if ((hostent = gethostbyname(host)) != NULL)
             memcpy(&hostaddr, hostent->h_addr, sizeof hostaddr);
         else
         {
-	    seterror("unknown host", "unknown host: \"%.32s\"", host);
+            seterror("unknown host: \"%.32s\"", host);
             return NULL;
         }
         saddr->sin_addr.s_addr = hostaddr;
     }
     if (sscanf(ports, "%hu", &port) != 1)
     {
-	char *proto;
-	struct servent *servent;
+        char *proto;
+        struct servent *servent;
         if ((proto = strchr(addr, '/')) != NULL)
             *proto++ = 0;
         if ((servent = getservbyname(ports, proto)) == NULL)
         {
-	    seterror("unknown service", "unknown service: \"%s\"", ports);
+            seterror("unknown service: \"%s\"", ports);
             return NULL;
         }
         port = ntohs(servent->s_port);
@@ -441,47 +300,36 @@ struct sockaddr_in *addr;
 
 #if 0
     if ((serv = getservbyport(addr->sin_port, NULL)) != NULL)
-	strcpy(addr_buf, serv->s_name);
+        strcpy(addr_buf, serv->s_name);
     else
 #endif
-	sprintf(addr_buf, "%u", ntohs(addr->sin_port));
+        sprintf(addr_buf, "%u", ntohs(addr->sin_port));
     strcat(addr_buf, "@");
     if (addr->sin_addr.s_addr == INADDR_ANY)
-	strcat(addr_buf, "?");
+        strcat(addr_buf, "?");
     else if (addr->sin_addr.s_addr == INADDR_LOOPBACK)
-	strcat(addr_buf, ".");
+        strcat(addr_buf, ".");
     else if (addr->sin_addr.s_addr == INADDR_BROADCAST)
-	strcat(addr_buf, "*");
+        strcat(addr_buf, "*");
     else if
     (
-	(
-	    host
-	    =
-	    gethostbyaddr
-	    (
-		(char *)&addr->sin_addr.s_addr,
-		sizeof addr->sin_addr,
-		AF_INET
-	    )
-	)
-	==
-	NULL
+        (
+            host
+            =
+            gethostbyaddr
+            (
+                (char *)&addr->sin_addr.s_addr,
+                sizeof addr->sin_addr,
+                AF_INET
+            )
+        )
+        ==
+        NULL
     )
-	strcat(addr_buf, inet_ntoa(addr->sin_addr));
+        strcat(addr_buf, inet_ntoa(addr->sin_addr));
     else
-	strcat(addr_buf, host->h_name);
+        strcat(addr_buf, host->h_name);
     return addr_buf;
-}
-
-/*
- * Error return utility. Formats the exception string with the
- * the message followed by the system error message and returns
- * 1 for use in error returns.
- */
-static int
-serr(char *msg)
-{
-    return seterror(syserr(), "%s: %s", msg, syserr());
 }
 
 /*
@@ -491,7 +339,7 @@ serr(char *msg)
  *
  * ICI usage,
  *
- *	skt = socket([proto]);
+ *      skt = socket([proto]);
  *
  * Where proto is one of the strings "tcp", "tcp/ip", "udp" or "udp/ip".
  * The default, if no argument is passed, is "tcp". If proto is an
@@ -504,57 +352,56 @@ serr(char *msg)
  *
  * Returns a socket object representing a communications end-point.
  */
-FUNC(socket)
+static int
+ici_net_socket()
 {
-    net_skt_t	*skt;
-    char	*proto;
-    int		type;
-    SOCKET	fd;
+    ici_handle_t            *skt;
+    string_t            *proto;
+    int                 type;
+    SOCKET              fd;
 
-    INITWINSOCK();
     if (NARGS() == 0)
-	proto = "tcp";
-    else if (ici_typecheck("s", &proto))
+        proto = ICIS(tcp);
+    else if (ici_typecheck("o", &proto))
     {
-	long		i;
+        long            i;
 #ifdef ICI_PEDANTIC_SKTS
-	struct stat	statbuf;
+        struct stat     statbuf;
 #endif
 
-	if (ici_typecheck("i", &i))
-	    return 1;
+        if (ici_typecheck("i", &i))
+            return 1;
 #ifdef ICI_PEDANTIC_SKTS
-	if (fstat(i, &statbuf) == -1)
-	{
-	    error = strerror(errno);
-	    return 1;
-	}
-	if ((statbuf.st_mode & S_IFMT) != S_IFSOCK)
-	{
-	    error = "not a socket";
-	    return 1;
-	}
+        if (fstat(i, &statbuf) == -1)
+        {
+            error = strerror(errno);
+            return 1;
+        }
+        if ((statbuf.st_mode & S_IFMT) != S_IFSOCK)
+        {
+            error = "not a socket";
+            return 1;
+        }
 #endif
-	return ici_ret_with_decref(objof(new_netsocket(i)));
+        return ici_ret_with_decref(objof(new_netsocket(i)));
     }
-    if (!strcmp(proto, "tcp") || !strcmp(proto, "tcp/ip"))
+    if (proto == ICIS(tcp) || proto == ICIS(tcp_ip))
         type = SOCK_STREAM;
-    else if (!strcmp(proto, "udp") || !strcmp(proto, "udp/ip"))
+    else if (proto == ICIS(udp) || proto == ICIS(udp_ip))
         type = SOCK_DGRAM;
     else
     {
         return seterror
-	(
-	    "unsupported protocol or family", 
-	    "unsupported protocol or family: %s", proto
-	);
+        (
+            "unsupported protocol or family: %s", proto->s_chars
+        );
     }
     if ((fd = socket(PF_INET, type, 0)) == -1)
-        return serr("net.socket");
+        return ici_get_last_errno("net.socket", NULL);
     if ((skt = new_netsocket(fd)) == NULL)
     {
-	closesocket(fd);
-	return 1;
+        closesocket(fd);
+        return 1;
     }
     return ici_ret_with_decref(objof(skt));
 }
@@ -562,19 +409,18 @@ FUNC(socket)
 /*
  * Close a socket
  */
-FUNC(close)
+static int
+ici_net_close()
 {
-    net_skt_t	*skt;
+    ici_handle_t            *skt;
 
-    if (ici_typecheck("o", &skt))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("h", ICIS(socket), &skt))
+        return 1;
     if (isclosed(skt))
-	return 1;
-    closesocket(skt->s_skt);
-    skt->s_closed = 1;
-    return null_ret();
+        return 1;
+    closesocket((SOCKET)skt->h_ptr);
+    objof(skt)->o_flags |= H_CLOSED;
+    return ici_null_ret();
 }
 
 /*
@@ -583,38 +429,37 @@ FUNC(close)
  *
  * ICI usage,
  *
- *	skt = listen(skt [, backlog]);
+ *      skt = listen(skt [, backlog]);
  *
  * Where skt is the socket descriptor as returned by socket(). The
  * result of listen is its parameter (to allow "functional" programming.)
  *
  */
-FUNC(listen)
+static int
+ici_net_listen()
 {
-    net_skt_t	*skt;
-    long	backlog = 5;	/* ain't tradition grand */
+    ici_handle_t    *skt;
+    long        backlog = 5;    /* ain't tradition grand */
 
     switch (NARGS())
     {
     case 1:
-	if (ici_typecheck("o", &skt))
-	    return 1;
-	break;
+        if (ici_typecheck("h", ICIS(socket), &skt))
+            return 1;
+        break;
 
     case 2:
-	if (ici_typecheck("oi", &skt, &backlog))
-	    return 1;
-	break;
+        if (ici_typecheck("hi", ICIS(socket), &skt, &backlog))
+            return 1;
+        break;
 
     default:
-	return ici_argcount(2);
+        return ici_argcount(2);
     }
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     if (isclosed(skt))
-	return 1;
-    if (listen(skt->s_skt, (int)backlog) == -1)
-        return serr("net.listen");
+        return 1;
+    if (listen((SOCKET)skt->h_ptr, (int)backlog) == -1)
+        return ici_get_last_errno("net.listen", NULL);
     return ici_ret_no_decref(objof(skt));
 }
 
@@ -624,33 +469,36 @@ FUNC(listen)
  *
  * ICI usage,
  *
- *	new_skt = accept(skt);
+ *      new_skt = accept(skt);
  *
  * Where skt is a socket descriptor of a TCP socket that has been
  * marked to accept connections (i.e., been passed to listen()).
  * The result is the socket descriptor of the new connection.
  */
-FUNC(accept)
+static int
+ici_net_accept()
 {
-    net_skt_t	*skt;
-    SOCKET	fd;
+    ici_handle_t    *skt;
+    SOCKET      fd;
+    exec_t      *x;
 
-    if (ici_typecheck("o", &skt))
+    if (ici_typecheck("h", ICIS(socket), &skt))
         return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     if (isclosed(skt))
-	return 1;
+        return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
-    if ((fd = accept(skt->s_skt, NULL, NULL)) == -1)
+    x = ici_leave();
+    if ((fd = accept((SOCKET)skt->h_ptr, NULL, NULL)) == -1)
     {
+        ici_enter(x);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+        ici_signals_blocking_syscall(0);
 #endif
-        return serr("net.accept");
+        return ici_get_last_errno("net.accept", NULL);
     }
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
@@ -665,46 +513,49 @@ FUNC(accept)
  *
  * ICI usage,
  *
- *	skt = connect(skt, address);
+ *      skt = connect(skt, address);
  *
  * Skt is a socket desciptor and address is a network address as
  * accepted by parseaddr().
  *
  */
-FUNC(connect)
+static int
+ici_net_connect()
 {
-    net_skt_t		*skt;
-    char		*addr;
-    object_t		*arg;
-    struct sockaddr_in	saddr;
+    ici_handle_t            *skt;
+    char                *addr;
+    object_t            *arg;
+    struct sockaddr_in  saddr;
+    exec_t              *x;
 
-    if (ici_typecheck("oo", &skt, &arg))
+    if (ici_typecheck("ho", ICIS(socket), &skt, &arg))
         return 1;
     if (isstring(arg))
-	addr = stringof(arg)->s_chars;
+        addr = stringof(arg)->s_chars;
     else if (isint(arg))
     {
-	sprintf(buf, "%ld", intof(arg)->i_value);
-	addr = buf;
+        sprintf(ici_buf, "%ld", intof(arg)->i_value);
+        addr = ici_buf;
     }
     else
-	return ici_argerror(1);
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+        return ici_argerror(1);
     if (parseaddr(addr, INADDR_LOOPBACK, &saddr) == NULL)
         return 1;
     if (isclosed(skt))
-	return 1;
+        return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
-    if (connect(skt->s_skt, (struct sockaddr *)&saddr, sizeof saddr) == -1)
+    x = ici_leave();
+    if (connect((SOCKET)skt->h_ptr, (struct sockaddr *)&saddr, sizeof saddr) == -1)
     {
+        ici_enter(x);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+        ici_signals_blocking_syscall(0);
 #endif
-        return serr("net.connect");
+        return ici_get_last_errno("net.connect", NULL);
     }
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
@@ -716,7 +567,7 @@ FUNC(connect)
  *
  * ICI usage,
  *
- *	skt = bind(skt [, address]);
+ *      skt = bind(skt [, address]);
  *
  * If no address is passed the system allocates a local address (i.e., for
  * a TCP socket we pass zero as the port number to bind() and have it select
@@ -726,39 +577,40 @@ FUNC(connect)
  * to create their sockets which can accept connections originating from any
  * network interface).
  */
-FUNC(bind)
+static int
+ici_net_bind()
 {
-    net_skt_t		*skt;
-    char		*addr;
-    struct sockaddr_in	saddr;
+    ici_handle_t            *skt;
+    char                *addr;
+    struct sockaddr_in  saddr;
 
     if (NARGS() == 2)
     {
-	skt = netsktof(ARG(0));
-	if (isstring(ARG(1)))
-	    addr = stringof(ARG(1))->s_chars;
-	else if (isint(ARG(1)))
-	{
-	    sprintf(buf, "%ld", intof(ARG(1))->i_value);
-	    addr = buf;
-	}
-	else
-	    return ici_argerror(1);
+        skt = handleof(ARG(0));
+        if (!ishandleof(skt, ICIS(socket)))
+            return ici_argerror(0);
+        if (isstring(ARG(1)))
+            addr = stringof(ARG(1))->s_chars;
+        else if (isint(ARG(1)))
+        {
+            sprintf(ici_buf, "%ld", intof(ARG(1))->i_value);
+            addr = ici_buf;
+        }
+        else
+            return ici_argerror(1);
     }
     else
     {
-	if (ici_typecheck("o", &skt))
-	    return 1;
-	addr = "0";
+        if (ici_typecheck("h", ICIS(socket), &skt))
+            return 1;
+        addr = "0";
     }
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     if (parseaddr(addr, INADDR_ANY, &saddr) == NULL)
         return 1;
     if (isclosed(skt))
-	return 1;
-    if (bind(skt->s_skt, (struct sockaddr *)&saddr, sizeof saddr) == -1)
-        return serr("net.bind");
+        return 1;
+    if (bind((SOCKET)skt->h_ptr, (struct sockaddr *)&saddr, sizeof saddr) == -1)
+        return ici_get_last_errno("net.bind", NULL);
     return ici_ret_no_decref(objof(skt));
 }
 
@@ -776,46 +628,46 @@ __inline__
 static int
 select_add_result
 (
-    struct_t		*result,
-    string_t		*key,
-    set_t		*set,
-    fd_set		*fds,
-    int			*n
+    struct_t            *result,
+    string_t            *key,
+    set_t               *set,
+    fd_set              *fds,
+    int                 *n
 )
 {
-    set_t	*rset;
-    SOCKET	fd;
-    int		i;
-    slot_t	*sl;
+    set_t       *rset;
+    SOCKET      fd;
+    int         i;
+    slot_t      *sl;
 
-    if ((rset = new_set()) == NULL)
-	return 1;
+    if ((rset = ici_set_new()) == NULL)
+        return 1;
     if (set != NULL)
     {
-	for (i = 0; *n > 0 && i < set->s_nslots; ++i)
-	{
-	    if ((sl = (slot_t *)&set->s_slots[i])->sl_key == NULL)
-		continue;
-	    if (!isnetskt(sl->sl_key))
-		continue;
-	    fd = netsktof(sl->sl_key)->s_skt;
-	    if (FD_ISSET(fd, fds))
-	    {
-		--*n;
-		if (assign(rset, netsktof(sl->sl_key), o_one))
-		{
-		    goto fail;
-		}
-	    }
-	}
+        for (i = 0; *n > 0 && i < set->s_nslots; ++i)
+        {
+            if ((sl = (slot_t *)&set->s_slots[i])->sl_key == NULL)
+                continue;
+            if (!ishandleof(sl->sl_key, ICIS(socket)))
+                continue;
+            fd = (SOCKET)handleof(sl->sl_key)->h_ptr;
+            if (FD_ISSET(fd, fds))
+            {
+                --*n;
+                if (ici_assign(rset, handleof(sl->sl_key), ici_one))
+                {
+                    goto fail;
+                }
+            }
+        }
     }
-    if (assign(result, key, rset))
-	goto fail;
-    decref(rset);
+    if (ici_assign(result, key, rset))
+        goto fail;
+    ici_decref(rset);
     return 0;
 
 fail:
-    decref(rset);
+    ici_decref(rset);
     return 1;
 }
 
@@ -836,46 +688,47 @@ fail:
  * Aldem: dtabsize now is computed (as max found FD). It is more efficient
  * than select() on ALL FDs.
  */
-FUNC(select)
+static int
+ici_net_select()
 {
-    int			i;
-    int			n;
-    int			dtabsize = -1;
-    long		timeout  = -1;
-    fd_set		fds[3];
-    fd_set		*rfds = NULL;
-    set_t		*rset = NULL;
-    fd_set		*wfds = NULL;
-    set_t		*wset = NULL;
-    fd_set		*efds = NULL;
-    set_t		*eset = NULL;
-    struct timeval	timeval;
-    struct timeval	*tv;
-    struct_t		*result;
-    set_t		*set  = NULL; /* Init. to remove compiler warning */
-    int			whichset = -1;	/* 0 == read, 1 == write, 2 == except*/
-    slot_t		*sl;
+    int                 i;
+    int                 n;
+    int                 dtabsize = -1;
+    long                timeout  = -1;
+    fd_set              fds[3];
+    fd_set              *rfds = NULL;
+    set_t               *rset = NULL;
+    fd_set              *wfds = NULL;
+    set_t               *wset = NULL;
+    fd_set              *efds = NULL;
+    set_t               *eset = NULL;
+    struct timeval      timeval;
+    struct timeval      *tv;
+    struct_t            *result;
+    set_t               *set  = NULL; /* Init. to remove compiler warning */
+    int                 whichset = -1;  /* 0 == read, 1 == write, 2 == except*/
+    slot_t              *sl;
+    exec_t              *x;
 
-    NEED_STRINGS(1);
     if (NARGS() == 0)
-        return seterror("incorrect number of arguments for net.select()", NULL);
+        return seterror("incorrect number of arguments for net.select()");
     for (i = 0; i < NARGS(); ++i)
     {
-    	if (isint(ARG(i)))
-    	{
+        if (isint(ARG(i)))
+        {
             if (timeout != -1)
-                return seterror("too many timeout parameters passed to net.select", NULL);
+                return seterror("too many timeout parameters passed to net.select");
             timeout = intof(ARG(i))->i_value;
             if (timeout < 0)
-                return seterror("-ve timeout passed to net.select", NULL);
+                return seterror("-ve timeout passed to net.select");
         }
         else if (ici_isset(ARG(i)) || isnull(ARG(i)))
         {
             int j;
 
             if (++whichset > 2)
-		return seterror("too many set/NULL params to select()", NULL);
-	    if (ici_isset(ARG(i)))
+                return seterror("too many set/NULL params to select()");
+            if (ici_isset(ARG(i)))
             {
                 fd_set *fs = 0;
 
@@ -883,15 +736,15 @@ FUNC(select)
                 {
                 case 0:
                     fs = rfds = &fds[0];
-		    set = rset = setof(ARG(i));
+                    set = rset = setof(ARG(i));
                     break;
                 case 1:
                     fs = wfds = &fds[1];
-		    set = wset = setof(ARG(i));
+                    set = wset = setof(ARG(i));
                     break;
                 case 2:
                     fs = efds = &fds[2];
-		    set = eset = setof(ARG(i));
+                    set = eset = setof(ARG(i));
                     break;
                 }
                 FD_ZERO(fs);
@@ -901,43 +754,43 @@ FUNC(select)
 
                     if ((sl = (slot_t *)&set->s_slots[j])->sl_key == NULL)
                         continue;
-                    if (!isnetskt(sl->sl_key))
+                    if (!ishandleof(sl->sl_key, ICIS(socket)))
                         continue;
-		    if (isclosed(netsktof(sl->sl_key)))
-			return seterror("attempt to use a closed socket in net.select", NULL);
-                    k = netsktof(sl->sl_key)->s_skt;
+                    if (isclosed(handleof(sl->sl_key)))
+                        return seterror("attempt to use a closed socket in net.select");
+                    k = (SOCKET)handleof(sl->sl_key)->h_ptr;
                     FD_SET(k, fs);
                     if (k > dtabsize)
-                    	dtabsize = k;
-		    ++n;
+                        dtabsize = k;
+                    ++n;
                 }
-		if (n == 0)
-		{
-		    switch (whichset)
-		    {
-		    case 0:
-			rfds = NULL;
-			rset = NULL;
-			break;
-		    case 1:
-			wfds = NULL;
-			wset = NULL;
-			break;
-		    case 2:
-			efds = NULL;
-			eset = NULL;
-			break;
-		    }
-		}
+                if (n == 0)
+                {
+                    switch (whichset)
+                    {
+                    case 0:
+                        rfds = NULL;
+                        rset = NULL;
+                        break;
+                    case 1:
+                        wfds = NULL;
+                        wset = NULL;
+                        break;
+                    case 2:
+                        efds = NULL;
+                        eset = NULL;
+                        break;
+                    }
+                }
             }
         }
         else
         {
-	    return ici_argerror(i);
-	}
+            return ici_argerror(i);
+        }
     }
     if (rfds == NULL && wfds == NULL && efds == NULL)
-        return seterror("nothing to select, all socket sets are empty", NULL);
+        return seterror("nothing to select, all socket sets are empty");
     if (timeout == -1)
         tv = NULL;
     else
@@ -949,51 +802,54 @@ FUNC(select)
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
+    x = ici_leave();
     if ((n = select(dtabsize + 1, rfds, wfds, efds, tv)) < 0)
     {
+        ici_enter(x);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+        ici_signals_blocking_syscall(0);
 #endif
-        return serr("net.select");
+        return ici_get_last_errno("net.select", NULL);
     }
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
-    if ((result = new_struct()) == NULL)
+    if ((result = ici_struct_new()) == NULL)
         return 1;
     /* Add in count */
     {
-	int_t	*nobj;
+        int_t   *nobj;
 
-	if ((nobj = new_int(n)) == NULL)
-	    goto fail;
-	if (assign(result, STRING(n), nobj))
-	{
-	    decref(nobj);
-	    goto fail;
-	}
-	decref(nobj);
+        if ((nobj = ici_int_new(n)) == NULL)
+            goto fail;
+        if (ici_assign(result, ICIS(n), nobj))
+        {
+            ici_decref(nobj);
+            goto fail;
+        }
+        ici_decref(nobj);
     }
-    if (select_add_result(result, STRING(read), rset, rfds, &n))
-	goto fail;
+    if (select_add_result(result, ICIS(read), rset, rfds, &n))
+        goto fail;
     /* Simpler return, one set of ready sockets */
     if (NARGS() == 1 && ici_isset(ARG(0)))
     {
-	object_t	*o;
+        object_t        *o;
 
-	o = fetch(result, STRING(read));
-	incref(o);
-	decref(result);
-	return ici_ret_with_decref(o);
+        o = ici_fetch(result, ICIS(read));
+        ici_incref(o);
+        ici_decref(result);
+        return ici_ret_with_decref(o);
     }
-    if (select_add_result(result, STRING(write), wset, wfds, &n))
-	goto fail;
-    if (select_add_result(result, STRING(except), eset, efds, &n))
-	goto fail;
+    if (select_add_result(result, ICIS(write), wset, wfds, &n))
+        goto fail;
+    if (select_add_result(result, ICIS(except), eset, efds, &n))
+        goto fail;
     return ici_ret_with_decref(objof(result));
 
 fail:
-    decref(objof(result));
+    ici_decref(objof(result));
     return 1;
 }
 
@@ -1005,41 +861,40 @@ fail:
  *      sendto(skt, msg, address)
  *
  */
-FUNC(sendto)
+static int
+ici_net_sendto()
 {
-    char		*addr;
-    string_t		*msg;
-    int			n;
-    net_skt_t		*skt;
-    struct sockaddr_in	sockaddr;
+    char                *addr;
+    string_t            *msg;
+    int                 n;
+    ici_handle_t            *skt;
+    struct sockaddr_in  sockaddr;
 
-    if (ici_typecheck("oos", &skt, &msg, &addr))
+    if (ici_typecheck("hos", ICIS(socket), &skt, &msg, &addr))
         return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     if (!isstring(objof(msg)))
-	return ici_argerror(1);
+        return ici_argerror(1);
     if (parseaddr(addr, INADDR_LOOPBACK, &sockaddr) == NULL)
         return 1;
     if (isclosed(skt))
-	return 1;
+        return 1;
     n = sendto
     (
-	skt->s_skt,
-	msg->s_chars,
-	msg->s_nchars,
-	0,
-	(struct sockaddr *)&sockaddr,
-	sizeof sockaddr
+        (SOCKET)skt->h_ptr,
+        msg->s_chars,
+        msg->s_nchars,
+        0,
+        (struct sockaddr *)&sockaddr,
+        sizeof sockaddr
     );
     if (n < 0)
-        return serr("sendto");
+        return ici_get_last_errno("sendto", NULL);
     if (n != msg->s_nchars)
     {
-        error = "short write";
+        ici_error = "short write";
         return 1;
     }
-    return null_ret();
+    return ici_null_ret();
 }
 
 #if 0
@@ -1051,11 +906,11 @@ flagval(flag)
 char *flag;
 {
     if (!strcmp(flag, "oob"))
-	return MSG_OOB;
+        return MSG_OOB;
     if (!strcmp(flag, "peek"))
-	return MSG_PEEK;
+        return MSG_PEEK;
     if (!strcmp(flag, "dontroute"))
-	return MSG_DONTROUTE;
+        return MSG_DONTROUTE;
     return -1;
 }
 #endif
@@ -1065,156 +920,158 @@ char *flag;
  * (at the ICI level) containing the data, in result.msg, and the address
  * in result.addr.
  */
-FUNC(recvfrom)
+static int
+ici_net_recvfrom()
 {
-    net_skt_t		*skt;
-    int			len;
-    int			nb;
-    char		*msg;
-    struct sockaddr_in	addr;
-    int			addrsz = sizeof addr;
-    struct_t		*result;
-    string_t		*s;
+    ici_handle_t            *skt;
+    int                 len;
+    int                 nb;
+    char                *msg;
+    struct sockaddr_in  addr;
+    int                 addrsz = sizeof addr;
+    struct_t            *result;
+    string_t            *s;
+    exec_t              *x;
 
-    NEED_STRINGS(1);
-    if (ici_typecheck("oi", &skt, &len))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
-    if ((msg = ici_alloc(len+1)) == NULL)
-	return 1;
+    if (ici_typecheck("hi", ICIS(socket), &skt, &len))
+        return 1;
+    if ((msg = ici_nalloc(len + 1)) == NULL)
+        return 1;
     if (isclosed(skt))
     {
-	ici_free(msg);
-	return 1;
+        ici_nfree(msg, len + 1);
+        return 1;
     }
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
-    if ((nb = recvfrom(skt->s_skt, msg, len, 0, (struct sockaddr *)&addr, &addrsz)) == -1)
+    x = ici_leave();
+    if ((nb = recvfrom((SOCKET)skt->h_ptr, msg, len, 0, (struct sockaddr *)&addr, &addrsz)) == -1)
     {
+        ici_enter(x);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+        ici_signals_blocking_syscall(0);
 #endif
-        ici_free(msg);
-	return serr("net.recvfrom");
+        ici_nfree(msg, len + 1);
+        return ici_get_last_errno("net.recvfrom", NULL);
     }
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
     if (nb == 0)
     {
-	ici_free(msg);
-	return null_ret();
+        ici_nfree(msg, len + 1);
+        return ici_null_ret();
     }
-    if ((result = new_struct()) == NULL)
+    if ((result = ici_struct_new()) == NULL)
     {
-        ici_free(msg);
+        ici_nfree(msg, len + 1);
         return 1;
     }
-    if ((s = new_name(msg, nb)) == NULL)
+    if ((s = ici_str_new(msg, nb)) == NULL)
     {
-        ici_free(msg);
+        ici_nfree(msg, len + 1);
         return 1;
     }
-    ici_free(msg);
+    ici_nfree(msg, len + 1);
     msg = NULL;
-    if (assign(result, STRING(msg), s))
+    if (ici_assign(result, ICIS(msg), s))
     {
-	decref(s);
-	goto fail;
+        ici_decref(s);
+        goto fail;
     }
-    decref(s);
-    if ((s = new_cname(unparse_addr(&addr))) == NULL)
+    ici_decref(s);
+    if ((s = ici_str_new_nul_term(unparse_addr(&addr))) == NULL)
     {
-	goto fail;
+        goto fail;
     }
-    if (assign(result, STRING(addr), s))
+    if (ici_assign(result, ICIS(addr), s))
     {
-	decref(s);
-	goto fail;
+        ici_decref(s);
+        goto fail;
     }
-    decref(s);
+    ici_decref(s);
     return ici_ret_with_decref(objof(result));
 
 fail:
     if (msg != NULL)
-	ici_free(msg);
-    decref(result);
+        ici_free(msg);
+    ici_decref(result);
     return 1;
 }
 
 /*
  * Send a message on a socket.
  */
-FUNC(send)
+static int
+ici_net_send()
 {
-    net_skt_t	*skt;
-    int		len;
-    string_t	*msg;
+    ici_handle_t    *skt;
+    int         len;
+    string_t    *msg;
 
-    if (ici_typecheck("oo", &skt, &msg))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("ho", ICIS(socket), &skt, &msg))
+        return 1;
     if (!isstring(objof(msg)))
-	return ici_argerror(1);
+        return ici_argerror(1);
     if (isclosed(skt))
-	return 1;
-    if ((len = send(skt->s_skt, msg->s_chars, msg->s_nchars, 0)) != msg->s_nchars)
-	return seterror
-	(
-	    "sent fewer bytes than expected in net.send()",
-	    "sent fewer bytes (%d) than expected (%d) in net.send()",
-	     len, msg->s_nchars
-	);
-    return null_ret();
+        return 1;
+    if ((len = send((SOCKET)skt->h_ptr, msg->s_chars, msg->s_nchars, 0)) != msg->s_nchars)
+    {
+        return seterror
+        (
+            "sent fewer bytes (%d) than expected (%d) in net.send()",
+             len, msg->s_nchars
+        );
+    }
+    return ici_null_ret();
 }
 
 /*
  * Receive a message.
  */
-FUNC(recv)
+static int
+ici_net_recv()
 {
-    net_skt_t	*skt;
-    int		len;
-    int		nb;
-    char	*msg;
-    string_t	*s;
+    ici_handle_t    *skt;
+    int         len;
+    int         nb;
+    char        *msg;
+    string_t    *s;
+    exec_t      *x;
 
-    if (ici_typecheck("oi", &skt, &len))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
-    if ((msg = ici_alloc(len+1)) == NULL)
-	return 1;
+    if (ici_typecheck("hi", ICIS(socket), &skt, &len))
+        return 1;
     if (isclosed(skt))
-    {
-	ici_free(msg);
-	return 1;
-    }
+        return 1;
+    if ((msg = ici_nalloc(len + 1)) == NULL)
+        return 1;
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(1);
 #endif
-    if ((nb = recv(skt->s_skt, msg, len, 0)) == -1)
+    x = ici_leave();
+    if ((nb = recv((SOCKET)skt->h_ptr, msg, len, 0)) == -1)
     {
+        ici_enter(x);
 #ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
+        ici_signals_blocking_syscall(0);
 #endif
-        ici_free(msg);
-	return serr("net.recv");
+        ici_nfree(msg, len + 1);
+        return ici_get_last_errno("net.recv", NULL);
     }
+    ici_enter(x);
 #ifndef NOSIGNALS
     ici_signals_blocking_syscall(0);
 #endif
     if (nb == 0)
     {
-	ici_free(msg);
-	return null_ret();
+        ici_nfree(msg, len + 1);
+        return ici_null_ret();
     }
-    if ((s = new_name(msg, nb)) == NULL)
-	return 1;
-    ici_free(msg);
+    if ((s = ici_str_new(msg, nb)) == NULL)
+        return 1;
+    ici_nfree(msg, len + 1);
     return ici_ret_with_decref(objof(s));
 }
 
@@ -1223,54 +1080,54 @@ FUNC(recv)
  * sockopt - turn a socket option name into an option code and level.
  *
  * Parameters:
- *	opt		The socket option, a string.
- *	level		A pointer to somewhere to store the
- *			level parameter for {get,set}sockopt.
+ *      opt             The socket option, a string.
+ *      level           A pointer to somewhere to store the
+ *                      level parameter for {get,set}sockopt.
  *
  * Returns:
- *	The option code or -1 if no matching option found.
+ *      The option code or -1 if no matching option found.
  */
 static int
 sockopt(char *opt, int *level)
 {
-    int	code;
-    int	i;
+    int code;
+    int i;
 
     static struct
     {
-        char	*name;
-        int	value;
-	int	level;
+        char    *name;
+        int     value;
+        int     level;
     }
     opts[] =
     {
-        {"debug",	SO_DEBUG,	SOL_SOCKET},
-        {"reuseaddr",	SO_REUSEADDR,	SOL_SOCKET},
-        {"keepalive",	SO_KEEPALIVE,	SOL_SOCKET},
-        {"dontroute",	SO_DONTROUTE,	SOL_SOCKET},
+        {"debug",       SO_DEBUG,       SOL_SOCKET},
+        {"reuseaddr",   SO_REUSEADDR,   SOL_SOCKET},
+        {"keepalive",   SO_KEEPALIVE,   SOL_SOCKET},
+        {"dontroute",   SO_DONTROUTE,   SOL_SOCKET},
 #ifndef __linux__
-	{"useloopback", SO_USELOOPBACK,	SOL_SOCKET},
+        {"useloopback", SO_USELOOPBACK, SOL_SOCKET},
 #endif
-        {"linger",	SO_LINGER,	SOL_SOCKET},
-        {"broadcast",	SO_BROADCAST,	SOL_SOCKET},
-        {"oobinline",	SO_OOBINLINE,	SOL_SOCKET},
-        {"sndbuf",	SO_SNDBUF,	SOL_SOCKET},
-        {"rcvbuf",	SO_RCVBUF,	SOL_SOCKET},
-        {"type",	SO_TYPE,	SOL_SOCKET},
-        {"error",	SO_ERROR,	SOL_SOCKET},
+        {"linger",      SO_LINGER,      SOL_SOCKET},
+        {"broadcast",   SO_BROADCAST,   SOL_SOCKET},
+        {"oobinline",   SO_OOBINLINE,   SOL_SOCKET},
+        {"sndbuf",      SO_SNDBUF,      SOL_SOCKET},
+        {"rcvbuf",      SO_RCVBUF,      SOL_SOCKET},
+        {"type",        SO_TYPE,        SOL_SOCKET},
+        {"error",       SO_ERROR,       SOL_SOCKET},
 
-	{"nodelay",	TCP_NODELAY,	IPPROTO_TCP}
+        {"nodelay",     TCP_NODELAY,    IPPROTO_TCP}
 
     };
 
     for (code = -1, i = 0; i < nels(opts); ++i)
     {
         if (!strcmp(opt, opts[i].name))
-	{
+        {
             code = opts[i].value;
-	    *level = opts[i].level;
-	    break;
-	}
+            *level = opts[i].level;
+            break;
+        }
     }
     return code;
 }
@@ -1282,94 +1139,93 @@ sockopt(char *opt, int *level)
  * is of the "linger" option. This gets returned as the lingering time if
  * it is set or -1 if lingering is not enabled.
  */
-FUNC(getsockopt)
+static int
+ici_net_getsockopt()
 {
-    net_skt_t		*skt;
-    char		*opt;
-    int			o;
-    char		*optval;
-    int			optlen;
-    int			optlevel;
-    struct linger	linger;
-    int			intvar;
+    ici_handle_t            *skt;
+    char                *opt;
+    int                 o;
+    char                *optval;
+    int                 optlen;
+    int                 optlevel;
+    struct linger       linger;
+    int                 intvar;
 
     optval = (char *)&intvar;
     optlen = sizeof intvar;
-    if (ici_typecheck("os", &skt, &opt))
+    if (ici_typecheck("hs", ICIS(socket), &skt, &opt))
         return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
 
     o = sockopt(opt, &optlevel);
 
     if (optlevel == SOL_SOCKET)
     {
-	switch (o)
-	{
-	case SO_DEBUG:
-	case SO_REUSEADDR:
-	case SO_KEEPALIVE:
-	case SO_DONTROUTE:
-	case SO_BROADCAST:
-	case SO_TYPE:
-	case SO_OOBINLINE:
-	case SO_SNDBUF:
-	case SO_RCVBUF:
-	case SO_ERROR:
-	    break;
+        switch (o)
+        {
+        case SO_DEBUG:
+        case SO_REUSEADDR:
+        case SO_KEEPALIVE:
+        case SO_DONTROUTE:
+        case SO_BROADCAST:
+        case SO_TYPE:
+        case SO_OOBINLINE:
+        case SO_SNDBUF:
+        case SO_RCVBUF:
+        case SO_ERROR:
+            break;
 
-	case SO_LINGER:
-	    optval = (char *)&linger;
-	    optlen = sizeof linger;
-	    break;
+        case SO_LINGER:
+            optval = (char *)&linger;
+            optlen = sizeof linger;
+            break;
 
-	default:
-	    goto bad;
-	}
+        default:
+            goto bad;
+        }
     }
     else if (optlevel == IPPROTO_TCP)
     {
-	switch (o)
-	{
-	case TCP_NODELAY:
-	    break;
+        switch (o)
+        {
+        case TCP_NODELAY:
+            break;
 
-	default:
-	    goto bad;
-	}
+        default:
+            goto bad;
+        }
     }
     else
     {
-	/* Shouldn't happen - sockopt returned a bogus level */
+        /* Shouldn't happen - sockopt returned a bogus level */
 #ifndef NDEBUG
-	abort();
+        abort();
 #endif
-	return seterror("internal ici error in skt.c:sockopt()", NULL);
+        return seterror("internal ici error in skt.c:sockopt()");
     }
-    
+
     if (isclosed(skt))
-	return 1;
-    if (getsockopt(skt->s_skt, optlevel, o, optval, &optlen) == -1)
-	return serr("net.getsockopt");
+        return 1;
+    if (getsockopt((SOCKET)skt->h_ptr, optlevel, o, optval, &optlen) == -1)
+        return ici_get_last_errno("net.getsockopt", NULL);
     if (o == SO_LINGER)
-	intvar = linger.l_onoff ? linger.l_linger : -1;
+        intvar = linger.l_onoff ? linger.l_linger : -1;
     else
     {
-	switch (o)
-	{
-	case SO_TYPE:
-	case SO_SNDBUF:
-	case SO_RCVBUF:
-	case SO_ERROR:
-	    break;
-	default:
-	    intvar = !!intvar;
-	}
+        switch (o)
+        {
+        case SO_TYPE:
+        case SO_SNDBUF:
+        case SO_RCVBUF:
+        case SO_ERROR:
+            break;
+        default:
+            intvar = !!intvar;
+        }
     }
-    return int_ret(intvar);
+    return ici_int_ret(intvar);
 
 bad:
-    return seterror("bad socket option", "bad socket option \"%s\"", opt);
+    return seterror("bad socket option \"%s\"", opt);
 }
 
 /*
@@ -1381,99 +1237,98 @@ bad:
  * option value is the linger time, if zero or negative lingering is
  * turned off.
  */
-FUNC(setsockopt)
+static int
+ici_net_setsockopt()
 {
-    net_skt_t		*skt;
-    char		*opt;
-    int			optcode;
-    int			optlevel;
-    char		*optval;
-    int			optlen;
-    int			intvar;
-    struct linger	linger;
+    ici_handle_t        *skt;
+    char                *opt;
+    int                 optcode;
+    int                 optlevel;
+    char                *optval;
+    int                 optlen;
+    int                 intvar;
+    struct linger       linger;
 
-    if (ici_typecheck("os", &skt, &opt) == 0)
-	intvar = 1; /* default to +ve action ... "set..." */
-    else if (ici_typecheck("osi", &skt, &opt, &intvar))
+    if (ici_typecheck("hs", ICIS(socket), &skt, &opt) == 0)
+        intvar = 1; /* default to +ve action ... "set..." */
+    else if (ici_typecheck("hsi", ICIS(socket), &skt, &opt, &intvar))
         return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     optcode = sockopt(opt, &optlevel);
     optval = (char *)&intvar;
     optlen = sizeof intvar;
     if (optlevel == SOL_SOCKET)
     {
-	switch (optcode)
-	{
-	case SO_DEBUG:
-	case SO_REUSEADDR:
-	case SO_KEEPALIVE:
-	case SO_DONTROUTE:
-	case SO_BROADCAST:
-	case SO_TYPE:
-	case SO_OOBINLINE:
-	case SO_SNDBUF:
-	case SO_RCVBUF:
-	case SO_ERROR:
-	    break;
+        switch (optcode)
+        {
+        case SO_DEBUG:
+        case SO_REUSEADDR:
+        case SO_KEEPALIVE:
+        case SO_DONTROUTE:
+        case SO_BROADCAST:
+        case SO_TYPE:
+        case SO_OOBINLINE:
+        case SO_SNDBUF:
+        case SO_RCVBUF:
+        case SO_ERROR:
+            break;
 
-	case SO_LINGER:
-	    linger.l_onoff = intvar > 0;
-	    linger.l_linger = intvar;
-	    optval = (char *)&linger;
-	    optlen = sizeof linger;
-	    break;
+        case SO_LINGER:
+            linger.l_onoff = intvar > 0;
+            linger.l_linger = intvar;
+            optval = (char *)&linger;
+            optlen = sizeof linger;
+            break;
 
-	default:
-	    goto bad;
-	}
+        default:
+            goto bad;
+        }
     }
     else if (optlevel == IPPROTO_TCP)
     {
-	switch (optcode)
-	{
-	case TCP_NODELAY:
-	    break;
+        switch (optcode)
+        {
+        case TCP_NODELAY:
+            break;
 
-	default:
-	    goto bad;
-	}
+        default:
+            goto bad;
+        }
     }
     else
     {
-	/* Shouldn't happen - sockopt returned a bogus level */
+        /* Shouldn't happen - sockopt returned a bogus level */
 #ifndef NDEBUG
-	abort();
+        abort();
 #endif
-	return seterror("internal ici error in skt.c:sockopt()", NULL);
+        return seterror("internal ici error in skt.c:sockopt()");
     }
 
     if (isclosed(skt))
-	return 1;
-    if (setsockopt(skt->s_skt, optlevel, optcode, optval, optlen) == -1)
-	return serr("net.setsockopt");
+        return 1;
+    if (setsockopt((SOCKET)skt->h_ptr, optlevel, optcode, optval, optlen) == -1)
+        return ici_get_last_errno("net.setsockopt", NULL);
     return ici_ret_no_decref(objof(skt));
 
 bad:
-    return seterror("bad socket option", "bad socket option \"%s\"", opt);
+    return seterror("bad socket option \"%s\"", opt);
 }
 
 /*
  * Get the host name as a string.
  */
-FUNC(hostname)
+static int
+ici_net_hostname()
 {
-    static string_t	*hostname = NULL;
+    static string_t     *hostname = NULL;
 
-    INITWINSOCK();
     if (hostname == NULL)
     {
         char name_buf[MAXHOSTNAMELEN];
         if (gethostname(name_buf, sizeof name_buf) == -1)
-            return serr("net.gethostname");
-        if ((hostname = new_cname(name_buf)) == NULL)
+            return ici_get_last_errno("net.gethostname", NULL);
+        if ((hostname = ici_str_new_nul_term(name_buf)) == NULL)
             return 1;
-        incref(hostname);
+        ici_incref(hostname);
     }
     return ici_ret_no_decref((object_t *)stringof(hostname));
 }
@@ -1482,25 +1337,25 @@ FUNC(hostname)
 /*
  * Return the name of the current user or the user with the given uid.
  */
-xFUNC(username)
+static
+ici_net_username()
 {
-    char	*s;
+    char        *s;
 #ifdef _WINDOWS
-    char	buffer[64];	/* I hope this is long enough! */
-    int		len;
+    char        buffer[64];     /* I hope this is long enough! */
+    int         len;
 
-    INITWINSOCK();
     len = sizeof buffer;
     if (!GetUserName(buffer, &len))
-	strcpy(buffer, "Windows User");
+        strcpy(buffer, "Windows User");
     s = buffer;
-#else	/* #ifdef _WINDOWS */
+#else   /* #ifdef _WINDOWS */
     /*
      * Do a password file lookup under Unix
      */
-    char		*getenv();
-    struct passwd	*pwent;
-    long		uid = getuid();
+    char                *getenv();
+    struct passwd       *pwent;
+    long                uid = getuid();
 
     if (NARGS() > 0)
     {
@@ -1509,13 +1364,13 @@ xFUNC(username)
     }
     if ((pwent = getpwuid(uid)) == NULL)
     {
-	sprintf(buf, "can't find name for uid %ld", uid);
-	error = buf;
-	return 1;
+        sprintf(buf, "can't find name for uid %ld", uid);
+        error = buf;
+        return 1;
     }
     s = pwent->pw_name;
 #endif
-    return ici_ret_no_decref((object_t *)new_cname(s));
+    return ici_str_ret(s);
 }
 #endif
 
@@ -1523,61 +1378,58 @@ xFUNC(username)
 /*
  * Get the address of the connected socket's client.
  */
-FUNC(getpeername)
+static int
+ici_net_getpeername()
 {
-    struct sockaddr_in	addr;
-    int			len = sizeof addr;
-    net_skt_t		*skt;
+    struct sockaddr_in  addr;
+    int                 len = sizeof addr;
+    ici_handle_t            *skt;
 
-    if (ici_typecheck("o", &skt))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("h", ICIS(socket), &skt))
+        return 1;
     if (isclosed(skt))
-	return 1;
-    if (getpeername(skt->s_skt, (struct sockaddr *)&addr, &len) == -1)
-	return serr("net.getpeername");
-    return str_ret(unparse_addr(&addr));
+        return 1;
+    if (getpeername((SOCKET)skt->h_ptr, (struct sockaddr *)&addr, &len) == -1)
+        return ici_get_last_errno("net.getpeername", NULL);
+    return ici_str_ret(unparse_addr(&addr));
 }
 
 /*
  * Get a socket's address.
  */
-FUNC(getsockname)
+static int
+ici_net_getsockname()
 {
-    struct sockaddr_in	addr;
-    int			len = sizeof addr;
-    net_skt_t		*skt;
+    struct sockaddr_in  addr;
+    int                 len = sizeof addr;
+    ici_handle_t            *skt;
 
-    if (ici_typecheck("o", &skt))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("h", ICIS(socket), &skt))
+        return 1;
     if (isclosed(skt))
-	return 1;
-    if (getsockname(skt->s_skt, (struct sockaddr *)&addr, &len) == -1)
-	return serr("net.getsockname");
-    return str_ret(unparse_addr(&addr));
+        return 1;
+    if (getsockname((SOCKET)skt->h_ptr, (struct sockaddr *)&addr, &len) == -1)
+        return ici_get_last_errno("net.getsockname", NULL);
+    return ici_str_ret(unparse_addr(&addr));
 }
 
 /*
  * Get the port number bound to a socket.
  */
-FUNC(getportno)
+static int
+ici_net_getportno()
 {
-    struct sockaddr_in	addr;
-    int			len = sizeof addr;
-    net_skt_t		*skt;
+    struct sockaddr_in  addr;
+    int                 len = sizeof addr;
+    ici_handle_t            *skt;
 
-    if (ici_typecheck("o", &skt))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("h", ICIS(socket), &skt))
+        return 1;
     if (isclosed(skt))
-	return 1;
-    if (getsockname(skt->s_skt, (struct sockaddr *)&addr, &len) == -1)
-	return serr("net.getsockname");
-    return int_ret(ntohs(addr.sin_port));
+        return 1;
+    if (getsockname((SOCKET)skt->h_ptr, (struct sockaddr *)&addr, &len) == -1)
+        return ici_get_last_errno("net.getsockname", NULL);
+    return ici_int_ret(ntohs(addr.sin_port));
 }
 
 /*
@@ -1586,19 +1438,19 @@ FUNC(getportno)
  * If the host's address cannot be resolved an error, "no such host"
  * is raised.
  */
-FUNC(gethostbyname)
+static int
+ici_net_gethostbyname()
 {
-    char		*name;
-    struct hostent	*hostent;
-    struct in_addr	addr;
+    char                *name;
+    struct hostent      *hostent;
+    struct in_addr      addr;
 
-    INITWINSOCK();
     if (ici_typecheck("s", &name))
-	return 1;
+        return 1;
     if ((hostent = gethostbyname(name)) == NULL)
-	return seterror("no such host", "no such host: \"%.32s\"", name);
+        return seterror("no such host: \"%.32s\"", name);
     memcpy(&addr, *hostent->h_addr_list, sizeof addr);
-    return str_ret(inet_ntoa(addr));
+    return ici_str_ret(inet_ntoa(addr));
 }
 
 /*
@@ -1611,40 +1463,38 @@ FUNC(gethostbyname)
  * The name is returned as a string. If the name cannot be resolved
  * an exception, "unknown host", is raised.
  */
-FUNC(gethostbyaddr)
+ici_net_gethostbyaddr()
 {
-    long		addr;
-    char		*s;
-    struct hostent	*hostent;
+    long                addr;
+    char                *s;
+    struct hostent      *hostent;
 
-    INITWINSOCK();
     if (NARGS() != 1)
-	return ici_argcount(1);
+        return ici_argcount(1);
     if (isint(ARG(0)))
-	addr = htonl((unsigned long)intof(ARG(0))->i_value);
+        addr = htonl((unsigned long)intof(ARG(0))->i_value);
     else if (ici_typecheck("s", &s))
-	return 1;
+        return 1;
     else if ((addr = inet_addr(s)) == 0xFFFFFFFF)
-	return seterror("invalid IP address", "invalid IP address: %32s", s);
+        return seterror("invalid IP address: %32s", s);
     if ((hostent = gethostbyaddr((char *)&addr, sizeof addr, AF_INET)) == NULL)
-	return seterror("unknown host", s != NULL ? "unknown host: %32s" : NULL, s);
-    return str_ret((char *)hostent->h_name);
+        return seterror(s != NULL ? "unknown host: %32s" : "unkown host", s);
+    return ici_str_ret((char *)hostent->h_name);
 }
 
 /*
  * f_sktno - return the OS socket descriptor (file descriptor) for a socket
  */
-FUNC(sktno)
+static int
+ici_net_sktno()
 {
-    net_skt_t	*skt;
+    ici_handle_t            *skt;
 
-    if (ici_typecheck("o", &skt))
-	return 1;
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
+    if (ici_typecheck("h", ICIS(socket), &skt))
+        return 1;
     if (isclosed(skt))
-	return 1;
-    return int_ret((long)skt->s_skt);
+        return 1;
+    return ici_int_ret((long)(SOCKET)skt->h_ptr);
 }
 
 /*
@@ -1656,20 +1506,20 @@ FUNC(sktno)
 
 enum
 {
-    SF_BUFSIZ	= 2048,	/* Read/write buffer size */
-    SF_READ	= 1,	/* Open for reading */
-    SF_WRITE	= 2,	/* Open for writing */
-    SF_EOF	= 4	/* EOF read */
+    SF_BUFSIZ   = 2048, /* Read/write buffer size */
+    SF_READ     = 1,    /* Open for reading */
+    SF_WRITE    = 2,    /* Open for writing */
+    SF_EOF      = 4     /* EOF read */
 };
 
 typedef struct
 {
-    net_skt_t	*sf_socket;
-    char	sf_buf[SF_BUFSIZ];
-    char	*sf_bufp;
-    int		sf_nbuf;
-    int		sf_pbchar;
-    int		sf_flags;
+    ici_handle_t    *sf_socket;
+    char        sf_buf[SF_BUFSIZ];
+    char        *sf_bufp;
+    int         sf_nbuf;
+    int         sf_pbchar;
+    int         sf_flags;
 }
 skt_file_t;
 
@@ -1679,26 +1529,26 @@ skt_getch(skt_file_t *sf)
     char    c;
 
     if (!(sf->sf_flags & SF_READ) || (sf->sf_flags & SF_EOF))
-	return EOF;
+        return EOF;
     if (sf->sf_pbchar != EOF)
     {
-	c = sf->sf_pbchar;
-	sf->sf_pbchar = EOF;
+        c = sf->sf_pbchar;
+        sf->sf_pbchar = EOF;
     }
     else
     {
-	if (sf->sf_nbuf == 0)
-	{
-	    sf->sf_nbuf = recv(sf->sf_socket->s_skt, sf->sf_buf, SF_BUFSIZ, 0);
-	    if (sf->sf_nbuf <= 0)
-	    {
-		sf->sf_flags |= SF_EOF;
-		return EOF;
-	    }
-	    sf->sf_bufp = sf->sf_buf;
-	}
-	c = *sf->sf_bufp++;
-	--sf->sf_nbuf;
+        if (sf->sf_nbuf == 0)
+        {
+            sf->sf_nbuf = recv((SOCKET)sf->sf_socket->h_ptr, sf->sf_buf, SF_BUFSIZ, 0);
+            if (sf->sf_nbuf <= 0)
+            {
+                sf->sf_flags |= SF_EOF;
+                return EOF;
+            }
+            sf->sf_bufp = sf->sf_buf;
+        }
+        c = *sf->sf_bufp++;
+        --sf->sf_nbuf;
     }
     return (unsigned char)c;
 }
@@ -1707,9 +1557,9 @@ static int
 skt_ungetc(int c, skt_file_t *sf)
 {
     if (!(sf->sf_flags & SF_READ))
-	return EOF;
+        return EOF;
     if (sf->sf_pbchar != EOF)
-	return EOF;
+        return EOF;
     sf->sf_pbchar = c;
     return 0;
 }
@@ -1719,14 +1569,14 @@ skt_flush(skt_file_t *sf)
 {
     if (sf->sf_flags & SF_WRITE && sf->sf_nbuf > 0)
     {
-	int	rc;
-	
-	if ((rc = send(sf->sf_socket->s_skt, sf->sf_buf, sf->sf_nbuf, 0)) != sf->sf_nbuf)
-	    return 1;
+        int     rc;
+
+        if ((rc = send((SOCKET)sf->sf_socket->h_ptr, sf->sf_buf, sf->sf_nbuf, 0)) != sf->sf_nbuf)
+            return 1;
     }
     else /* sf->sf_flags & SF_READ */
     {
-	sf->sf_pbchar = EOF;
+        sf->sf_pbchar = EOF;
     }
     sf->sf_bufp = sf->sf_buf;
     sf->sf_nbuf = 0;
@@ -1739,11 +1589,11 @@ skt_putch(int c, skt_file_t *sf)
     char    ch = c;
 
     if (!(sf->sf_flags & SF_WRITE))
-	return EOF;
+        return EOF;
     if (sf->sf_nbuf == SF_BUFSIZ)
     {
-	if (skt_flush(sf))
-	    return EOF;
+        if (skt_flush(sf))
+            return EOF;
     }
     *sf->sf_bufp++ = c;
     ++sf->sf_nbuf;
@@ -1753,19 +1603,19 @@ skt_putch(int c, skt_file_t *sf)
 static int
 skt_fclose(skt_file_t *sf)
 {
-    int		rc = 0;
+    int         rc = 0;
 
     if (sf->sf_flags & SF_WRITE)
-	rc = skt_flush(sf);
-    decref(sf->sf_socket);
-    ici_free(sf);
+        rc = skt_flush(sf);
+    ici_decref(sf->sf_socket);
+    ici_tfree(sf, skt_file_t);
     return rc;
 }
 
 static long
 skt_seek(void)
 {
-    error = "cannot seek on a socket";
+    ici_error = "cannot seek on a socket";
     return -1;
 }
 
@@ -1778,26 +1628,26 @@ skt_eof(skt_file_t *sf)
 static int
 skt_write(char *buf, int n, skt_file_t *sf)
 {
-    int		nb;
-    int		rc;
+    int         nb;
+    int         rc;
 
     if (!(sf->sf_flags & SF_WRITE))
-	return EOF;
+        return EOF;
     for (rc = nb = 0; n > 0; n -= nb, rc += nb)
     {
-	if (sf->sf_nbuf == SF_BUFSIZ && skt_flush(sf))
-	    return EOF;
-	if ((nb = n) > (SF_BUFSIZ - sf->sf_nbuf))
-	    nb = SF_BUFSIZ - sf->sf_nbuf;
-	memcpy(sf->sf_bufp, buf, nb);
-	sf->sf_bufp += nb;
-	sf->sf_nbuf += nb;
-	buf += nb;
+        if (sf->sf_nbuf == SF_BUFSIZ && skt_flush(sf))
+            return EOF;
+        if ((nb = n) > (SF_BUFSIZ - sf->sf_nbuf))
+            nb = SF_BUFSIZ - sf->sf_nbuf;
+        memcpy(sf->sf_bufp, buf, nb);
+        sf->sf_bufp += nb;
+        sf->sf_nbuf += nb;
+        buf += nb;
     }
     return rc;
 }
 
-static ftype_t	net_skt_ftype =
+static ftype_t  net_skt_ftype =
 {
     skt_getch,
     skt_ungetc,
@@ -1810,29 +1660,29 @@ static ftype_t	net_skt_ftype =
 };
 
 static skt_file_t *
-skt_open(net_skt_t *s, char *mode)
+skt_open(ici_handle_t *s, char *mode)
 {
-    skt_file_t	*sf;
+    skt_file_t  *sf;
 
-    if ((sf = talloc(skt_file_t)) != NULL)
+    if ((sf = ici_talloc(skt_file_t)) != NULL)
     {
-	sf->sf_socket = s;
-	incref(sf->sf_socket);
-	sf->sf_pbchar = EOF;
-	sf->sf_bufp = sf->sf_buf;
-	sf->sf_nbuf = 0;
-	switch (*mode)
-	{
-	case 'r':
-	    sf->sf_flags = SF_READ;
-	    break;
-	case 'w':
-	    sf->sf_flags = SF_WRITE;
-	    break;
-	default:
-	    seterror("bad open mode for socket", "bad open mode, \"%s\", for socket", mode);
-	    return NULL;
-	}
+        sf->sf_socket = s;
+        ici_incref(sf->sf_socket);
+        sf->sf_pbchar = EOF;
+        sf->sf_bufp = sf->sf_buf;
+        sf->sf_nbuf = 0;
+        switch (*mode)
+        {
+        case 'r':
+            sf->sf_flags = SF_READ;
+            break;
+        case 'w':
+            sf->sf_flags = SF_WRITE;
+            break;
+        default:
+            seterror("bad open mode, \"%s\", for socket", mode);
+            return NULL;
+        }
     }
     return sf;
 }
@@ -1840,63 +1690,62 @@ skt_open(net_skt_t *s, char *mode)
 /*
  * f_sktopen - turn a socket descriptor into a file
  */
-FUNC(sktopen)
+static int
+ici_net_sktopen()
 {
-    net_skt_t		*skt;
-    char		*mode;
-    file_t		*f;
-    skt_file_t		*sf;
+    ici_handle_t            *skt;
+    char                *mode;
+    file_t              *f;
+    skt_file_t          *sf;
 
-    if (ici_typecheck("os", &skt, &mode))
+    if (ici_typecheck("hs", ICIS(socket), &skt, &mode))
     {
-	if (ici_typecheck("o", &skt))
-	    return 1;
-	mode = "r";
+        if (ici_typecheck("h", ICIS(socket), &skt))
+            return 1;
+        mode = "r";
     }
-    if (!isnetskt(objof(skt)))
-	return ici_argerror(0);
     if (isclosed(skt))
-	return 1;
+        return 1;
     if ((sf = skt_open(skt, mode)) == NULL)
-	return 1;
-    if ((f = new_file((char *)sf, &net_skt_ftype, NULL)) == NULL)
+        return 1;
+    if ((f = new_file((char *)sf, &net_skt_ftype, NULL, NULL)) == NULL)
     {
-	skt_fclose(sf);
-	return 1;
+        skt_fclose(sf);
+        return 1;
     }
     return ici_ret_with_decref(objof(f));
 }
 
-#ifndef _WINDOWS
+#ifndef USE_WINSOCK
 /*
  * f_socketpair - return a pair of connected stream sockets
  */
-FUNC(socketpair)
+static int
+ici_net_socketpair()
 {
-    array_t	*a;
-    net_skt_t	*s;
-    int		sv[2];
+    array_t             *a;
+    ici_handle_t        *s;
+    int                 sv[2];
 
-    INITWINSOCK();
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
-	return serr("net.socketpair");
-    if ((a = new_array()) == NULL || pushcheck(a, 2))
-	goto fail1;
+        return ici_get_last_errno("net.socketpair", NULL);
+    if ((a = ici_array_new(2)) == NULL)
+        goto fail1;
     if ((s = new_netsocket(sv[0])) == NULL)
     {
-	decref(a);
-	goto fail1;
+        ici_decref(a);
+        goto fail1;
     }
     *a->a_top++ = objof(s);
-    decref(s);
+    ici_decref(s);
     if ((s = new_netsocket(sv[1])) == NULL)
     {
-	close(sv[1]);
-	decref(a);
-	goto fail;
+        close(sv[1]);
+        ici_decref(a);
+        goto fail;
     }
     *a->a_top++ = objof(s);
-    decref(s);
+    ici_decref(s);
     return ici_ret_with_decref(objof(a));
 
 fail1:
@@ -1905,7 +1754,7 @@ fail1:
 fail:
     return 1;
 }
-#endif	/* #ifndef _WINDOWS */
+#endif  /* #ifndef USE_WINSOCK */
 
 /*
  * Shutdown communications on a socket.
@@ -1918,33 +1767,81 @@ fail:
  *
  * Returns the socket.
  */
-FUNC(shutdown)
+static int
+ici_net_shutdown()
 {
-    net_skt_t	*skt;
-    long	flags;
+    ici_handle_t    *skt;
+    long        flags;
 
     switch (NARGS())
     {
     case 1:
-	if (ici_typecheck("o", &skt))
-	    return 1;
-	flags = 2;
-	break;
+        if (ici_typecheck("h", ICIS(socket), &skt))
+            return 1;
+        flags = 2;
+        break;
 
     case 2:
-	if (ici_typecheck("oi", &skt, &flags))
-	    return 1;
-	break;
+        if (ici_typecheck("hi", ICIS(socket), &skt, &flags))
+            return 1;
+        break;
 
     default:
-	return ici_argcount(2);
+        return ici_argcount(2);
     }
-    shutdown(skt->s_skt, (int)flags);
+    shutdown((SOCKET)skt->h_ptr, (int)flags);
     return ici_ret_no_decref(objof(skt));
 }
 
-
-#if defined __MACH__ && defined __APPLE__
-#include "strings.c"
-#include "cfuncs.c"
+static cfunc_t ici_net_cfuncs[] =
+{
+    {CF_OBJ, "socket", ici_net_socket},
+    {CF_OBJ, "close", ici_net_close},
+    {CF_OBJ, "listen", ici_net_listen},
+    {CF_OBJ, "accept", ici_net_accept},
+    {CF_OBJ, "connect", ici_net_connect},
+    {CF_OBJ, "bind", ici_net_bind},
+    {CF_OBJ, "select", ici_net_select},
+    {CF_OBJ, "sendto", ici_net_sendto},
+    {CF_OBJ, "recvfrom", ici_net_recvfrom},
+    {CF_OBJ, "send", ici_net_send},
+    {CF_OBJ, "recv", ici_net_recv},
+    {CF_OBJ, "getsockopt", ici_net_getsockopt},
+    {CF_OBJ, "setsockopt", ici_net_setsockopt},
+    {CF_OBJ, "hostname", ici_net_hostname},
+    {CF_OBJ, "getpeername", ici_net_getpeername},
+    {CF_OBJ, "getsockname", ici_net_getsockname},
+    {CF_OBJ, "getportno", ici_net_getportno},
+    {CF_OBJ, "gethostbyname", ici_net_gethostbyname},
+    {CF_OBJ, "gethostbyaddr", ici_net_gethostbyaddr},
+    {CF_OBJ, "sktno", ici_net_sktno},
+    {CF_OBJ, "sktopen", ici_net_sktopen},
+    {CF_OBJ, "shutdown", ici_net_shutdown},
+#ifndef USE_WINSOCK
+    {CF_OBJ, "socketpair", ici_net_socketpair},
 #endif
+    {CF_OBJ}
+};
+
+object_t *
+ici_net_library_init(void)
+{
+#ifdef  USE_WINSOCK
+    {
+        WSADATA             wsadata;
+
+        if (WSAStartup(MAKEWORD(1, 1), &wsadata))
+        {
+            /*
+             * Can't use GetLastError() on WSAStartup() failure.
+             */
+            ici_error = "failed to initialise Windows socket";
+            return NULL;
+        }
+    }
+#endif
+    if (init_ici_str())
+        return NULL;
+    return objof(ici_module_new(ici_net_cfuncs));
+}
+
