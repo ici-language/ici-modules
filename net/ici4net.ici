@@ -1,10 +1,18 @@
 /*
- * $Id: icinet.ici,v 1.1 2000/03/11 00:29:18 andy Exp $
+ * $Id: ici4net.ici,v 1.1 2002/04/06 01:46:52 timl Exp $
  *
  * Various network related functions for ici.
  */
 
-
+/*
+ * string = net.class_of(ipaddr)
+ *
+ * Returns the network class as a string ("A", "B", "C" or "D")
+ * given an IP address 'ipaddr' (also a string) in dotted decimal
+ * notation.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
+ */
 extern
 class_of(ipaddr)
 {
@@ -38,6 +46,14 @@ join(v, sep)
 }
 
 
+/*
+ * string = net.network_of(ipaddr)
+ *
+ * Returns the network address of a given an IP address 'ipaddr'
+ * (also a string), both dotted decimal notation.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
+ */
 extern
 network_of(ipaddr)
 {

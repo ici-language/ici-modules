@@ -12,6 +12,10 @@ $(OTHERDEFS)
 
 $(LIB): $(OBJS)
 	$(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	
+doc: $(ICISRCS) ici4net.ici
+	ici ../tools/extract-doc-from-src.ici man $(ICISRCS) ici4net.ici
+	ici ../tools/extract-doc-from-src.ici html $(ICISRCS) ici4net.ici
 
 clean:
 	rm -f $(LIB) $(OBJS)
@@ -24,5 +28,7 @@ depend:
 
 install: $(LIBINSTALLS)
 	$(INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
+	$(INSTALL) ici$(MODULE).1 $(PREFIX)/lib/man1
+	
 
 $(OTHERRULES)

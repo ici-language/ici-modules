@@ -20,7 +20,7 @@ echo_client(n, port)
     return 1;
 }
 
-ssock = net.listen(net.bind(net.socket("tcp/ip"), 0));
+ssock = net.listen(net.bind(net.socket("tcp/ip")));
 client = thread(echo_client, n, net.getportno(ssock));
 csock = net.accept(ssock);
 t = 0;

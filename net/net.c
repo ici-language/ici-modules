@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.17 2003/01/04 11:13:48 timl Exp $
+ * $Id: net.c,v 1.18 2003/01/15 01:44:51 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -16,6 +16,20 @@
  * functions are not provided in the Windows version of the module
  * (currently only the socketpair() function is missing).
  *
+ */
+
+/*
+ * The ICI 'net' module provides sockets style network interface functions.
+ * It is available on systems that provide BSD-compatible sockets calls and
+ * for Win32 platforms.  The sockets extension is generally compatible with
+ * the C sockets functions, but uses types and calling semantics more akin to
+ * the ICI environment.
+ *
+ * The sockets extension introduces a new type, 'socket', to hold socket
+ * objects.  The new intrinsic function, 'socket()', returns a 'socket'
+ * object.
+ *
+ * This --intro-- forms part of the --ici-net-- documentation.
  */
 
 #include <ici.h>
@@ -181,21 +195,50 @@ isclosed(ici_handle_t *skt)
 }
 
 /*
- * Parse an IP address in the format "service[@host]" where service is a
- * port number or service name (in the form "name[/proto]" where name is
- * the name of the service and, the optional, proto is either "tcp" or
- * "udp"). The host part is optional and if not specified defaults to
- * the defhost parameter. The host may be specified as an IP address
- * in dotted decimal notation or as a hostname. Three special values
- * are recognsied, "." stands for the local host, "?" stands for any
- * host and "*" means broadcast. The address may be NULL to just
- * initialise the socket address to defhost port 0.
+ * The functions in the 'net' module use strings to specify IP network
+ * addresses.  Addresses may be expressed in one of the forms:
  *
- * The sockaddr structure is filled in and 0 returned if all is okay.
- * When a error occurs the error string is set and 1 is returned.
+ *  [host:]portnum
  *
- * Now also recognises addresses in the form "host:port" (with host
- * and port being numeric or textual as in @ form).
+ * or
+ *
+ *  portnum[@host]
+ *
+ * or
+ *
+ *  [host:]service[/protocol]
+ *
+ * or
+ *
+ *  service[/protocol][@host]
+ *
+ * where '[...]' are optional elements, and:
+ *
+ * portnum              Is an integer port number.
+ *
+ * service              Is a service name that will be looked up in the
+ *                      services database.  (See '/etc/services' on UNIX-like
+ *                      systems).
+ *
+ * protocol             Is either 'tcp' or 'udp'.
+ *
+ * host                 Is either a domain name, an IP address in dotted
+ *                      decimal notation, "." for the local address, "?" for
+ *                      any, or "*" for all.
+ *
+ *                      If the '@host' is omitted, the the default host
+ *                      depends on context (see 'net.bind()' and 'net.connect()').
+ *
+ * This also forms part of the --ici-net-- intro.
+ */
+/*
+ * Parse an IP address in the format described above.  The host part is
+ * optional and if not specified defaults to the defhost parameter.  The
+ * address may be NULL to just initialise the socket address to defhost port
+ * 0.
+ *
+ * The sockaddr structure is filled in and 0 returned if all is okay.  When a
+ * error occurs the error string is set and 1 is returned.
  */
 static struct sockaddr_in *
 parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
@@ -215,6 +258,7 @@ parseaddr(char *raddr, long defhost, struct sockaddr_in *saddr)
     saddr->sin_family = PF_INET;
     saddr->sin_addr.s_addr = htonl(defhost);
     saddr->sin_port = 0;
+    port = 0;
     if (raddr == NULL)
         return saddr;
 
@@ -333,24 +377,24 @@ struct sockaddr_in *addr;
 }
 
 /*
- * Create a socket with a certain protocol (currently TCP or UDP)
- * and return its descriptor. Raises exception if the protocol
- * is unknown or the socket cannot be created.
+ * skt = net.socket([proto])
  *
- * ICI usage,
+ * Create a socket with a certain protocol (currently only TCP or UDP) and return
+ * its descriptor.  Raises exception if the protocol is unknown or the socket
+ * cannot be created.
  *
- *      skt = socket([proto]);
+ * Where proto is one of the strings 'tcp', 'tcp/ip', 'udp' or 'udp/ip'.  The
+ * default, if no argument is passed, is 'tcp'.  If proto is an int it is a
+ * file descriptor for a socket and is a socket object is created with that
+ * file descriptor.
  *
- * Where proto is one of the strings "tcp", "tcp/ip", "udp" or "udp/ip".
- * The default, if no argument is passed, is "tcp". If proto is an
- * int it is a file descriptor for a socket and is a socket object
- * is created with that file descriptor.
- *
- * The "/ip" is the start of handling different protocol families (as
- * implemented in BSD and WINSOCK 2). For compatibiliy with exisitng
- * ICI sockets code the default protocol family is defined to be "ip".
+ * The '/ip' is the start of handling different protocol families (as
+ * implemented in BSD and WINSOCK 2).  For compatibiliy with exisitng ICI
+ * sockets code the default protocol family is defined to be 'ip'.
  *
  * Returns a socket object representing a communications end-point.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_socket()
@@ -407,7 +451,11 @@ ici_net_socket()
 }
 
 /*
- * Close a socket
+ * net.close(socket)
+ *
+ * Close a socket.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_close()
@@ -424,16 +472,15 @@ ici_net_close()
 }
 
 /*
- * Tell the system to listen for connections on a socket. Raises
- * the appropriate system error if it fails.
+ * skt = net.listen(skt [, backlog])
  *
- * ICI usage,
+ * Notify the sytem of willingness to accept connections on 'skt'.  This would
+ * be done to a socket created with 'net.socket()' prior to using
+ * 'net.accept()' to accept connections.  The 'backlog' parameter defines the
+ * maximum length the queue of pending connections may grow to (default 5).
+ * Returns the given 'skt'.
  *
- *      skt = listen(skt [, backlog]);
- *
- * Where skt is the socket descriptor as returned by socket(). The
- * result of listen is its parameter (to allow "functional" programming.)
- *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_listen()
@@ -464,16 +511,17 @@ ici_net_listen()
 }
 
 /*
- * Accept a connection on a socket. Returns the descriptor for the
- * new socket connection or raises an exception.
+ * new_skt = net.accept(skt)
  *
- * ICI usage,
+ * Wait for and accept a connection on the socket 'skt'.  Returns the
+ * descriptor for a new socket connection.  The argument 'skt' is a socket
+ * that has been created with 'net.socket()', bound to a local address with
+ * 'net.bind()', and has been conditioned to listen for connections by a call
+ * to 'net.listen()'.
  *
- *      new_skt = accept(skt);
+ * This may block, but will allow thread switching while blocked.
  *
- * Where skt is a socket descriptor of a TCP socket that has been
- * marked to accept connections (i.e., been passed to listen()).
- * The result is the socket descriptor of the new connection.
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_accept()
@@ -506,18 +554,16 @@ ici_net_accept()
 }
 
 /*
- * Connect a socket to an address. Raises an exception if it fails
- * for some reason or returns the socket passed as the first
- * parameter which is now connected to the address specified as
- * the second parameter.
+ * skt = net.connect(skt, address)
  *
- * ICI usage,
+ * Connect 'skt' to 'address'.  Returns the socket passed; which is now
+ * connected to 'address'.  While connected, sent data will be directed to the
+ * address, and only data received from the address will be accepted.  See the
+ * introduction for a description of address formats.
  *
- *      skt = connect(skt, address);
+ * This may block, but will allow thread switching while blocked.
  *
- * Skt is a socket desciptor and address is a network address as
- * accepted by parseaddr().
- *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_connect()
@@ -563,19 +609,28 @@ ici_net_connect()
 }
 
 /*
- * Bind the local address of a socket and returns socket descriptor.
+ * skt = net.bind(skt [, address])
  *
- * ICI usage,
+ * Bind the socket 'skt' to the local 'address' so that others may connect to
+ * it.  The given socket is returned.
  *
- *      skt = bind(skt [, address]);
+ * If 'address' is not given or is 0, the system allocates a local address
+ * (including port number).  In this case the port number allocated can be
+ * recovered with 'net.getportno()'.
  *
- * If no address is passed the system allocates a local address (i.e., for
- * a TCP socket we pass zero as the port number to bind() and have it select
- * a local port number). If address is passed but has no host portion then
- * the default host address is INADDR_ANY which is usually what you want to
- * do for servers (i.e. a server can use the code "bind(socket("tcp"), port)"
- * to create their sockets which can accept connections originating from any
- * network interface).
+ * If 'address' is given, it may be an integer, in which case it is
+ * interpreted as a port number.  Otherwise it must be a string and will be
+ * interpreted as described in the introduction.
+ *
+ * If 'address' is given, but has no host portion, "?" (any) is used.  Thus,
+ * for example:
+ *
+ *  skt = bind(socket("tcp"), port);
+ *
+ * Will create a socket that accepts connections to the given port originating
+ * from any network interface.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_bind()
@@ -672,19 +727,27 @@ fail:
 }
 
 /*
- * Check for ready sockets with optional timeout. This returns a
- * structure of three sets of descriptors. The parameters to
- * this function are complex. It takes two types of parameters,
- * an integer timeout value (in milliseconds) or up to to three
- * sets of socket descriptors (at least one set must be passed.)
- * The first set is taken to be the sockets to check for reading,
- * the second set is checked for writing and the third set is
- * checked for "urgent" status. The write and urgent sets are
- * optional. Any set may be specified as NULL. This is used to
- * specify, say, just a write set when there is no read set.
- * The read set must be specified (becauses the others are
- * optional) but there are no members.
+ * struct = net.select([int,] set|NULL [, set|NULL [, set|NULL]])
  *
+ * Checks sockets for I/O readiness with an optional timeout.  Select may be
+ * passed up to three sets of sockets that are checked for readiness to
+ * perform I/O.  The first set holds the sockets to test for input pending,
+ * the second set the sockets to test for output able and the third set the
+ * sockets to test for exceptional states.  NULL may be passed in place of a
+ * set parameter to avoid passing empty sets.  An integer may also appear in
+ * the parameter list.  This integer specifies the number of milliseconds to
+ * wait for the sockets to become ready.  If a zero timeout is passed the
+ * sockets are polled to test their state.  If no timeout is passed the call
+ * blocks until at least one of the sockets is ready for I/O.
+ *
+ * The result of select is a struct containing three sets, of sockets,
+ * identified by the keys 'read', 'write' and 'except'.
+ *
+ * This may block, but will allow thread switching while blocked.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
+ */
+/*
  * Aldem: dtabsize now is computed (as max found FD). It is more efficient
  * than select() on ALL FDs.
  */
@@ -854,12 +917,13 @@ fail:
 }
 
 /*
- * Send a message to a specific address.
+ * net.sendto(skt, msg, address)
  *
- * Usage
+ * Send a 'msg' (a string) to a specific 'address'.  This may be used even if
+ * 'skt' is not connected.  If the host portion of the address is missing the
+ * local host address is used.
  *
- *      sendto(skt, msg, address)
- *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_sendto()
@@ -916,9 +980,18 @@ char *flag;
 #endif
 
 /*
- * Receive a message and get the source address. This returns a structure
- * (at the ICI level) containing the data, in result.msg, and the address
- * in result.addr.
+ * struct = net.recvfrom(skt, int)
+ *
+ * Receive a message on the socket 'skt' and return a struct containing the
+ * data of the message and the source address of the data.  The 'int'
+ * parameter gives the maximum number of bytes to receive.  The result is a
+ * struct with the keys 'msg' (a string) being the data data received and
+ * 'addr' (a string) the address it was received from (in one of the @
+ * forms described in the introduction).
+ *
+ * This may block, but will allow thread switching while blocked.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_recvfrom()
@@ -1002,7 +1075,12 @@ fail:
 }
 
 /*
- * Send a message on a socket.
+ * net.send(skt, string)
+ *
+ * Send the message 'string' on the socket 'skt'. The socket must
+ * be connected.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_send()
@@ -1029,7 +1107,14 @@ ici_net_send()
 }
 
 /*
- * Receive a message.
+ * string = net.recv(skt, int)
+ *
+ * Receive data from a socket 'skt' and return it as a string.  The 'int'
+ * parameter gives the maximum size of message that will be received.
+ *
+ * This may block, but will allow thread switching while blocked.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_recv()
@@ -1133,11 +1218,31 @@ sockopt(char *opt, int *level)
 }
 
 /*
- * Get socket options.
+ * int = net.getsockopt(skt, string)
+ *
+ * Retrieve the value of a socket option. A socket may have various
+ * attributes associated with it. These are accessed via the 'getsockopt' and
+ * 'setsockopt' functions.  The attributes are named with 'string' from
+ * the following list:
+ *
+ *  "debug"
+ *  "reuseaddr"
+ *  "keepalive"
+ *  "dontroute"
+ *  "useloopback"   (Linux only)
+ *  "linger"
+ *  "broadcast"
+ *  "oobinline"
+ *  "sndbuf"
+ *  "rcvbuf"
+ *  "type"
+ *  "error"
  *
  * All option values get returned as integers. The only special processing
  * is of the "linger" option. This gets returned as the lingering time if
  * it is set or -1 if lingering is not enabled.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_getsockopt()
@@ -1229,13 +1334,16 @@ bad:
 }
 
 /*
- * setsockopt(skt, string [, val])
+ * setsockopt(skt, string [, int])
  *
- * Set socket options.
+ * Set socket a socket option named by 'string' to 'int' (default 1).
+ * See 'net.getsockopt()' for a list of option names.
  *
  * All socket options are integers. Again linger is a special case. The
  * option value is the linger time, if zero or negative lingering is
  * turned off.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_setsockopt()
@@ -1314,7 +1422,11 @@ bad:
 }
 
 /*
- * Get the host name as a string.
+ * string = net.hostname()
+ *
+ * Return the name of the current host.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_hostname()
@@ -1376,7 +1488,12 @@ ici_net_username()
 
 
 /*
- * Get the address of the connected socket's client.
+ * string = net.getpeername(skt)
+ *
+ * Return the address of the peer of a TCP socket. That is, the
+ * name of the thing it is connected to.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_getpeername()
@@ -1395,7 +1512,11 @@ ici_net_getpeername()
 }
 
 /*
- * Get a socket's address.
+ * string = net.getsockname(skt)
+ *
+ * Return the local address of a socket.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_getsockname()
@@ -1414,7 +1535,11 @@ ici_net_getsockname()
 }
 
 /*
- * Get the port number bound to a socket.
+ * int = net.getportno(skt)
+ *
+ * Return the local port number bound to a TCP or UDP socket.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_getportno()
@@ -1433,10 +1558,14 @@ ici_net_getportno()
 }
 
 /*
+ * string = net.gethostbyname(string)
+ *
  * Return the IP address for the specified host. The address is returned
  * as a string containing the dotted decimal form of the host's address.
  * If the host's address cannot be resolved an error, "no such host"
  * is raised.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_gethostbyname()
@@ -1454,6 +1583,8 @@ ici_net_gethostbyname()
 }
 
 /*
+ * string = net.gethostbyaddr(int|string)
+ *
  * Return the name of a host given an IP address. The IP address is
  * specified as either a string containing an address in dotted
  * decimal or an integer containing the IP address in host byte
@@ -1462,6 +1593,8 @@ ici_net_gethostbyname()
  *
  * The name is returned as a string. If the name cannot be resolved
  * an exception, "unknown host", is raised.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 ici_net_gethostbyaddr()
 {
@@ -1483,7 +1616,11 @@ ici_net_gethostbyaddr()
 }
 
 /*
- * f_sktno - return the OS socket descriptor (file descriptor) for a socket
+ * int = net.sktno(skt)
+ *
+ * Return the underlying OS file descriptor associated with a socket.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_sktno()
@@ -1688,7 +1825,24 @@ skt_open(ici_handle_t *s, char *mode)
 }
 
 /*
- * f_sktopen - turn a socket descriptor into a file
+ * Note that ICI 'socket' objects can not be used directly where
+ * an ICI file object is required (for example, in such functions
+ * as 'printf' and 'getchar'), but a file that refers to the socket
+ * can be obtained by calling 'net.sktopen()' (see below).
+ *
+ * This --intro-- forms part of the --ici-net-- documentation.
+ */
+
+/*
+ * file = net.sktopen(skt [, mode])
+ *
+ * Open a socket as a file, for input or output according to mode (see
+ * 'fopen').
+ *
+ * Note that closing this file does not close the underlying socket.
+ * Also note that no "text" mode is supported, even on Win32 systems.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_sktopen()
@@ -1718,7 +1872,13 @@ ici_net_sktopen()
 
 #ifndef USE_WINSOCK
 /*
- * f_socketpair - return a pair of connected stream sockets
+ * array = net.socketpair()
+ *
+ * Returns an array containing a pair of connected sockets.
+ *
+ * This function is not currently available on Win32 platforms.
+ *
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_socketpair()
@@ -1757,21 +1917,20 @@ fail:
 #endif  /* #ifndef USE_WINSOCK */
 
 /*
- * Shutdown communications on a socket.
+ * socket = net.shutdown(socket [, int ])
  *
- * socket = shutdown(socket [ , int ])
+ * Shutdown the send or receive or both sides of a TCP connection.  The
+ * optional int specifies which direction to shut down, 0 for send, 1 for
+ * receive and 2 for both.  The default is 2.  Returns the same socket it is
+ * given.
  *
- * Shutdown the send or receive or both sides of a TCP connection.
- * The optional int specifies which direction to shut down, 0 for
- * send, 1 for receive and 2 for both. The default is 2.
- *
- * Returns the socket.
+ * This --topic-- forms part of the --ici-net-- documentation.
  */
 static int
 ici_net_shutdown()
 {
     ici_handle_t    *skt;
-    long        flags;
+    long            flags;
 
     switch (NARGS())
     {
