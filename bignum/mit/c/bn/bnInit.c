@@ -6,7 +6,7 @@
 /* bnInit.c: a piece of the bignum kernel written in C */
 
 
-		/***************************************/
+        /***************************************/
 
 #define BNNMACROS_OFF
 #include "BigNum.h"
@@ -18,7 +18,7 @@ static int Initialized = FALSE;
 static char copyright[]="@(#)bnInit.c: copyright Digital Equipment Corporation & INRIA 1988, 1989, 1990\n";
 
 
-		/***************************************/
+        /***************************************/
 
 void BnnInit ()
 {
@@ -30,7 +30,7 @@ void BnnInit ()
     }
 }
 
-		/***************************************/
+        /***************************************/
 
 void BnnClose ()
 {
@@ -42,31 +42,31 @@ void BnnClose ()
     }
 }
 
-		/***************************************/
+        /***************************************/
 
-		/* some U*x standard functions do not exist on VMS */
+        /* some U*x standard functions do not exist on VMS */
 
-#ifdef VMS
+#if defined(VMS) || defined(_WIN32)
 
 /* Copies LENGTH bytes from string SRC to string DST */
 void bcopy(src, dst, length)
-char	*src, *dst;
-register int	length;
+char    *src, *dst;
+register int    length;
 {
     for (; length > 0; length--)
-	*dst++ = *src++;
+    *dst++ = *src++;
 }
 
 /* Places LENGTH 0 bytes in the string B */
 void bzero(buffer, length)
-char	*buffer;
-register int	length;
+char    *buffer;
+register int    length;
 {
     for (;  length>0; length--)
-	*buffer++ = 0;
+    *buffer++ = 0;
 }
 
 #endif
 
 
-		/***************************************/
+        /***************************************/

@@ -1,5 +1,8 @@
+# This comes from bignum/Makefile.frag...
 CFLAGS = $(CF_CFLAGS) -DDIGITon32BITS -I. -I$(CF_ICI_H_DIR) -Imit/h
-OBJS = $(CF_STAR_DOT_O) KerN.o bnInit.o bnMult.o bnDivide.o bnCmp.o bzf.o bz.o 
+OBJS = $(CF_STAR_DOT_O) KerN.$(CF_O) bnInit.$(CF_O) \
+	bnMult.$(CF_O) bnDivide.$(CF_O) bnCmp.$(CF_O) \
+	bzf.$(CF_O) bz.$(CF_O) 
 
 KerN.$(CF_O):	mit/c/KerN.c
 	$(CC) $(CFLAGS) -c mit/c/KerN.c
@@ -21,3 +24,4 @@ bzf.$(CF_O):	mit/c/bzf.c
 
 bz.$(CF_O):	mit/c/bz.c
 	$(CC) $(CFLAGS) -c mit/c/bz.c
+# end of bignum/Makefile.frag
