@@ -286,6 +286,12 @@ forall (can_do_flavs, module in modules)
         f = fopen(makein = sprintf("%s/Makefile.%s", module, flavour));
     onerror try
         f = fopen(makein = sprintf("%s/Makefile.generic", module));
+    onerror try
+    {
+        fopen(sprintf("%s/Makefile.patch", module));
+        system(sprintf("patch -o %s/Makefile.patched Makefile.generic %s/Makefile.patch", module, module));
+        f = fopen(makein = sprintf("%s/Makefile.patched", module));
+    }
     onerror
         f = fopen(makein = "Makefile.generic");
     f = getfile(f);
