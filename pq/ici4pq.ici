@@ -1,5 +1,5 @@
 /*
- * Constants etc... used by PQ module.  All dervied from enums
+ * Constants used by pq module.  All dervied from enums
  * defined by the PostgreSQL API header files.
  */
 

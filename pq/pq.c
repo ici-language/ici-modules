@@ -1,198 +1,56 @@
 /* 
- * $Id: pq.c,v 1.10 2001/09/23 05:58:06 atrn Exp $
+ * $Id: pq.c,v 1.11 2001/11/16 20:26:33 atrn Exp $
  *
  * ICI PostgreSQL inferface module.
  */
 
-#include "ici.h"
 #include <libpq-fe.h>
-
-typedef struct
-{
-    object_t	o_head;
-    PGconn	*pgconn;
-}
-connection_t;
-
-static unsigned long
-mark_connection(object_t *o)
-{
-    o->o_flags |= O_MARK;
-    return sizeof (connection_t);
-}
-
-static type_t	connection_type =
-{
-    mark_connection,
-    free_simple,
-    hash_unique,
-    cmp_unique,
-    copy_simple,
-    assign_simple,
-    fetch_simple,
-    "connection"
-};
-
-inline
-static connection_t *
-connectionof(void *o)
-{
-    return (connection_t *)o;
-}
-
-inline
-static int
-isconnection(object_t *o)
-{
-    return o->o_type == &connection_type;
-}
-
-static
-connection_t *
-new_connection(PGconn *con)
-{
-    connection_t	*c;
-
-    if (con == NULL)
-    {
-	c = NULL;
-	if (error == NULL || *error == '\0')
-	    error = "NULL PGconn * passed to new_connection";
-    }
-    else if ((c = talloc(connection_t)) != NULL)
-    {
-	objof(c)->o_flags = 0;
-	objof(c)->o_nrefs = 1;
-	objof(c)->o_tcode = TC_OTHER;
-	objof(c)->o_type  = &connection_type;
-	c->pgconn = con;
-	rego(c);
-    }
-    return c;
-}
-
-typedef struct
-{
-    object_t	o_head;
-    PGresult	*pgresult;
-}
-result_t;
-
-inline
-static result_t *
-resultof(void *o)
-{
-    return (result_t *)o;
-}
-
-static unsigned long
-mark_result(object_t *o)
-{
-    o->o_flags |= O_MARK;
-    return sizeof (result_t);
-}
+#include <ici.h>
+#include "icistr.h"
+#include <icistr-setup.h>
 
 static void
-free_result(object_t *o)
+ici_pq_result_pre_free(ici_handle_t *h)
 {
-    if (resultof(o)->pgresult != NULL)
-	PQclear(resultof(o)->pgresult);
-    ici_free(o);
+    PQclear((PGresult *)h->h_ptr);
 }
 
-static type_t	result_type =
-{
-    mark_result,
-    free_result,
-    hash_unique,
-    cmp_unique,
-    copy_simple,
-    assign_simple,
-    fetch_simple,
-    "result"
-};
-
-inline
 static int
-isresult(object_t *o)
+glue_i_c(void)
 {
-    return o->o_type == &result_type;
-}
+    ici_handle_t *conn;
+    int (*pf)();
 
-static
-result_t *
-new_result(PGresult *result)
-{
-    result_t	*c;
-    int		rc;
-
-    if (result == NULL)
-	c = NULL;
-    else if
-    (
-	(rc = PQresultStatus(result)) == PGRES_BAD_RESPONSE
-	||
-	rc == PGRES_NONFATAL_ERROR
-	||
-	rc == PGRES_FATAL_ERROR
-    )
-    {
-	error = PQresultErrorMessage(result);
-	c = NULL;
-    }
-    else if ((c = talloc(result_t)) != NULL)
-    {
-	objof(c)->o_flags = 0;
-	objof(c)->o_nrefs = 1;
-	objof(c)->o_tcode = TC_OTHER;
-	objof(c)->o_type  = &result_type;
-	c->pgresult = result;
-	rego(c);
-    }
-    return c;
-}
-
-FUNCDEF(glue_i_c)
-{
-    connection_t	*conn;
-
-    if (ici_typecheck("o", &conn))
+    if (ici_typecheck("h", ICIS(PGconn), &conn))
 	return 1;
-    if (!isconnection(objof(conn)))
-	return ici_argerror(0);
-    return int_ret((*CF_ARG1())(conn->pgconn));
+    pf = CF_ARG1();
+    return ici_int_ret((*pf)((PGconn *)conn->h_ptr));
 }
 
-FUNCDEF(glue_n_c)
+static int
+glue_n_c(void)
 {
-    connection_t	*conn;
+    ici_handle_t *conn;
+    void (*pf)();
 
-    if (ici_typecheck("o", &conn))
+    if (ici_typecheck("h", ICIS(PGconn), &conn))
 	return 1;
-    if (!isconnection(objof(conn)))
-	return ici_argerror(0);
-    (*CF_ARG1())(conn->pgconn);
-    return null_ret();
+    pf = CF_ARG1();
+    (*pf)((PGconn *)conn->h_ptr);
+    return ici_null_ret();
 }
 
-FUNC(glue_s_c)
+static int
+glue_s_c(void)
 {
-    connection_t	*conn;
+    ici_handle_t *conn;
+    char *(*pf)();
 
-    if (ici_typecheck("o", &conn))
+    if (ici_typecheck("h", ICIS(PGconn), &conn))
 	return 1;
-    if (!isconnection(objof(conn)))
-	return ici_argerror(0);
-    return str_ret((char *)(*CF_ARG1())(conn->pgconn));
+    pf = CF_ARG1();
+    return ici_str_ret((*pf)((PGconn *)conn->h_ptr));
 }
-
-NEED_STRING(keyword);
-NEED_STRING(envvar);
-NEED_STRING(compiled);
-NEED_STRING(val);
-NEED_STRING(label);
-NEED_STRING(dispchar);
-NEED_STRING(dispsize);
 
 static struct_t *
 conninfoOption_to_struct(PQconninfoOption *opt)
@@ -201,21 +59,20 @@ conninfoOption_to_struct(PQconninfoOption *opt)
     string_t		*s;
     int_t		*i;
 
-    NEED_STRINGS(NULL);
-    if ((d = new_struct()) == NULL)
+    if ((d = ici_struct_new()) == NULL)
 	return NULL;
 
 #define	ASSIGN(KEY)\
     if (opt->KEY == NULL)\
 	s = stringof(&o_null);\
-    else if ((s = new_cname(opt->KEY)) == NULL)\
+    else if ((s = ici_str_new_nul_term(opt->KEY)) == NULL)\
 	goto fail;\
-    if (assign(d, STRING(KEY), s))\
+    if (ici_assign(d, ICIS(KEY), s))\
     {\
-	decref(s);\
+	ici_decref(s);\
 	goto fail;\
     }\
-    decref(s)
+    ici_decref(s)
 
     ASSIGN(keyword);
     ASSIGN(envvar);
@@ -226,51 +83,53 @@ conninfoOption_to_struct(PQconninfoOption *opt)
 
 #undef ASSIGN
 
-    if ((i = new_int(opt->dispsize)) == NULL)
+    if ((i = ici_int_new(opt->dispsize)) == NULL)
 	goto fail;
-    if (assign(d, STRING(dispsize), i))
+    if (ici_assign(d, ICIS(dispsize), i))
     {
-	decref(i);
+	ici_decref(i);
 	goto fail;
     }
-    decref(i);
+    ici_decref(i);
 
     return d;
 
 fail:
-    decref(d);
+    ici_decref(d);
     return NULL;
 }
 
-FUNC(conndefaults)
+static int
+ici_pq_conndefaults(void)
 {
     array_t		*a;
     struct_t		*d;
     PQconninfoOption	*opt;
     PQconninfoOption	*p;
 
-    if ((a = new_array()) == NULL)
+    if ((a = ici_array_new(7)) == NULL) /* conninfoOption has seven fields */
 	return 1;
     opt = PQconndefaults();
     for (p = opt; p->keyword != NULL; ++p)
     {
-	if (pushcheck(a, 1))
+	if (ici_stk_push_chk(a, 1))
 	    goto fail;
 	if ((d = conninfoOption_to_struct(p)) == NULL)
 	    goto fail;
 	*a->a_top++ = objof(d);
-	decref(d);
+	ici_decref(d);
     }
     PQconninfoFree(opt);
     return ici_ret_with_decref(objof(a));
 
 fail:
     PQconninfoFree(opt);
-    decref(a);
+    ici_decref(a);
     return 1;
 }
 
-FUNC(connectdb)
+static int
+ici_pq_connectdb(void)
 {
     char	*conninfo;
     PGconn	*conn;
@@ -279,26 +138,27 @@ FUNC(connectdb)
 	return 1;
     if ((conn = PQconnectdb(conninfo)) == NULL)
     {
-	error = "unable to create PostgreSQL connection object";
+	ici_error = "unable to create PostgreSQL connection object";
 	return 1;
     }
     if (PQstatus(conn) != CONNECTION_OK)
     {
-	error = PQerrorMessage(conn);
-	if (chkbuf(strlen(error)+1))
-	    error = "failed to connect to database";
+	char *err = PQerrorMessage(conn);
+	if (ici_chkbuf(strlen(err) + 1))
+	    ici_error = "failed to connect to database";
 	else
 	{
-	    strcpy(buf, error);
-	    error = buf;
+	    strcpy(ici_buf, err);
+	    ici_error = ici_buf;
 	}
 	PQfinish(conn);
 	return 1;
     }
-    return ici_ret_with_decref(objof(new_connection(conn)));
+    return ici_ret_with_decref(objof(ici_handle_new(conn, ICIS(PGconn), NULL)));
 }
 
-FUNC(setdbLogin)
+static int
+ici_pq_setdbLogin(void)
 {
     char	*host;
     char	*port;
@@ -312,67 +172,51 @@ FUNC(setdbLogin)
     if (ici_typecheck("sssssss", &host, &port, &options, &tty, &dbname, &login, &pwd))
 	return 1;
     conn = PQsetdbLogin(host, port, options, tty, dbname, login, pwd);
-    return ici_ret_with_decref(objof(new_connection(conn)));
+    return ici_ret_with_decref(objof(ici_handle_new(conn, ICIS(PGconn), NULL)));
 }
 
-FUNC(connectStart)
+static int
+ici_pq_connectStart(void)
 {
     char	*conninfo;
 
     if (ici_typecheck("s", &conninfo))
 	return 1;
-    return ici_ret_with_decref(objof(new_connection(PQconnectStart(conninfo))));
+    return ici_ret_with_decref(objof(ici_handle_new(PQconnectStart(conninfo), ICIS(PGconn), NULL)));
 }
-
-CFUNC1(connectPoll, glue_i_c, PQconnectPoll);
-CFUNC1(status, glue_i_c, PQstatus);
-CFUNC1(finish, glue_n_c, PQfinish);
-CFUNC1(reset, glue_n_c, PQreset);
-CFUNC1(resetStart, glue_i_c, PQresetStart);
-CFUNC1(resetPoll, glue_i_c, PQresetPoll);
-CFUNC1(db, glue_s_c, PQdb);
-CFUNC1(user, glue_s_c, PQuser);
-CFUNC1(pass, glue_s_c, PQpass);
-CFUNC1(host, glue_s_c, PQhost);
-CFUNC1(port, glue_s_c, PQport);
-CFUNC1(tty, glue_s_c, PQtty);
-CFUNC1(options, glue_s_c, PQoptions);
-CFUNC1(errorMessage, glue_s_c, PQerrorMessage);
-CFUNC1(socket, glue_i_c, PQsocket);
-CFUNC1(clientEncoding, glue_i_c, PQclientEncoding);
-CFUNC1(backendPID, glue_i_c, PQbackendPID);
 
 static int
 cleared_result()
 {
-    error = "attempt to use result after clearing";
+    ici_error = "attempt to use result after clearing";
     return 1;
 }
 
-FUNCDEF(glue_i_r)
+static int
+glue_i_r(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
+    int (*pf)();
 
-    if (ici_typecheck("o", &res))
+    if (ici_typecheck("h", ICIS(PGresult), &res))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return int_ret((*CF_ARG1())(res->pgresult));
+    pf = CF_ARG1();
+    return ici_int_ret((*pf)((PGresult *)res->h_ptr));
 }
 
-FUNC(exec)
+static int
+ici_pq_exec(void)
 {
-    connection_t	*conn;
+    ici_handle_t	*conn;
     char		*query;
     PGresult		*res;
+    ici_handle_t	*r;
 
-    if (ici_typecheck("os", &conn, &query))
+    if (ici_typecheck("hs", ICIS(PGconn), &conn, &query))
 	return 1;
-    if (!isconnection(objof(conn)))
-	return ici_argerror(0);
-    res = PQexec(conn->pgconn, query);
+    res = PQexec((PGconn *)conn->h_ptr, query);
     switch (PQresultStatus(res))
     {
     case PGRES_EMPTY_QUERY:
@@ -381,178 +225,156 @@ FUNC(exec)
 	break;
 
     default:
-	error = PQresStatus(PQresultStatus(res));
-	if (chkbuf(strlen(error)+1))
-	    error = "database request failed";
+    {
+	char *err = PQresStatus(PQresultStatus(res));
+	if (ici_chkbuf(strlen(err) + 1))
+	    ici_error = "database request failed";
 	else
 	{
-	    strcpy(buf, error);
-	    error = buf;
+	    strcpy(ici_buf, err);
+	    ici_error = ici_buf;
 	}
 	PQclear(res);
 	return 1;
     }
-    return ici_ret_with_decref(objof(new_result(res)));
+
+    }
+    if ((r = ici_handle_new(res, ICIS(PGresult), NULL)) == NULL)
+	return 1;
+    r->h_pre_free = ici_pq_result_pre_free;
+    return ici_ret_with_decref(objof(r));
 }
 
-CFUNC1(resultStatus, glue_i_r, PQresultStatus);
-
-FUNC(resStatus)
+static int
+ici_pq_resStatus(void)
 {
     long	code;
 
     if (ici_typecheck("i", &code))
 	return 1;
-    return str_ret(PQresStatus(code));
+    return ici_str_ret(PQresStatus(code));
 }
 
-FUNCDEF(glue_s_r)
+static int
+glue_s_r(void)
 {
-    result_t	*res;
+    ici_handle_t	*res;
+    char *(*pf)();
 
-    if (ici_typecheck("o", &res))
+    if (ici_typecheck("h", ICIS(PGresult), &res))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return str_ret((char *)(*CF_ARG1())(res->pgresult));
+    pf = CF_ARG1();
+    return ici_str_ret((*pf)((PGresult *)res->h_ptr));
 }
 
-CFUNC1(resultErrorMessage, glue_s_r, PQresultErrorMessage);
-CFUNC1(cmdStatus, glue_s_r, PQcmdStatus);
-CFUNC1(oidStatus, glue_s_r, PQoidStatus);
-CFUNC1(oidValue, glue_i_r, PQoidValue);
-CFUNC1(cmdTuples, glue_s_r, PQcmdTuples);
-CFUNC1(ntuples, glue_i_r, PQntuples);
-CFUNC1(nfields, glue_i_r, PQnfields);
-CFUNC1(binaryTuples, glue_i_r, PQbinaryTuples);
-
-FUNC(fname)
+static int
+ici_pq_fname(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     long	idx;
 
-    if (ici_typecheck("oi", &res, &idx))
+    if (ici_typecheck("hi", ICIS(PGresult), &res, &idx))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return str_ret(PQfname(res->pgresult, idx));
+    return ici_str_ret(PQfname((PGresult *)res->h_ptr, idx));
 }
 
-FUNC(fnumber)
+static int
+ici_pq_fnumber(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     char	*fname;
 
-    if (ici_typecheck("os", &res, &fname))
+    if (ici_typecheck("hs", ICIS(PGresult), &res, &fname))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return int_ret(PQfnumber(res->pgresult, fname));
+    return ici_int_ret(PQfnumber((PGresult *)res->h_ptr, fname));
 }
 
-FUNCDEF(glue_i_ri)
+static int
+glue_i_ri(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     long	arg;
+    int         (*pf)();
 
-    if (ici_typecheck("oi", &res, &arg))
+    if (ici_typecheck("hi", ICIS(PGresult), &res, &arg))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return int_ret((*CF_ARG1())(res->pgresult, arg));
+    pf = CF_ARG1();
+    return ici_int_ret((*pf)((PGresult *)res->h_ptr, arg));
 }
 
-CFUNC1(ftype, glue_i_ri, PQftype);
-CFUNC1(fsize, glue_i_ri, PQfsize);
-CFUNC1(fmod, glue_i_ri, PQfmod);
-
-FUNC(getvalue)
+static int
+ici_pq_getvalue(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     long	tup;
     long	fld;
 
-    if (ici_typecheck("oii", &res, &tup, &fld))
+    if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return str_ret(PQgetvalue(res->pgresult, tup, fld));
+    return ici_str_ret(PQgetvalue((PGresult *)res->h_ptr, tup, fld));
 }
 
-FUNC(getlength)
+static int
+ici_pq_getlength(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     long	tup;
     long	fld;
 
-    if (ici_typecheck("oii", &res, &tup, &fld))
+    if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return int_ret(PQgetlength(res->pgresult, tup, fld));
+    return ici_int_ret(PQgetlength((PGresult *)res->h_ptr, tup, fld));
 }
 
-FUNC(getisnull)
+static int
+ici_pq_getisnull(void)
 {
-    result_t	*res;
+    ici_handle_t *res;
     long	tup;
     long	fld;
 
-    if (ici_typecheck("oii", &res, &tup, &fld))
+    if (ici_typecheck("hii", ICIS(PGresult), &res, &tup, &fld))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    return int_ret(PQgetisnull(res->pgresult, tup, fld));
+    return ici_int_ret(PQgetisnull((PGresult *)res->h_ptr, tup, fld));
 }
 
-FUNC(clear)
+static int
+ici_pq_clear(void)
 {
-    result_t	*res;
+    ici_handle_t	*res;
 
-    if (ici_typecheck("o", &res))
+    if (ici_typecheck("h", ICIS(PGresult), &res))
 	return 1;
-    if (!isresult(objof(res)))
-	return ici_argerror(0);
-    if (res->pgresult == NULL)
+    if (objof(res)->o_flags & H_CLOSED)
 	return cleared_result();
-    PQclear(res->pgresult);
-    res->pgresult = NULL;
-    return null_ret();
+    PQclear((PGresult *)res->h_ptr);
+    objof(res)->o_flags |= H_CLOSED;
+    return ici_null_ret();
 }
 
-NEED_STRING(header);
-NEED_STRING(align);
-NEED_STRING(standard);
-NEED_STRING(html3);
-NEED_STRING(expanded);
-NEED_STRING(pager);
-NEED_STRING(fieldSep);
-NEED_STRING(tableOpt);
-NEED_STRING(caption);
-NEED_STRING(fieldName);
 
 /*
  * Turn an ICI array of strings into an argv-style array. The memory for
- * the argv-style array is allocated (via ici_raw_alloc()) and must be freed
+ * the argv-style array is allocated (via ici_alloc()) and must be freed
  * after use. The memory is allocated as one block so a single zfree()
  * of the function result is all that's required.
  */
 static char **
-ici_array_to_argv(array_t *a, int *pargc)
+array_to_argv(array_t *a, int *pargc)
 {
     char	**argv;
     int		argc;
@@ -567,12 +389,12 @@ ici_array_to_argv(array_t *a, int *pargc)
     {
 	if (!isstring(*po))
 	{
-	    error = "non-string in argv array";
+	    ici_error = "non-string in argv array";
 	    return NULL;
 	}
 	sz += stringof(*po)->s_nchars + 1;
     }
-    if ((argv = (char **)ici_raw_alloc(sz)) == NULL)
+    if ((argv = (char **)ici_alloc(sz)) == NULL)
 	return NULL;
     p = (char *)&argv[argc];
     for (n = argc, po = a->a_base; n > 0; --n, ++po)
@@ -590,29 +412,30 @@ ici_array_to_argv(array_t *a, int *pargc)
 static PQprintOpt *
 struct_to_printOpt(struct_t *d)
 {
-    static PQprintOpt	popt;
+    PQprintOpt          *popt;
     object_t		*o;
     char		**names;
 
-    NEED_STRINGS(NULL);
+    if ((popt = ici_talloc(PQprintOpt)) == NULL)
+        return NULL;
 
-    popt.header = 0;
-    popt.align = 0;
-    popt.standard = 0;
-    popt.html3 = 0;
-    popt.expanded = 0;
-    popt.pager = 0;
-    popt.fieldSep = NULL;
-    popt.tableOpt = NULL;
-    popt.caption = NULL;
-    popt.fieldName = NULL;
+    popt->header = 0;
+    popt->align = 0;
+    popt->standard = 0;
+    popt->html3 = 0;
+    popt->expanded = 0;
+    popt->pager = 0;
+    popt->fieldSep = NULL;
+    popt->tableOpt = NULL;
+    popt->caption = NULL;
+    popt->fieldName = NULL;
 
 #define FETCH(FLD)\
-    if ((o = fetch(d, STRING(FLD))) != objof(&o_null))\
+    if ((o = ici_fetch(d, ICIS(FLD))) != objof(&o_null))\
     {\
 	if (!isint(o))\
 	    goto nonint;\
-	popt. FLD = intof(o)->i_value;\
+	popt->FLD = intof(o)->i_value;\
     }
 
     FETCH(header);
@@ -624,11 +447,11 @@ struct_to_printOpt(struct_t *d)
 
 #undef FETCH
 #define FETCH(FLD)\
-    if ((o = fetch(d, STRING(FLD))) != objof(&o_null))\
+    if ((o = ici_fetch(d, ICIS(FLD))) != objof(&o_null))\
     {\
 	if (!isstring(o))\
 	    goto nonstr;\
-	popt. FLD = stringof(o)->s_chars;\
+	popt->FLD = stringof(o)->s_chars;\
     }
 
     FETCH(fieldSep);
@@ -638,33 +461,44 @@ struct_to_printOpt(struct_t *d)
 #undef FETCH
 
     names = NULL;
-    if ((o = fetch(d, STRING(fieldName))) != objof(&o_null))
+    if ((o = ici_fetch(d, ICIS(fieldName))) != objof(&o_null))
     {
 	if (!isarray(o))
 	{
-	    error = "print options fieldName field not an array";
+	    ici_error = "print options fieldName field not an array";
 	    return NULL;
 	}
-	names = ici_array_to_argv(arrayof(o), NULL);
+	names = array_to_argv(arrayof(o), NULL);
     }
 
-    popt.fieldName = names;
+    popt->fieldName = names;
 
-    return &popt;
+    return popt;
 
 nonint:
-    error = "non-int value for int field in print options struct";
+    ici_nfree(popt, sizeof *popt);
+    ici_error = "non-int value for int field in print options struct";
     return NULL;
 
 nonstr:
-    error = "non-string value for string field in print options struct";
+    ici_error = "non-string value for string field in print options struct";
     return NULL;
 }
 
-FUNC(print)
+static void
+free_printopt(PQprintOpt *popt)
+{
+    if (popt->fieldName != NULL)
+        ici_free(popt->fieldName);
+    ici_nfree(popt, sizeof *popt);
+}
+
+
+static int
+ici_pq_print(void)
 {
     file_t	*file;
-    result_t	*res;
+    ici_handle_t *res;
     struct_t	*opt;
     PQprintOpt	*popt;
     PQprintOpt	defopt =
@@ -681,19 +515,19 @@ FUNC(print)
 	NULL	/* replacement field name array */
     };
 
-    if ((file = need_stdout()) == NULL)
+    if ((file = ici_need_stdout()) == NULL)
 	return 1;
     popt = &defopt;
     if (NARGS() == 1)
     {
-	if (ici_typecheck("o", res))
+	if (ici_typecheck("h", ICIS(PGresult), res))
 	    return 1;
     }
     else if (NARGS() == 2)
     {
-	if (ici_typecheck("uo", &file, &res))
+	if (ici_typecheck("uh", &file, ICIS(PGresult), &res))
 	{
-	    if (ici_typecheck("od", &res, &opt))
+	    if (ici_typecheck("hd", ICIS(PGresult), &res, &opt))
 		return 1;
 	    if ((popt = struct_to_printOpt(opt)) == NULL)
 		return 1;
@@ -701,49 +535,103 @@ FUNC(print)
     }
     else
     {
-	if (ici_typecheck("uod", &file, &res, &opt))
+	if (ici_typecheck("uhd", &file, ICIS(PGresult), &res, &opt))
 	    return 1;
 	if ((popt = struct_to_printOpt(opt)) == NULL)
 	    return 1;
     }
-    if (file->f_type != &stdio_ftype)
+    if (file->f_type != &ici_stdio_ftype)
     {
-	error = "cannot print to non-stdio file";
-	return 1;
+	ici_error = "cannot print to non-stdio file";
+        if (popt != &defopt)
+            free_printopt(popt);
     }
-    PQprint((FILE *)file->f_file, res->pgresult, popt);
-    return null_ret();
+    PQprint((FILE *)file->f_file, (PGresult *)res->h_ptr, popt);
+    if (popt != &defopt)
+        free_printopt(popt);
+    return ici_null_ret();
 }
 
-FUNC(trace)
+static int
+ici_pq_trace(void)
 {
-    connection_t	*conn;
+    ici_handle_t	*conn;
     file_t		*file;
 
-    if (ici_typecheck("o", &conn))
+    if (ici_typecheck("h", ICIS(PGconn), &conn))
     {
-	if (ici_typecheck("ou", &conn, &file))
+	if (ici_typecheck("hu", ICIS(PGconn), &conn, &file))
 	    return 1;
-	if (file->f_type != &stdio_ftype)
+	if (file->f_type != &ici_stdio_ftype)
 	{
-	    error = "can only trace to stdio-type files";
+	    ici_error = "can only trace to stdio-type files";
 	    return 1;
 	}
     }
     else
     {
-	if ((file = need_stdout()) == NULL)
+	if ((file = ici_need_stdout()) == NULL)
 	    return 1;
     }
-    if (!isconnection(objof(conn)))
-	return ici_argerror(0);
-    PQtrace(conn->pgconn, (FILE *)file->f_file);
-    return null_ret();
+    PQtrace((PGconn *)conn->h_ptr, (FILE *)file->f_file);
+    return ici_null_ret();
 }
 
-CFUNC1(untrace, glue_n_c, PQuntrace);
+static cfunc_t ici_pq_cfuncs[] =
+{
+    {CF_OBJ, "untrace", glue_n_c, PQuntrace},
+    {CF_OBJ, "connectPoll", glue_i_c, PQconnectPoll},
+    {CF_OBJ, "status", glue_i_c, PQstatus},
+    {CF_OBJ, "finish", glue_n_c, PQfinish},
+    {CF_OBJ, "reset", glue_n_c, PQreset},
+    {CF_OBJ, "resetStart", glue_i_c, PQresetStart},
+    {CF_OBJ, "resetPoll", glue_i_c, PQresetPoll},
+    {CF_OBJ, "db", glue_s_c, PQdb},
+    {CF_OBJ, "user", glue_s_c, PQuser},
+    {CF_OBJ, "pass", glue_s_c, PQpass},
+    {CF_OBJ, "host", glue_s_c, PQhost},
+    {CF_OBJ, "port", glue_s_c, PQport},
+    {CF_OBJ, "tty", glue_s_c, PQtty},
+    {CF_OBJ, "options", glue_s_c, PQoptions},
+    {CF_OBJ, "errorMessage", glue_s_c, PQerrorMessage},
+    {CF_OBJ, "socket", glue_i_c, PQsocket},
+    {CF_OBJ, "clientEncoding", glue_i_c, PQclientEncoding},
+    {CF_OBJ, "backendPID", glue_i_c, PQbackendPID},
+    {CF_OBJ, "resultStatus", glue_i_r, PQresultStatus},
+    {CF_OBJ, "resultErrorMessage", glue_s_r, PQresultErrorMessage},
+    {CF_OBJ, "cmdStatus", glue_s_r, PQcmdStatus},
+    {CF_OBJ, "oidStatus", glue_s_r, PQoidStatus},
+    {CF_OBJ, "oidValue", glue_i_r, PQoidValue},
+    {CF_OBJ, "cmdTuples", glue_s_r, PQcmdTuples},
+    {CF_OBJ, "ntuples", glue_i_r, PQntuples},
+    {CF_OBJ, "nfields", glue_i_r, PQnfields},
+    {CF_OBJ, "binaryTuples", glue_i_r, PQbinaryTuples},
+    {CF_OBJ, "ftype", glue_i_ri, PQftype},
+    {CF_OBJ, "fsize", glue_i_ri, PQfsize},
+    {CF_OBJ, "fmod", glue_i_ri, PQfmod},
+    {CF_OBJ, "conndefaults", ici_pq_conndefaults},
+    {CF_OBJ, "connectdb", ici_pq_connectdb},
+    {CF_OBJ, "setdbLogin", ici_pq_setdbLogin},
+    {CF_OBJ, "connectStart", ici_pq_connectStart},
+    {CF_OBJ, "exec", ici_pq_exec},
+    {CF_OBJ, "resStatus", ici_pq_resStatus},
+    {CF_OBJ, "fname", ici_pq_fname},
+    {CF_OBJ, "fnumber", ici_pq_fnumber},
+    {CF_OBJ, "getvalue", ici_pq_getvalue},
+    {CF_OBJ, "getlength", ici_pq_getlength},
+    {CF_OBJ, "getisnull", ici_pq_getisnull},
+    {CF_OBJ, "clear", ici_pq_clear},
+    {CF_OBJ, "print", ici_pq_print},
+    {CF_OBJ, "trace", ici_pq_trace},
+    {CF_OBJ}
+};
 
-#if defined __APPLE__ && defined __MACH__
-#include "cfuncs.c"
-#include "strings.c"
-#endif
+object_t *
+ici_pq_library_init(void)
+{
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "pq"))
+	return NULL;
+    if (init_ici_str())
+	return NULL;
+    return objof(ici_module_new(ici_pq_cfuncs));
+}

@@ -1,5 +1,5 @@
 /*
- * $Id: PostgreSQL.ici,v 1.14 2001/01/15 01:26:53 atrn Exp $
+ * $Id: PostgreSQL.ici,v 1.15 2001/09/11 08:10:17 atrn Exp $
  */
 
 /*
@@ -7,7 +7,8 @@
  * Remove any leading "PGRES_" from the identifiers so we
  * get nicer looking names (PostgreSQL.COMMAND.OK etc...)
  */
-forall (v, k in PQ)
+v := k := NULL;
+forall (v, k in pq)
 {
     if (typeof(v) == "int")
     {
@@ -38,93 +39,93 @@ Connection = [class
     new(info)
     {
 	this = this:^new();
-	this.conn := PQ.connectdb(info);
+	this.conn := pq.connectdb(info);
 	return this;
     }
 
     defaults()
     {
-	return PQ.conndefaults();
+	return pq.conndefaults();
     }
 
     trace(file)
     {
 	auto file = stderr;
-	PQ.trace(conn, file);
+	pq.trace(conn, file);
 	return this;
     }
 
     untrace()
     {
-	PQ.untrace(conn);
+	pq.untrace(conn);
 	return this;
     }
 
     status()
     {
-	return PQ.status(conn);
+	return pq.status(conn);
     }
 
     finish()
     {
-	PQ.finish(conn);
+	pq.finish(conn);
 	return this;
     }
 
     reset()
     {
-	PQ.reset(conn);
+	pq.reset(conn);
 	return this;
     }
 
     db()
     {
-	return PQ.db(conn);
+	return pq.db(conn);
     }
 
     user()
     {
-	return PQ.user(conn);
+	return pq.user(conn);
     }
 
     pass()
     {
-	return PQ.pass(conn);
+	return pq.pass(conn);
     }
 
     host()
     {
-	return PQ.host(conn);
+	return pq.host(conn);
     }
 
     port()
     {
-	return PQ.port(conn);
+	return pq.port(conn);
     }
     
     tty()
     {
-	return PQ.tty(conn);
+	return pq.tty(conn);
     }
     
     options()
     {
-	return PQ.options(conn);
+	return pq.options(conn);
     }
 
     error_message()
     {
-	return PQ.errorMessage(conn);
+	return pq.errorMessage(conn);
     }
 
     socket()
     {
-	return PQ.socket(conn);
+	return pq.socket(conn);
     }
 
     exec(stmt)
     {
-	return Result:new(PQ.exec(conn, stmt));
+	return Result:new(pq.exec(conn, stmt));
     }
 
     tuples(res)
@@ -214,19 +215,19 @@ Result = [class
 
     status()
     {
-	return PQ.resultStatus(result);
+	return pq.resultStatus(result);
     }
 
     sstatus(code)
     {
 	if (code == NULL)
-	    code = PQ.resultStatus(result);
-	return PQ.resStatus(code);
+	    code = pq.resultStatus(result);
+	return pq.resStatus(code);
     }
 
     error_message()
     {
-	return PQ.resultErrorMessage(result);
+	return pq.resultErrorMessage(result);
     }
 
     failed()
@@ -238,82 +239,82 @@ Result = [class
 
     cmd_status()
     {
-	return PQ.cmdStatus(result);
+	return pq.cmdStatus(result);
     }
 
     oid_status()
     {
-	return PQ.oidStatus(result);
+	return pq.oidStatus(result);
     }
     
     oid_value()
     {
-	return PQ.oidValue(result);
+	return pq.oidValue(result);
     }
     
     cmd_tuples()
     {
-	return PQ.cmdTuples(result);
+	return pq.cmdTuples(result);
     }
     
     ntuples()
     {
-	return PQ.ntuples(result);
+	return pq.ntuples(result);
     }
     
     nfields()
     {
-	return PQ.nfields(result);
+	return pq.nfields(result);
     }
     
     binary_tuples()
     {
-	return PQ.binaryTuples(result);
+	return pq.binaryTuples(result);
     }
 
     fname(idx)
     {
-	return PQ.fname(result, idx);
+	return pq.fname(result, idx);
     }
 
     fnumber(nam)
     {
-	return PQ.fnumber(result, nam);
+	return pq.fnumber(result, nam);
     }
 
     ftype(idx)
     {
-	return PQ.ftype(result, idx);
+	return pq.ftype(result, idx);
     }
     
     fsize(idx)
     {
-	return PQ.fsize(result, idx);
+	return pq.fsize(result, idx);
     }
     
     fmod(idx)
     {
-	return PQ.fmod(result, idx);
+	return pq.fmod(result, idx);
     }
 
     getvalue(tup, fld)
     {
-	return PQ.getvalue(result, tup, fld);
+	return pq.getvalue(result, tup, fld);
     }
 
     getlength(tup, fld)
     {
-	return PQ.getlength(result, tup, fld);
+	return pq.getlength(result, tup, fld);
     }
 
     getisnull(tup, fld)
     {
-	return PQ.getisnull(result, tup, fld);
+	return pq.getisnull(result, tup, fld);
     }
 
     clear()
     {
-	PQ.clear(result);
+	pq.clear(result);
     }
     
 ];

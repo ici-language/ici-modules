@@ -1,0 +1,4 @@
+*  The module has been "renamed".  Previously it was installed as "PQ".
+   This has been changed to "pq".
+
+*  Updated to work with ici version 4
