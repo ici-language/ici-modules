@@ -1,7 +1,12 @@
-#include "ici.h"
+#include <ici.h>
+#include <icistr-setup.h>
+#include "icistr.h"
 #include "load.h"
 #include "dllmanager.h"
 #include "dll.h"
+#include "dllfunc.h"
+
+int                     dllmanager_tcode;
 
 /*
  * Make a new dllmanager object. The dllmanager object holds a shadow struct
@@ -15,19 +20,16 @@ new_dllmanager(void)
 {
     dllmanager_t   *dllm;
 
-    if ((dllm = talloc(dllmanager_t)) == NULL)
+    if ((dllm = ici_talloc(dllmanager_t)) == NULL)
         return NULL;
-    if ((dllm->dllm_struct = new_struct()) == NULL)
+    if ((dllm->dllm_struct = ici_struct_new()) == NULL)
     {
-        ici_free(dllm);
+        ici_tfree(dllm, dllmanager_t);
         return NULL;
     }
-    objof(dllm)->o_tcode = TC_OTHER;
-    objof(dllm)->o_type  = &dllmanager_type;
-    objof(dllm)->o_nrefs = 1;
-    objof(dllm)->o_flags = 0;
-    rego(objof(dllm));
-    decref(dllm->dllm_struct);
+    ICI_OBJ_SET_TFNZ(dllm, dllmanager_tcode, 0, 1, 0);
+    ici_rego(objof(dllm));
+    ici_decref(dllm->dllm_struct);
     return dllm;
 }
 
@@ -39,7 +41,13 @@ static unsigned long
 mark_dllmanager(object_t *o)
 {
     o->o_flags |= O_MARK;
-    return sizeof(dllmanager_t) + mark(dllmanagerof(o)->dllm_struct);
+    return sizeof(dllmanager_t) + ici_mark(dllmanagerof(o)->dllm_struct);
+}
+
+static void
+free_dllmanager(ici_obj_t *o)
+{
+    ici_tfree(o, dllmanager_t);
 }
 
 /*
@@ -51,7 +59,7 @@ mark_dllmanager(object_t *o)
 static int
 assign_dllmanager(object_t *o, object_t *k, object_t *v)
 {
-    return assign(dllmanagerof(o)->dllm_struct, k, v);
+    return ici_assign(dllmanagerof(o)->dllm_struct, k, v);
 }
 
 /*
@@ -66,55 +74,26 @@ assign_dllmanager(object_t *o, object_t *k, object_t *v)
 static object_t *
 fetch_dllmanager(object_t *o, object_t *k)
 {
-    char                *path;
+    //char                *path;
     char                fname[FILENAME_MAX];
     dll_t               lib;
     int                 gotlib;
     object_t            *v;
 
     gotlib = 0;
-    if ((v = fetch(dllmanagerof(o)->dllm_struct, k)) == NULL)
+    if ((v = ici_fetch(dllmanagerof(o)->dllm_struct, k)) == NULL)
         return NULL;
-    if (v != objof(&o_null))
+    if (v != ici_null)
         return v;
     if (!isstring(k) || stringof(k)->s_nchars > sizeof fname - 1)
-        return fetch_simple(o, k);
+        return ici_fetch_fail(o, k);
 
     /*
      * First try to load it directly. (Windows)
      */
-    strcpy(fname, stringof(k)->s_chars);
+    strncpy(fname, stringof(k)->s_chars, sizeof fname);
+    fname[sizeof fname - 1] = '\0';
     lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
-    if (!valid_dll(lib))
-    {
-        /*
-         * That didn't work. Try finding the file explicitly and using
-         * that.
-         */
-        path = get_dll_path();
-#ifndef WIN32
-        sprintf(fname, "lib%s", stringof(k)->s_chars);
-#endif
-        if
-        (
-            !ici_find_on_path(path, fname, ICI_DLL_EXT)
-            &&
-            !ici_find_on_path(path, fname, NULL)
-        )
-        {
-            char            n[30];
-
-            sprintf(ici_buf, "could not locate dynamic-load library %s",
-                objname(n, k));
-            error = ici_buf;
-            return NULL;
-        }
-
-        /*
-         * We have a file. Attempt to dynamically load it.
-         */
-        lib = dlopen(fname, RTLD_NOW|RTLD_GLOBAL);
-    }
     if (!valid_dll(lib))
     {
         char        *err;
@@ -122,22 +101,22 @@ fetch_dllmanager(object_t *o, object_t *k)
 
         if ((err = (char *)dlerror()) == NULL)
             err = "dynamic link error";
-        if (chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
+        if (ici_chkbuf(strlen(fmt) + strlen(fname) + strlen(err) + 1))
             strcpy(ici_buf, err);
         else
             sprintf(ici_buf, fmt, fname, err);
-        error = buf;
+        ici_error = ici_buf;
         return NULL;
     }
     gotlib = 1;
     if ((v = objof(new_dll(lib))) == NULL)
         goto fail;
-    if (assign(dllmanagerof(o)->dllm_struct, k, v))
+    if (ici_assign(dllmanagerof(o)->dllm_struct, k, v))
     {
-        decref(v);
+        ici_decref(v);
         goto fail;
     }
-    decref(v);
+    ici_decref(v);
     return v;
 
 fail:
@@ -148,13 +127,13 @@ fail:
     return NULL;
 }
 
-static type_t dllmanager_type =
+type_t dllmanager_type =
 {
     mark_dllmanager,
-    free_simple,
-    hash_unique,
-    cmp_unique,
-    copy_simple,
+    free_dllmanager,
+    ici_hash_unique,
+    ici_cmp_unique,
+    ici_copy_simple,
     assign_dllmanager,
     fetch_dllmanager,
     "dllmanager"
@@ -163,5 +142,19 @@ static type_t dllmanager_type =
 object_t *
 ici_dll_library_init(void)
 {
-    return objof(new_dllmanager());
+    dllmanager_t        *dllm;
+
+    if (ici_interface_check(ICI_VER, ICI_BACK_COMPAT_VER, "dll"))
+        return NULL;
+    if (init_ici_str())
+        return NULL;
+    if ((dllmanager_tcode = ici_register_type(&dllmanager_type)) == 0)
+        return NULL;
+    if ((dll_tcode = ici_register_type(&dll_type)) == 0)
+        return NULL;
+    if ((dllfunc_tcode = ici_register_type(&dllfunc_type)) == 0)
+        return NULL;
+    if ((dllm = new_dllmanager()) == NULL)
+        return NULL;
+    return objof(dllm);
 }

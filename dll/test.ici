@@ -1,7 +1,13 @@
+dll.msvcrt.printf("Hello world\n");
+
+printf("%d\n", dll.msvcrt.strlen("Hello world\n"));
+
+dll.user32.CALLTYPE = "winapi";
+dll.kernel32.CALLTYPE = "winapi";
+dll.advapi32.CALLTYPE = "winapi";
 
 dll.user32.MessageBox
 (
-    "int",
     NULL,
     "Test of call to dll.user32.MessageBox(...)",
     "ICI DLL call test",
@@ -10,9 +16,8 @@ dll.user32.MessageBox
 
 dll.user32.MessageBox
 (
-    "int",
     NULL,
-    sprintf("dll.kernel32.GetLastError() = %d\n", dll.kernel32.GetLastError("int")),
+    sprintf("dll.kernel32.GetLastError() = %d\n", dll.kernel32.GetLastError()),
     "ICI DLL call test",
     0/*MB_OK*/
 );
@@ -28,7 +33,6 @@ static i;
 
 ecode = dll.advapi32.RegOpenKeyEx
 (
-    "int",
     HKEY_CURRENT_CONFIG,
     "Display\\Settings",
     0,
@@ -39,7 +43,6 @@ if (ecode != 0)
     fail(sprintf("Failed to RegOpenKeyEx(), returned %d.", ecode));
 ecode = dll.advapi32.RegQueryValueEx
 (
-    "int",
     key_handle,
     "Resolution",
     0,
@@ -68,7 +71,6 @@ cstring(m)
 
 dll.user32.MessageBox
 (
-    "int",
     NULL,
     sprintf("HKEY_CURRENT_CONFIG\\Display\\Settings\\Resolution = %s",
         cstring(value)),

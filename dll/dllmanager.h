@@ -9,8 +9,9 @@ typedef struct dllmanager
     dllmanager_t;
 
 #define dllmanagerof(o)     ((dllmanager_t *)(o))
-#define isdllmanager(o)     ((o)->o_type == &dllm_type)
+#define isdllmanager(o)     ((o)->o_tcode == dllmanager_tcode)
 
 extern type_t   dllmanager_type;
+extern int      dllmanager_tcode;
 
 #endif /* #ifndef ICI_DLLMANAGER_H */

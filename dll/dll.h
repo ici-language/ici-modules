@@ -13,10 +13,10 @@ typedef struct dllib
     dllib_t;
 
 #define dllof(o)        ((dllib_t *)(o))
-#define isdll(o)        ((o)->o_type == &dll_type)
+#define isdll(o)        ((o)->o_tcode == dll_tcode)
 
 dllib_t                 *new_dll(dll_t lib);
-cfunc_t                 *new_dllfunc(dll_t *lib, string_t *s);
 extern type_t           dll_type;
+extern int              dll_tcode;
 
 #endif /* ICI_DLL_H */

@@ -1,26 +1,68 @@
 #if defined(_WIN32)
-# include "load-w32.h"
-#elif defined(__BEOS__)
-# include "load-beos.h"
+
+#   include <windows.h>
+
+    typedef void    *dll_t;
+
+#   define valid_dll(dll)  ((dll) != NULL)
+
+    static dll_t
+    dlopen(const char *name, int mode)
+    {
+        return LoadLibrary(name);
+    }
+
+    static void *
+    dlsym(dll_t hinst, const char *name)
+    {
+        return GetProcAddress(hinst, name);
+    }
+
+    static char *
+    dlerror(void)
+    {
+        static char     msg[80];
+
+        FormatMessage
+        (
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL,
+            GetLastError(),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            msg,
+            sizeof msg,
+            NULL
+        );
+        return msg;
+    }
+
+    static void
+    dlclose(dll_t hinst)
+    {
+        FreeLibrary(hinst);
+    }
+
+
 #else /* Unix */
-# include <sys/types.h>
-# include <dlfcn.h>
-# include <unistd.h>
 
-typedef void *dll_t;
-#define valid_dll(dll)  ((dll) != NULL)
+#   include <sys/types.h>
+#   include <dlfcn.h>
+#   include <unistd.h>
 
-static char *
-get_dll_path(void)
-{
-    char	*path;
+    typedef void *dll_t;
+#   define valid_dll(dll)  ((dll) != NULL)
 
-    if ((path = getenv("ICIPATH")) == NULL)
-    	path = ".:" PREFIX "/lib/ici:/usr/X11R6/lib:/usr/local/lib:/usr/lib:/lib";
-    return path ;
-}
+    static char *
+    get_dll_path(void)
+    {
+        char	*path;
 
-#endif /* _WIN32, __BEOS__ */
+        if ((path = getenv("ICIPATH")) == NULL)
+    	    path = ".:" PREFIX "/lib/ici:/usr/X11R6/lib:/usr/local/lib:/usr/lib:/lib";
+        return path ;
+    }
+
+#endif /* _WIN32 vs UNIX */
 
 #ifndef RTLD_NOW
 #define RTLD_NOW 1
