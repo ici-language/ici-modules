@@ -40,8 +40,8 @@
 static modules = [struct
 
     sys     = [set "bsd", "linux", "osx", "sol2"],
-    net     = [set "bsd", "linux", "osx", "sol2"],
-    xml     = [set "bsd", "linux",        "sol2"],
+//    net     = [set "bsd", "linux", "osx", "sol2"],
+//    xml     = [set "bsd", "linux",        "sol2"],
 ];
 
 /*
@@ -112,14 +112,14 @@ static subs = [struct
     /*
      * $(OPTIM) The argument to the C compiler to turn on optimisation.
      */
-    ("$(OPTIM)") = [struct default = "-O2 -DNDEBUG"],
+    ("$(OPTIM)") = [struct default = "-g -O2 -DNDEBUG"],
     //("$(OPTIM)") = [struct default = "-g"],
     
     /*
      * $(ICICFLAGS) C compiler options in addition to the others already
      * mentioned here.
      */
-    ("$(ICICFLAGS)") = [struct bsd = "-DBSD4", default = ""],
+    ("$(ICICFLAGS)") = [struct bsd = "-DBSD_4", default = ""],
 
     /*
      * $(ICILDFLAGS) Linker options in addition to the others already
@@ -127,7 +127,9 @@ static subs = [struct
      */
     ("$(ICILDFLAGS)") =
         [struct
-            osx = "-flat_namespace -bundle -undefined suppress",
+            osx = "-flat_namespace -bundle -undefined suppress "
+		"-install_name /usr/local/lib/ici4/$(LIB)",
+            sol2 = "-G",
             default = "-shared",
         ],
     
