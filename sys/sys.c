@@ -1898,10 +1898,10 @@ static cfunc_t ici_sys_cfuncs[] =
         {CF_OBJ, "truncate",ici_sys_truncate},
         {CF_OBJ, "umask",   ici_sys_simple, umask,  "i"},
         {CF_OBJ, "usleep",  ici_sys_usleep},
-#       if !defined(linux}, && !defined(BSD4_4},
+#       if !defined(linux), && !defined(BSD4_4),
             {CF_OBJ, "lockf",   ici_sys_simple, lockf,  "iii"},
 #       endif /* linux */
-#       if !defined(NeXT}, && !defined(BSD4_4},
+#       if !defined(NeXT), && !defined(BSD4_4),
             {CF_OBJ, "ulimit",  ici_sys_simple, ulimit, "ii"},
 #       endif
 #   endif
