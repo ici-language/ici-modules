@@ -1,1 +1,3 @@
+*  Made uuid objects atomic.
+
 *  Converted to work with ici version 4
