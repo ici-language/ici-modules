@@ -466,7 +466,7 @@ bad_lock_type:
 static int ici_sys_fcntl()
 {
 #ifdef _WINDOWS
-    return not_on_win32("fdopen");
+    return not_on_win32("fcntl");
 #else
     long        fd;
     string_t    *what;
@@ -595,8 +595,8 @@ static int ici_sys_mkdir()
 
 static int ici_sys_mkfifo()
 {
-#ifdef _WINDOWS /* WINDOWS can't do fdopen() without lots of work */
-    return not_on_win32("fdopen");
+#ifdef _WINDOWS /* WINDOWS can't do mkifo() */
+    return not_on_win32("mkfifo");
 #else
     char        *path;
     long        mode;
@@ -677,8 +677,8 @@ static int ici_sys_write()
 
 static int ici_sys_symlink()
 {
-#ifdef _WINDOWS /* WINDOWS can't do fdopen() without lots of work */
-    return not_on_win32("fdopen");
+#ifdef _WINDOWS /* WINDOWS can't do symlink() */
+    return not_on_win32("symlink");
 #else
     char        *a, *b;
 
@@ -1797,31 +1797,32 @@ fail:
 
 static int ici_sys_sleep()
 {
-	long	t;
+    long	t;
 
-	if (ici_typecheck("i", &t))
-		return 1;
+    if (ici_typecheck("i", &t))
+	return 1;
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(1);
+    ici_signals_blocking_syscall(1);
 #endif
-	sleep(t);
+    sleep(t);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+    ici_signals_blocking_syscall(0);
 #endif
+    return ici_null_ret();
 }
 
 static int ici_sys_usleep()
 {
-	long	t;
+    long	t;
 
-	if (ici_typecheck("i", &t))
-		return 1;
+    if (ici_typecheck("i", &t))
+	return 1;
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(1);
+    ici_signals_blocking_syscall(1);
 #endif
-	sleep(t);
+    usleep(t);
 #ifndef NOSIGNALS
-	ici_signals_blocking_syscall(0);
+    ici_signals_blocking_syscall(0);
 #endif
 }
 
@@ -1829,7 +1830,6 @@ static int ici_sys_usleep()
 
 static cfunc_t ici_sys_cfuncs[] =
 {
-    /* fcntl */
     /* utime */
     {CF_OBJ, "access",  ici_sys_access},
     {CF_OBJ, "chdir",   ici_sys_simple, chdir,  "s"},
