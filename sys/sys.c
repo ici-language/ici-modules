@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
-#ifndef _WINDOWS
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #if defined(sun) || defined(BSD4_4) || defined(linux)
@@ -45,7 +45,7 @@
 #include <sys/signal.h>
 #endif
 
-#ifdef _WINDOWS
+#ifdef _WIN32
 # define        ICI_SYS_NOPASSWD
 # define        ICI_SYS_NOFLOCK
 # define        ICI_SYS_NORLIMITS
@@ -56,7 +56,7 @@
 #endif
 
 #ifndef ICI_SYS_NODIR
-#ifndef _WINDOWS
+#ifndef _WIN32
 #include <sys/param.h>
 #include <dirent.h>
 #endif
@@ -82,13 +82,13 @@
 #error __linux__ or BSD4_4 for setpgrp(), not both
 #endif
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 # ifndef ICI_SYS_NOFLOCK
 #  include <sys/file.h>
 # endif
 #endif
 
-#ifdef _WINDOWS
+#ifdef _WIN32
 #include <io.h>
 #include <process.h>
 #include <direct.h>
@@ -156,7 +156,7 @@ ici_sys_vars_init(objwsup_t *scp)
         VALOF(LOCK_UN),
 #endif
 
-#ifdef _WINDOWS
+#ifdef _WIN32
         VALOF(_P_WAIT),
         VALOF(_P_NOWAIT),
 #endif
@@ -169,7 +169,7 @@ ici_sys_vars_init(objwsup_t *scp)
         VALOF(S_IWRITE),
         VALOF(S_IEXEC),
 
-#ifndef _WINDOWS
+#ifndef _WIN32
         VALOF(S_IFIFO),
         VALOF(S_IFBLK),
         VALOF(S_IFLNK),
@@ -196,7 +196,7 @@ ici_sys_vars_init(objwsup_t *scp)
     return 0;
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 /*
  * System calls.  We do all the easy ones because they cost so little,
  * most of the code being in the kernel.  And who can tell what people
@@ -263,7 +263,7 @@ int     acct();
 int     getppid(void);
 int     lockf();
 #endif
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 
 /*
  * Used as a common error return for system calls that fail. Sets the
@@ -333,7 +333,7 @@ static int ici_sys_open()
     return sys_ret(open(fname, omode, perms));
 }
 
-#ifdef _WINDOWS
+#ifdef _WIN32
 /*
  * General return for things not implemented on (that suckful) Win32.
  */
@@ -357,7 +357,7 @@ not_on_win32(char *s)
  */
 static int ici_sys_fdopen()
 {
-#ifdef _WINDOWS /* WINDOWS can't do fdopen() without lots of work */
+#ifdef _WIN32 /* WINDOWS can't do fdopen() without lots of work */
     return not_on_win32("fdopen");
 #else
     long        fd;
@@ -391,7 +391,7 @@ static int ici_sys_fdopen()
         return 1;
     }
     return ici_ret_with_decref(objof(f));
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 static int ici_sys_close()
@@ -430,7 +430,7 @@ static int ici_sys_close()
 }
 
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 
 /* Convert a struct to a struct flock for fcntl's F_SETLK */
 
@@ -474,14 +474,14 @@ bad_lock_type:
         flock->l_whence = intof(o)->i_value;
     return 0;
 }
-#endif  /* _WINDOWS */
+#endif  /* _WIN32 */
 
 /*
  * fcntl(int, what)
  */
 static int ici_sys_fcntl()
 {
-#ifdef _WINDOWS
+#ifdef _WIN32
     return not_on_win32("fcntl");
 #else
     long        fd;
@@ -546,7 +546,7 @@ static int ici_sys_fcntl()
     r = fcntl(fd, iwhat, iarg);
 ret:
     return sys_ret(r);
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 static int ici_sys_fileno()
@@ -581,14 +581,14 @@ static int ici_sys_setlinebuf()
         setlinebuf((FILE *)file->f_file);
     return ici_null_ret();
 }
-#endif /* _WINDOWS, CYGWIN */
+#endif /* _WIN32, CYGWIN */
 
 
 static int ici_sys_mkdir()
 {
     char        *path;
 
-#ifdef _WINDOWS
+#ifdef _WIN32
     if (ici_typecheck("s", &path))
         return 1;
     if (mkdir(path) == -1)
@@ -611,7 +611,7 @@ static int ici_sys_mkdir()
 
 static int ici_sys_mkfifo()
 {
-#ifdef _WINDOWS /* WINDOWS can't do mkifo() */
+#ifdef _WIN32 /* WINDOWS can't do mkifo() */
     return not_on_win32("mkfifo");
 #else
     char        *path;
@@ -622,7 +622,7 @@ static int ici_sys_mkfifo()
     if (mkfifo(path, mode) == -1)
         return ici_get_last_errno("mkfifo", path);
     return ici_ret_no_decref(ici_null);
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 static int ici_sys_read()
@@ -693,7 +693,7 @@ static int ici_sys_write()
 
 static int ici_sys_symlink()
 {
-#ifdef _WINDOWS /* WINDOWS can't do symlink() */
+#ifdef _WIN32 /* WINDOWS can't do symlink() */
     return not_on_win32("symlink");
 #else
     char        *a, *b;
@@ -703,12 +703,12 @@ static int ici_sys_symlink()
     if (symlink(a, b) == -1)
         return ici_get_last_errno("symlink", a);
     return ici_ret_no_decref(ici_null);
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 static int ici_sys_readlink()
 {
-#ifdef _WINDOWS /* WINDOWS can't do fdopen() without lots of work */
+#ifdef _WIN32 /* WINDOWS can't do fdopen() without lots of work */
     return not_on_win32("fdopen");
 #else
     char        *path;
@@ -719,7 +719,7 @@ static int ici_sys_readlink()
     if (readlink(path, pbuf, sizeof pbuf) == -1)
         return ici_get_last_errno("readlink", path);
     return ici_ret_with_decref(objof(ici_str_new_nul_term(pbuf)));
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 /*
@@ -784,7 +784,7 @@ static int ici_sys_stat()
     SETFIELD(atime);
     SETFIELD(mtime);
     SETFIELD(ctime);
-#ifndef _WINDOWS
+#ifndef _WIN32
     SETFIELD(blksize);
     SETFIELD(blocks);
 #endif
@@ -798,7 +798,7 @@ fail:
     return 1;
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 /*
  * lstat(string)
  *
@@ -894,7 +894,7 @@ static int ici_sys_time()
     return ici_int_ret(time(NULL));
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 
 static int
 assign_timeval(struct_t *s, string_t *k, struct timeval *tv)
@@ -1071,7 +1071,7 @@ static int ici_sys_gettimeofday()
     }
     return ici_ret_with_decref(objof(s));
 }
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 
 
 /*
@@ -1109,7 +1109,7 @@ static int ici_sys_access()
  */
 static int ici_sys_pipe()
 {
-#ifdef _WINDOWS
+#ifdef _WIN32
     return not_on_win32("pipe");
 #else
     int         pfd[2];
@@ -1138,7 +1138,7 @@ fail:
     close(pfd[0]);
     close(pfd[1]);
     return 1;
-#endif  /* #ifndef _WINDOWS */
+#endif  /* #ifndef _WIN32 */
 }
 
 /*
@@ -1285,7 +1285,7 @@ static int ici_sys_exec()
  */
 static int ici_sys_spawn()
 {
-#ifndef _WINDOWS
+#ifndef _WIN32
     ici_error = "spawn is only implemented on Win32 platforms";
     return 1;
 #else
@@ -1410,7 +1410,7 @@ static int ici_sys_lseek()
  */
 static int ici_sys_wait()
 {
-#ifdef _WINDOWS
+#ifdef _WIN32
     return not_on_win32("wait");
 #else
     int         pid;
@@ -1452,7 +1452,7 @@ static int ici_sys_wait()
 fail:
     ici_decref(s);
     return 1;
-#endif /* _WINDOWS */
+#endif /* _WIN32 */
 }
 
 /*
@@ -1467,7 +1467,7 @@ static int ici_sys_getcwd()
     return ici_str_ret(buf);
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 
 /*
  * array = passwd()
@@ -1667,7 +1667,7 @@ static int ici_sys_truncate()
 }
 #endif
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 
 static int
 string_to_resource(object_t *what)
@@ -1845,7 +1845,7 @@ static int ici_sys_usleep()
 #endif
 }
 
-#endif /* #ifndef _WINDOWS */
+#endif /* #ifndef _WIN32 */
 
 static cfunc_t ici_sys_cfuncs[] =
 {
@@ -1880,11 +1880,11 @@ static cfunc_t ici_sys_cfuncs[] =
 #   ifndef NOSIGNALS
         {CF_OBJ, "signal",  ici_sys_simple, signal, "ii"},
 #   endif
-#   ifdef _WINDOWS
+#   ifdef _WIN32
         {CF_OBJ, "spawn",   ici_sys_spawn, spawnv},
         {CF_OBJ, "spawnp",  ici_sys_spawn, spawnvp},
 #   endif
-#   ifndef _WINDOWS
+#   ifndef _WIN32
         /* poll */
         /* times */
         /* uname */

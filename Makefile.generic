@@ -5,24 +5,25 @@
 # See the comments in configure for details.
 #
 PREFIX	= $(CF_PREFIX)
-CFLAGS	= $(CF_PIC) $(CF_OPTIM) $(CF_CFLAGS) -I. -I$(CF_ICI_H_DIR)
+MOD	= $(CF_MOD)
+CFLAGS	= $(CF_CFLAGS) -I. -I$(CF_ICI_H_DIR)
 LDFLAGS = $(CF_LDFLAGS)
-OBJS	= $(CF_DOT_O)
-C_SRC	= $(CF_DOT_C)
-ALL_SRC	= $(C_SRC) $(CF_ICI_DOT_ICI)
-LIB	= $(CF_ICIV)$(CF_MOD).$(CF_SOSUFFIX)
+OBJS	= $(CF_STAR_DOT_O)
+C_SRC	= $(CF_STAR_DOT_C)
+ALL_SRC	= $(C_SRC) $(CF_ICI_STAR_DOT_ICI)
+ICIMOD	= $(CF_ICIV)$(CF_MOD).$(CF_SO)
 LIBS	= $(CF_LIBS)
-LIBINSTALLS = $(LIB) $(CF_ICI_DOT_ICI)
+LIBINSTALLS = $(ICIMOD) $(CF_ICI_STAR_DOT_ICI)
 $(CF_OTHERDEFS)
 
-default: $(LIB)
+default: $(ICIMOD)
 
 $(CF_MAKE_FRAG)
 
 $(CF_MAKE_FRAG_FLAV)
 
-$(LIB): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+$(ICIMOD): $(OBJS)
+	$(CC) $(CF_LD_OUT_NAME_OPT) $(OBJS) $(LIBS) $(LDFLAGS) 
 
 doc: ici$(CF_MOD).1 ici$(CF_MOD).html
 
@@ -33,7 +34,7 @@ ici$(CF_MOD).html: $(SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 	
 clean:
-	rm -f $(LIB) $(OBJS)
+	rm -f $(ICIMOD) $(OBJS)
 
 clobber: clean
 	rm -f .depend

@@ -29,10 +29,12 @@
  *
  * Ideally, a module will not have any Makefiles, and the generic one will be
  * sufficient.  However, if there are special build requirements, for a
- * particular module, the Makefile.generic can be copied into the sub-dir and
- * tailored.  If, for some systems, even this is not enough, the Makefile that
- * this script generates can be copied to Makefile.flavour and specific
- * arrangements made for the particular module on the particular system.
+ * particular module, a Makefile.frag or Makefile.frag.flavour can be placed
+ * in the module directory to add stuff.  If that is not enough, the
+ * Makefile.generic can be copied into the sub-dir and tailored.  If, for some
+ * systems, even this is not enough, the Makefile that this script generates
+ * can be copied to Makefile.flavour and specific arrangements made for the
+ * particular module on the particular system.
  *
  * This script only uses core ICI features (because, of course, you might not
  * have any other modules built yet).
@@ -51,10 +53,11 @@
  */
 static modules = [struct
 
-    sys     = [set "bsd", "linux", "osx", "sol2", "cygwin"],
-    net     = [set "bsd", "linux", "osx", "sol2", "cygwin"],
-    xml     = [set "bsd", "linux",        "sol2", "cygwin"],
-    dll     = [set "bsd", "linux", "osx", "sol2", "cygwin"],
+    sys     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    net     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    xml     = [set "bsd", "linux",        "sol2", "cygwin", "w32"],
+    dll     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
+    str     = [set "bsd", "linux", "osx", "sol2", "cygwin", "w32"],
 ];
 
 /*
@@ -94,26 +97,21 @@ static modules = [struct
  * CF_ICI_H_DIR         The location of ici.h for this system.  (Same as
  *                      CF_PREFIX above, with /include appended.)
  *
- * CF_DOT_O             *.c in the module dir with all the .c changed to .o.
+ * CF_STAR_DOT_O        *.c in the module dir with all the .c changed to .o.
  *
- * CF_DOT_C             *.c in the module dir.
+ * CF_STAR_DOT_C        *.c in the module dir.
  *
- * CF_ICI_DOT_ICI       ici*.ici in the moduler dir.
+ * CF_ICI_STAR_DOT_ICI  ici*.ici in the moduler dir.
  *
  * CF_INSTALL           The command, with options, to copy files into an
  *                      install directory. (Varies with flavour.)
  *
- * CF_PIC               Is the option to the C compiler to make it produce
- *                      position independent code suitable for a shared or
- *                      dynamicly loading library of the sort ICI needs on
- *                      this system. (Varies with flavour.)
- *
- * CF_OSUFFIX           The suffix the shared, dynamic link, dynamic load, or
+ * CF_SO                The suffix the shared, dynamic link, dynamic load, or
  *                      whatever library should have to be suitable for ICI.
  *                      (Varies with flavour.)
  *
- * CF_OPTIM             The argument to the C compiler to turn on
- *                      optimisation.  (Varies with flavour.)
+ * CF_O                 The suffix of an object module ("o" except for
+ *                      Windows which is "obj".)
  *
  * CF_CFLAGS            C compiler options in addition to the others already
  *                      mentioned here.  (Varies with flavour.)
@@ -151,32 +149,39 @@ static subs = [struct
 
     CF_ICI_H_DIR(){return (getenv("PREFIX") || "/usr/local") + "/include";}
 
-    CF_DOT_O()
+    CF_STAR_DOT_O()
     {
-        cs := dir(module, #\.c$#);
+        dot_o = flavour == "w32" ? ".obj" : ".o";
+        cs := dir(module, #(?i)\.c$#);
         r := strbuf();
         forall (c in cs)
-            strcat(r, c ~~ #^(.*)\.c$#, ".o", " ");
+            strcat(r, c ~~ #(?i)^(.*)\.c$#, dot_o, " ");
         return r;
     }
 
-    CF_DOT_C()
+    CF_STAR_DOT_C()
     {
-        cs := dir(module, #\.c$#);
+        cs := dir(module, #(?i)\.c$#);
         r := strbuf();
         forall (c in cs)
             strcat(r, c, " ");
         return r;
     }
 
-    CF_ICI_DOT_ICI()
+    CF_ICI_STAR_DOT_ICI()
     {
-        cs := dir(module, #^ici4.*\.ici$#);
+        cs := dir(module, #(?i)^ici4.*\.ici$#);
         r := strbuf();
         forall (c in cs)
             strcat(r, c, " ");
         return r;
     }
+
+    CF_O =
+    [struct
+        w32 = "obj",
+        default = "o"
+    ],
 
     CF_INSTALL =
     [struct
@@ -184,23 +189,22 @@ static subs = [struct
         default = "install -c -m 444"
     ],
 
-    CF_PIC =
+    CF_SO =
     [struct
-        osx = "-dynamic -fno-common",
-        cygwin = "",
-        default = "-fpic"
+        osx = "dylib",
+        cygwin = "dll",
+        w32 = "dll",
+        default = "so"
     ],
-
-    CF_SOSUFFIX = [struct osx = "dylib", cygwin = "dll", default = "so"],
-
-    CF_OPTIM = [struct default = "-g -O2 -DNDEBUG"],
 
     CF_CFLAGS =
     [struct
-        bsd = "-DBSD_4",
-        sol2 = "-DSUNOS5",
-        cygwin = "",
-        default = ""
+        osx = "-dynamic -fno-common -g -O2 -DNDEBUG",
+        bsd = "-DBSD_4 -g -O2 -DNDEBUG",
+        sol2 = "-DSUNOS5 -g -O2 -DNDEBUG",
+        cygwin = "-g -O2 -DNDEBUG",
+        w32 = "/MD /O2 /DNDEBUG",
+        default = "-fpic -g -O2 -DNDEBUG"
     ],
 
     CF_LDFLAGS =
@@ -209,12 +213,20 @@ static subs = [struct
             "-install_name $(PREFIX)/lib/ici4/$(LIB)",
         sol2 = "-G",
         cygwin = "-shared -L$(PREFIX)/lib",
+        w32 = "/MD /link /DLL /export:ici_$(MOD)_library_init",
         default = "-shared",
+    ],
+
+    CF_LD_OUT_NAME_OPT =
+    [struct
+        w32 = "/Fe$@",
+        default = "-o $@"
     ],
 
     CF_LIBS =
         [struct
             cygwin = "-lici4.dll",
+            w32 = "user32.lib wsock32.lib advapi32.lib winmm.lib ici4.lib",
             default = "",
         ],
 
@@ -222,6 +234,7 @@ static subs = [struct
         [struct
             sol2 = "CC\t= gcc -pipe",
             cygwin = "CC\t= gcc",
+            w32 = "CC\t= cl /nologo",
             default = "",
         ],
 ];
@@ -391,7 +404,10 @@ forall (target in [array "all", "doc", "clean", "clobber", "depend", "install"])
     {
         if (!can_do_flavs[flavour])
             continue;
-        printf(m, "\tcd %s; make %s\n", module, target == "all" ? "" : target);
+        if (flavour == "w32")
+            printf(m, "\tcd %s\n\tnmake %s\n\tcd ..\n", module, target == "all" ? "" : target);
+        else
+            printf(m, "\tcd %s; make %s\n", module, target == "all" ? "" : target);
     }
     printf(m, "\n");
 }
