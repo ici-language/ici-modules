@@ -56,7 +56,7 @@ StrCpy $0 "Yes docs"
 CreateDirectory "$SMPROGRAMS\ICI Programming Language"
 SectionEnd
 
-Section "XML parser (xml)"
+Section "xml - Expat based XML parser"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4xml.dll" "..\xml\Release\ici4xml.dll"
 File "/oname=ici4xml.ici" "..\xml\ici4xml.ici"
@@ -68,7 +68,7 @@ File "/oname=ici4xml.ici" "..\xml\ici4xml.ici"
 ;no_xml_doc:
 SectionEnd
 
-Section "Sockets based networking (net)"
+Section "net - Sockets based networking"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4net.dll" "..\net\Release\ici4net.dll"
 File "/oname=ici4net.ici" "..\net\ici4net.ici"
@@ -80,7 +80,7 @@ StrCmp $0 "No docs" no_net_doc
 no_net_doc:
 SectionEnd
 
-Section "System calls and related (sys)"
+Section "sys - System calls and related"
 SetOutPath "$SYSDIR\ici"
 File "/oname=ici4sys.dll" "..\sys\Release\ici4sys.dll"
 File "/oname=ici4sys.ici" "..\sys\ici4sys.ici"
@@ -90,6 +90,17 @@ StrCmp $0 "No docs" no_sys_doc
 	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"\
 	 "$INSTDIR\icisys.html"
 no_sys_doc:
+SectionEnd
+
+Section "dll - Call DLL functions directly"
+SetOutPath "$SYSDIR\ici"
+File "/oname=ici4dll.dll" "..\dll\Release\ici4dll.dll"
+StrCmp $0 "No docs" no_dll_doc
+	SetOutPath "$INSTDIR"
+	File "/oname=icidll.html" "..\dll\icidll.html"
+	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI dll module doc.lnk"\
+	 "$INSTDIR\icidll.html"
+no_dll_doc:
 SectionEnd
 
 
@@ -112,6 +123,7 @@ Delete "$SYSDIR\ici\ici4net.dll"
 Delete "$SYSDIR\ici\ici4net.ici"
 Delete "$SYSDIR\ici\ici4sys.dll"
 Delete "$SYSDIR\ici\ici4sys.ici"
+Delete "$SYSDIR\ici\ici4dll.dll"
 RMDir  "$SYSDIR\ici"
 
 ;
@@ -125,6 +137,8 @@ Delete "$INSTDIR\icinet.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI net module doc.lnk"
 Delete "$INSTDIR\icisys.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"
+Delete "$INSTDIR\icidll.html"
+Delete "$SMPROGRAMS\ICI Programming Language\ICI dll module doc.lnk"
 RMDir  "$SMPROGRAMS\ICI Programming Language"
 RMDir  "$PROGRAMFILES\ICI"
 

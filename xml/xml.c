@@ -1,5 +1,5 @@
 /*
- * $Id: xml.c,v 1.3 2002/04/06 01:42:48 timl Exp $
+ * $Id: xml.c,v 1.4 2003/01/04 11:16:41 timl Exp $
  *
  * xml.c - Interface to the Expat XML parser.
  *
@@ -368,7 +368,7 @@ ici_xml_library_init(void)
         return NULL;
     if ((ici_xml_parser_class = ici_class_new(ici_xml_parser_cfuncs, ici_xml_module)) == NULL)
         goto fail;
-    if (assign_base(ici_xml_module, ICIS(parser_class), ici_xml_parser_class))
+    if (ici_assign_base(ici_xml_module, ICIS(parser_class), ici_xml_parser_class))
         goto fail;
     ici_decref(ici_xml_parser_class);
     return objof(ici_xml_module);

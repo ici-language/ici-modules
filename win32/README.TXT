@@ -18,13 +18,9 @@ and Release executable to:
     C:\Program Files\Microsoft Visual Studio\VC98\ici\ici.exe
 
 Link... Input
-To the input libraries in Debug config, add:
+To the input libraries in Release & Debug config, add:
 
-    ici4.lib ###
-
-To the input libraries in Release config, add:
-
-    ici.lib
+    ici4.lib
 
 To the Project Options in *both* configs add:
 
