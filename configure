@@ -106,7 +106,7 @@ static subs = [struct
      */
     LIBINSTALLS = [func()
         {
-            cs := dir(module, #^ici4\.ici$#);
+            cs := dir(module, #^ici4.*\.ici$#);
             r := strbuf("$(LIB)");
             forall (c in cs)
                 strcat(r, " ", c);
@@ -224,6 +224,15 @@ static flavours = [struct
 ];
 
 /*--------------------End of tables, start of code.----------------------*/
+
+/*
+ * Emulate configure :)
+ */
+if (argv[1] == "--help")
+{
+    printf("This is NOT an autoconf configure script!\n");
+    exit(0);
+}
 
 /*
  * Get uname and find ICI style system flavour.
