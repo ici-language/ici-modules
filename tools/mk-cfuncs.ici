@@ -1,12 +1,10 @@
 #!/usr/local/bin/ici3
 
 /*
- * $Id: mk-cfuncs.ici,v 1.2 1999/10/18 09:15:38 andy Exp $
+ * $Id: mk-cfuncs.ici,v 1.3 2000/08/01 07:36:12 atrn Exp $
  *
  * Create the cfuncs file for a module.
  */
-
-static	windows	= scope().spawn != NULL;
 
 static	myname	= argv[0];
 static	efuncs	= array(); /* ici module externs */

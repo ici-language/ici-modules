@@ -15,23 +15,7 @@ extern "C"
 /*
  * Pull in ICI headers
  */
-#include <int.h>
-#include <float.h>
-#include <re.h>
-#include <str.h>
-#include <array.h>
-#include <file.h>
-#include <struct.h>
-#include <set.h>
-#include <mem.h>
-#include <exec.h>
-#include <func.h>
-#include <cfunc.h>
-#include <op.h>
-#include <buf.h>
-#include <primes.h>
-#include <null.h>
-#include <method.h>
+#include <ici.h>
 
 /*
  * For defining strings.

@@ -1,4 +1,4 @@
-static	windows = scope().spawn != NULL;
+static  windows = version() ~ #Win32#;
 
 if (argc != 2)
     exit("usage: " + basename(argv[0]) + " <module-name>");
@@ -9,12 +9,12 @@ auto h = fopen("strs.h.new", "w");
 printf(c, "/* Auto-generated. Don't edit */\n\n");
 printf(h, "/* Auto-generated. Don't edit */\n\n");
 
-printf(c, "#include \"ici.h\"\n\n");
+printf(c, "#include \"ici-priv.h\"\n\n");
 auto s, a = array();
 while (s = getline())
 {
     if (s !~ #^NEED_STRING#)
-	continue;
+    continue;
     s = s ~~ #NEED_STRING\((.*)\)#;
     push(a, s);
     printf(c, "DEF_STRING(%s);\n", s);
@@ -32,11 +32,11 @@ static
 different(a, b)
 {
     if (windows)
-	return 1;
+    return 1;
     auto rc;
     rc = system(sprintf("cmp -s %s %s", a, b));
     if (rc)
-	printf("%s and %s differ\n", a, b);
+    printf("%s and %s differ\n", a, b);
     return rc;
 }
 
@@ -45,9 +45,9 @@ move(src, dst)
 {
     try remove(dst); onerror ;
     if (windows)
-	system(sprintf("ren %s %s", src, dst));
+    system(sprintf("ren %s %s", src, dst));
     else
-	system(sprintf("mv %s %s", src, dst));
+    system(sprintf("mv %s %s", src, dst));
 }
 
 if (different("strings.c.new", "strings.c"))

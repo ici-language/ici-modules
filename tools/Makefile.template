@@ -1,11 +1,12 @@
 #
-# $Id: Makefile.template,v 1.5 1999/02/06 10:32:58 andy Exp $
+# $Id: Makefile.template,v 1.1.1.1 1999/09/08 01:27:26 andy Exp $
 #
 
 #
 # Makefile for XXXX module.
 #
 
+ICIVER		= 4
 MODULE_NAME	= XXXX
 OBJS		= XXXX.o
 
@@ -18,37 +19,33 @@ PREFIX		= /usr/local/
 ICI		= $(PREFIX)
 
 FLAVOUR		= bsd
-ICI_DEFS	= -DCONFIG_FILE='"conf-$(FLAVOUR).h"'
 
 INCS		= -I$(PREFIX)/include/ici
-DEFS		= $(ICI_DEFS)
+DEFS		=
 
 CFLAGS		= -Wall -g -O -fpic $(INCS) $(DEFS)
 
-LIB		= ici$(MODULE_NAME).so
+LIB		= ici$(ICIVER)$(MODULE_NAME).so
 
 LIBS		=
 
 all:	$(LIB)
 
-$(LIB):	$(OBJS) strings.o cfuncs.o
+$(LIB):	$(OBJS) cfuncs.o
 	ld -o $@ -Bshareable $(OBJS) strings.o cfuncs.o $(LIBS)
 	@chmod 644 $@
 
-$(OBJS) : ici.h strs.h
+$(OBJS) : ici-priv.h
 
 .SUFFIXES: .c .i
 
 .c.i:
 	$(CC) -E $(CFLAGS) $*.c > $*.i
 
-strs.h strings.c : $(OBJS:.o=.c) $(TOOLS)/mk-strings.ici
-	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-strings.ici $(MODULE_NAME)
-
 cfuncs.c : $(OBJS:.o=.c) $(TOOLS)/mk-cfuncs.ici
 	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-cfuncs.ici $(MODULE_NAME)
 
-ici.h : $(TOOLS)/mk-ici-dot-h.ici
+ici-priv.h : $(TOOLS)/mk-ici-dot-h.ici
 	ici $(TOOLS)/mk-ici-dot-h.ici $(MODULE_NAME)
 
 install: $(LIB)
@@ -58,12 +55,12 @@ uninstall:
 	rm -f $(PREFIX)lib/ici/$(LIB)
 
 clean:
-	rm -f *.o *.so cfuncs.c strings.c
+	rm -f *.o *.so cfuncs.c
 
 clobber: clean
-	rm -f .depend ici.h
+	rm -f .depend ici-priv.h
 
-depend: ici.h strs.h
+depend: ici-priv.h strs.h
 	mkdep $(CFLAGS) $(OBJS:.o=.c)
 
 docs:

@@ -93,7 +93,7 @@ fetch_dllmanager(object_t *o, object_t *k)
          */
         path = get_dll_path();
 #ifndef WIN32
-	sprintf(fname, "lib%s", stringof(k)->s_chars);
+        sprintf(fname, "lib%s", stringof(k)->s_chars);
 #endif
         if
         (

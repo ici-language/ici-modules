@@ -1,0 +1,20 @@
+#
+# This $(FLAVOUR) specific makefile was automatically created by
+# processing $(MAKEIN) to get $(MAKEOUT).
+#
+# See the comments in makemake.ici for details.
+#
+CFLAGS  = $(PIC) $(OPTIM) -I$(ICISDK) -I. $(ICICFLAGS)
+OBJS    = $(ICIOBJS)
+
+$(ICIV)$(MOD).$(SOSUFFIX): $(OBJS)
+        $(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+clean:
+        rm -f $(ICIV)$(MOD).$(SOSUFFIX) $(OBJS)
+
+clobber: clean
+        rm -f .depend
+
+depend:
+        mkdep $(CFLAGS) $(ICISRCS)

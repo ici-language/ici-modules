@@ -80,6 +80,19 @@ StrCmp $0 "No docs" no_net_doc
 no_net_doc:
 SectionEnd
 
+Section "System calls and related (sys)"
+SetOutPath "$SYSDIR\ici"
+File "/oname=ici4sys.dll" "..\sys\Release\ici4sys.dll"
+File "/oname=ici4sys.ici" "..\sys\ici4sys.ici"
+StrCmp $0 "No docs" no_sys_doc
+	SetOutPath "$INSTDIR"
+	File "/oname=icisys.html" "..\sys\icisys.html"
+	CreateShortCut "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"\
+	 "$INSTDIR\icisys.html"
+no_sys_doc:
+SectionEnd
+
+
 ;----------------------------------------------------------------------
 ; Uninstall stuff. Note that this stuff is logically seperate from the
 ; install stuff above (for obvious reasons). This runs when the user does
@@ -97,6 +110,8 @@ Delete "$SYSDIR\ici\ici4xml.dll"
 Delete "$SYSDIR\ici\ici4xml.ici"
 Delete "$SYSDIR\ici\ici4net.dll"
 Delete "$SYSDIR\ici\ici4net.ici"
+Delete "$SYSDIR\ici\ici4sys.dll"
+Delete "$SYSDIR\ici\ici4sys.ici"
 RMDir  "$SYSDIR\ici"
 
 ;
@@ -108,6 +123,8 @@ Delete "$INSTDIR\icixml.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI xml module doc.lnk"
 Delete "$INSTDIR\icinet.html"
 Delete "$SMPROGRAMS\ICI Programming Language\ICI net module doc.lnk"
+Delete "$INSTDIR\icisys.html"
+Delete "$SMPROGRAMS\ICI Programming Language\ICI sys module doc.lnk"
 RMDir  "$SMPROGRAMS\ICI Programming Language"
 RMDir  "$PROGRAMFILES\ICI"
 

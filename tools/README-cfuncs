@@ -11,7 +11,7 @@ the module is output.
 
 Macros
 
-The per-module ici.h file defines a number of macros to be used with the
+The per-module ici-priv.h file defines a number of macros to be used with the
 automatic cfuncs scheme. These macros are,
 
 FUNCDEF(name)
