@@ -179,26 +179,6 @@ static ici_debug_t ici_debug_funcs =
 };
 
 
-/*
- * Simple command line debugger
- *
- * The simple ICI debugger ('dbg') extension module provides a simple
- * command line interface that works on all systems.
- *
- * From the command line, the module can be pre-loaded by using the
- * '-l' option, as in:
- *
- *  ici -ldbg -f myprog.ici args...
- *
- * Or loaded within a program with:
- *
- *  load("dbg");
- *
- * Upon load, the debugger self-registers with ICI's debugger interface,
- * enables debugging, and enters its command mode. 
- *
- * This --intro-- and --synopsis-- forms part of --ici-dbg-- documentation.
- */
 object_t *
 ici_dbg_library_init(void)
 {

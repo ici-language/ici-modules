@@ -500,10 +500,12 @@ forall (file in files)
         }
         else if (text ~ #--topic--#)
         {
-            bits = text ~~~ #\s*(.*)\n\n((?s).*)$#;
-            head = bits[0];
-            text = bits[1];
-            push(module.topics, struct("item", item = strbuf(), "head", head));
+            bits = text ~~~ #\s*([0-9\.]*)\s*(.*)\n\n((?s).*)$#;
+            seq = bits[0];
+            head = bits[1];
+            text = bits[2];
+            push(module.topics,
+                struct("item", item = strbuf(), "head", head, "seq", seq));
             strcat(item, out:heading2(head));
         }
         if (item == NULL)
@@ -598,6 +600,12 @@ forall (file in files)
 static
 cmp_topics(a, b)
 {
+    as := a.seq ~ #\d# ? float(a.seq) : 1e6;
+    bs := b.seq ~ #\d# ? float(b.seq) : 1e6;
+    if (as != bs)
+    {
+        return cmp(as, bs);
+    }
     a = a.head;
     b = b.head;
     if (a ~ #^.*=#)

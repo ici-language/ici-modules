@@ -224,7 +224,7 @@ static subs = [struct
         bsd = "-DBSD_4 -g -O2 -DNDEBUG",
         sol2 = "-DSUNOS5 -g -O2 -DNDEBUG",
         cygwin = "-g -O2 -DNDEBUG",
-        w32 = "/MD /O2 /DNDEBUG",
+        w32 = "/MD /Z7 /O2 /DNDEBUG",
         default = "-fpic -g -O2 -DNDEBUG"
     ],
 
@@ -233,7 +233,7 @@ static subs = [struct
         osx = "-flat_namespace -bundle -undefined suppress",
         sol2 = "-G",
         cygwin = "-shared -L$(PREFIX)/lib",
-        w32 = "/MD /link /DLL /export:ici_$(MOD)_library_init",
+        w32 = "/MD /Z7 /link /DLL /export:ici_$(MOD)_library_init",
         default = "-shared",
     ],
 
