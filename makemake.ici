@@ -1,5 +1,5 @@
 /*
- * This script generates a "Makefile" in each of the module directories
+ * This script generates a Makefile in each of the module directories
  * on the list below for a UNIX-like system. Each Makefile is tailored to
  * build the modules on and for the flavour of system this script is run on.
  * The known flavours are listed below.
@@ -16,7 +16,7 @@
  *
  * Ideally, a module will not have any Makefiles, and the generic one
  * will be sufficient. However, if there are special build requirements,
- * for a particular module the Makefile.generic can be copied into the
+ * for a particular module, the Makefile.generic can be copied into the
  * sub-dir and tailored. If, for some systems, even this is not enough,
  * the Makefile that this script generates can be copied to Makefile.flavour
  * and specific arrangements made for the particular module on the
@@ -24,11 +24,18 @@
  *
  * This script only uses core ICI features (because, of course, you
  * might not have any other modules built yet).
+ *
+ * Anyone adding modules or systems is invited to add to the tables
+ * below (if you think you know what you are doing).
+ *
+ * The most-generic Makefile (the one in this directory) assumes that
+ * *.c in module dir should be built into a library.
+ *
  */
  
 /*
- * The modules that this script will process, and for which system
- * flavous it will do it.
+ * The modules that this script will process, and the system
+ * flavous for which it will do it.
  */
 static modules = [struct
 
@@ -40,7 +47,7 @@ static modules = [struct
 /*
  * The substitutions that are performed in copying a Makefile.generic to
  * a particular module for a paricular flavour. If an entry is a function,
- * it is called to return a string. If an entry is a struct, it is indexed
+ * it is called to get a string. If an entry is a struct, it is indexed
  * by the flavour to find a value. If the flavour is not found, the default
  * entry is used. If an entry is a string, it is used directly.
  */
@@ -152,19 +159,18 @@ static flavours = [struct
     SunOS       =
         [func()
         {
-          try
-              {close(fopen("/vmunix")); return "sunos";}
-          onerror
-              return "sol2";
+            try
+                {close(fopen("/vmunix")); return "sunos";}
+            onerror
+                return "sol2";
         }],
     Win32       = "w32",
 ];
 
 /*--------------------End of tables, start of code.----------------------*/
 
-
 /*
- * Get uname and find ici flavour.
+ * Get uname and find ICI style system flavour.
  */
 static flavour;
 if (argv[1] != NULL)
@@ -222,7 +228,7 @@ forall (can_do_flavs, module in modules)
      */
     f = smash(f, re, "\\0", "\\&", 1);
     /*
-     * Perform substitutions (on the odd numbered entries).
+     * Perform substitutions on the odd numbered entries.
      */
     forall (s, i in f)
     {

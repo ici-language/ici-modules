@@ -4,17 +4,18 @@
 #
 # See the comments in makemake.ici for details.
 #
-CFLAGS  = $(PIC) $(OPTIM) -I$(ICISDK) -I. $(ICICFLAGS)
-OBJS    = $(ICIOBJS)
+CFLAGS	= $(PIC) $(OPTIM) -I$(ICISDK) -I. $(ICICFLAGS)
+OBJS	= $(ICIOBJS)
+LIB	= $(ICIV)$(MOD).$(SOSUFFIX)
 
-$(ICIV)$(MOD).$(SOSUFFIX): $(OBJS)
-        $(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
+$(LIB): $(OBJS)
+	$(CC) $(ICILDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
-        rm -f $(ICIV)$(MOD).$(SOSUFFIX) $(OBJS)
+	rm -f $(LIB) $(OBJS)
 
 clobber: clean
-        rm -f .depend
+	rm -f .depend
 
 depend:
-        mkdep $(CFLAGS) $(ICISRCS)
+	mkdep $(CFLAGS) $(ICISRCS)
