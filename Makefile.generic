@@ -34,7 +34,7 @@ ici$(MOD).html: $(ALL_SRC)
 	ici ../tools/extract-doc-from-src.ici html $(ALL_SRC)
 
 clean:
-	$(CF_RM) -f $(OBJS)
+	$(CF_RM) -f $(OBJS) 
 
 clobber: clean
 	$(CF_RM) -f $(ICIMOD) ici$(MOD).1 ici$(MOD).html .depend
@@ -45,6 +45,6 @@ depend:
 test:
 	ici tst-$(MOD).ici
 
-install: $(LIBINSTALLS) ici$(MOD).1
+install: $(LIBINSTALLS) ici$(MOD).1 ici$(MOD).html
 	$(CF_INSTALL) $(LIBINSTALLS) $(PREFIX)/lib/ici4
 	$(CF_INSTALL) ici$(MOD).1 $(PREFIX)/man/man1

@@ -67,6 +67,7 @@ static modules = [struct
     pdf     = [set "bsd", "linux"                                ],
     pq      = [set "bsd", "linux"                                ],
     uuid    = [set "bsd", "linux"                                ],
+    widb    = [set                                          "w32"],
 ];
 
 /*

@@ -112,12 +112,12 @@ static html = [class
             <HTML>
             <HEAD>
                 <TITLE>The ICI %s module</TITLE>
-                <STYLE TYPE="text/css" TITLE="Bright Colours">
+                <STYLE TYPE="text/css">
                     BODY {color: black}
-                    P {font-size: 12pt}
-                    H1 {font-size: 14pt; font-family: Arial;
+                    P {font-size: 12pt; width: 450pt}
+                    H1 {font-size: 12pt; font-family: Arial;
                         font-weight: bold}
-                    H2 {font-size: 12pt; font-family: Arial;
+                    H2 {font-size: 10pt; font-family: Arial;
                         font-style: italic; font-weight: bold}
                     PRE {background: aliceblue}
                 </STYLE>
