@@ -1,5 +1,5 @@
 /*
- * $Id: net.c,v 1.22 2003/03/08 06:48:05 timl Exp $
+ * $Id: net.c,v 1.23 2003/04/18 02:04:15 timl Exp $
  *
  * net module - ici sockets interface
  *
@@ -202,6 +202,28 @@ isclosed(ici_handle_t *skt)
         return 0;
     ici_error = "attempt to use closed socket";
     return 1;
+}
+
+/*
+ * Do what needs to be done just before calling a potentially
+ * blocking system call.
+ */
+static ici_exec_t *
+potentially_block()
+{
+#ifndef NOSIGNALS
+    ici_signals_blocking_syscall(1);
+#endif
+    return ici_leave();
+}
+
+static void
+unblock(ici_exec_t *x)
+{
+#ifndef NOSIGNALS
+    ici_signals_blocking_syscall(0);
+#endif
+    ici_enter(x);
 }
 
 /*
@@ -546,22 +568,13 @@ ici_net_accept()
         return 1;
     if (isclosed(skt))
         return 1;
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(1);
-#endif
-    x = ici_leave();
-    if ((fd = accept((SOCKET)skt->h_ptr, NULL, NULL)) == -1)
+    x = potentially_block();
+    fd = accept((SOCKET)skt->h_ptr, NULL, NULL);
+    unblock(x);
+    if (fd == -1)
     {
-        ici_enter(x);
-#ifndef NOSIGNALS
-        ici_signals_blocking_syscall(0);
-#endif
         return ici_get_last_errno("net.accept", NULL);
     }
-    ici_enter(x);
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
-#endif
     return ici_ret_with_decref(objof(new_netsocket(fd)));
 }
 
@@ -585,6 +598,7 @@ ici_net_connect()
     object_t            *arg;
     struct sockaddr_in  saddr;
     exec_t              *x;
+    int                 rc;
 
     if (ici_typecheck("ho", ICIS(socket), &skt, &arg))
         return 1;
@@ -601,23 +615,10 @@ ici_net_connect()
         return 1;
     if (isclosed(skt))
         return 1;
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(1);
-#endif
-    x = ici_leave();
-    if (connect((SOCKET)skt->h_ptr, (struct sockaddr *)&saddr, sizeof saddr) == -1)
-    {
-        ici_enter(x);
-#ifndef NOSIGNALS
-        ici_signals_blocking_syscall(0);
-#endif
-        return ici_get_last_errno("net.connect", NULL);
-    }
-    ici_enter(x);
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
-#endif
-    return ici_ret_no_decref(objof(skt));
+    x = potentially_block();
+    rc = connect((SOCKET)skt->h_ptr, (struct sockaddr *)&saddr, sizeof saddr);
+    unblock(x);
+    return rc == -1 ? ici_get_last_errno("net.connect", NULL) : ici_ret_no_decref(objof(skt));
 }
 
 /*
@@ -874,22 +875,11 @@ ici_net_select()
         tv->tv_sec = timeout / 1000000;
         tv->tv_usec = (timeout % 1000000); /* * 1000000.0; */
     }
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(1);
-#endif
-    x = ici_leave();
-    if ((n = select(dtabsize + 1, rfds, wfds, efds, tv)) < 0)
-    {
-        ici_enter(x);
-#ifndef NOSIGNALS
-        ici_signals_blocking_syscall(0);
-#endif
+    x = potentially_block();
+    n = select(dtabsize + 1, rfds, wfds, efds, tv);
+    unblock(x);
+    if (n < 0)
         return ici_get_last_errno("net.select", NULL);
-    }
-    ici_enter(x);
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
-#endif
     if ((result = ici_struct_new()) == NULL)
         return 1;
     /* Add in count */
@@ -1023,23 +1013,14 @@ ici_net_recvfrom()
         return seterror("negative transfer count", NULL);
     if ((msg = ici_nalloc(len + 1)) == NULL)
         return 1;
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(1);
-#endif
-    x = ici_leave();
-    if ((nb = recvfrom((SOCKET)skt->h_ptr, msg, len, 0, (struct sockaddr *)&addr, &addrsz)) == -1)
+    x = potentially_block();
+    nb = recvfrom((SOCKET)skt->h_ptr, msg, len, 0, (struct sockaddr *)&addr, &addrsz);
+    unblock(x);
+    if (nb == -1)
     {
-        ici_enter(x);
-#ifndef NOSIGNALS
-        ici_signals_blocking_syscall(0);
-#endif
         ici_nfree(msg, len + 1);
         return ici_get_last_errno("net.recvfrom", NULL);
     }
-    ici_enter(x);
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
-#endif
     if (nb == 0)
     {
         ici_nfree(msg, len + 1);
@@ -1142,23 +1123,14 @@ ici_net_recv()
         return seterror("negative transfer count", NULL);
     if ((msg = ici_nalloc(len + 1)) == NULL)
         return 1;
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(1);
-#endif
-    x = ici_leave();
-    if ((nb = recv((SOCKET)skt->h_ptr, msg, len, 0)) == -1)
+    x = potentially_block();
+    nb = recv((SOCKET)skt->h_ptr, msg, len, 0);
+    unblock(x);
+    if (nb == -1)
     {
-        ici_enter(x);
-#ifndef NOSIGNALS
-        ici_signals_blocking_syscall(0);
-#endif
         ici_nfree(msg, len + 1);
         return ici_get_last_errno("net.recv", NULL);
     }
-    ici_enter(x);
-#ifndef NOSIGNALS
-    ici_signals_blocking_syscall(0);
-#endif
     if (nb == 0)
     {
         ici_nfree(msg, len + 1);
@@ -1673,7 +1645,7 @@ skt_file_t;
 static int
 skt_getch(skt_file_t *sf)
 {
-    char    c;
+    char        c;
 
     if (!(sf->sf_flags & SF_READ) || (sf->sf_flags & SF_EOF))
         return EOF;
@@ -1686,7 +1658,9 @@ skt_getch(skt_file_t *sf)
     {
         if (sf->sf_nbuf == 0)
         {
+            ici_exec_t *x = potentially_block();
             sf->sf_nbuf = recv((SOCKET)sf->sf_socket->h_ptr, sf->sf_buf, SF_BUFSIZ, 0);
+            unblock(x);
             if (sf->sf_nbuf <= 0)
             {
                 sf->sf_flags |= SF_EOF;
@@ -1717,8 +1691,10 @@ skt_flush(skt_file_t *sf)
     if (sf->sf_flags & SF_WRITE && sf->sf_nbuf > 0)
     {
         int     rc;
-
-        if ((rc = send((SOCKET)sf->sf_socket->h_ptr, sf->sf_buf, sf->sf_nbuf, 0)) != sf->sf_nbuf)
+        ici_exec_t *x = potentially_block();
+        rc = send((SOCKET)sf->sf_socket->h_ptr, sf->sf_buf, sf->sf_nbuf, 0);
+        unblock(x);
+        if (rc != sf->sf_nbuf)
             return 1;
     }
     else /* sf->sf_flags & SF_READ */
@@ -1796,6 +1772,7 @@ skt_write(char *buf, int n, skt_file_t *sf)
 
 static ftype_t  net_skt_ftype =
 {
+    0,
     skt_getch,
     skt_ungetc,
     skt_putch,
