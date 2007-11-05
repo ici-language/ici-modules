@@ -1978,13 +1978,40 @@ static int ici_sys_flock()
 }
 #endif /* ICI_SYS_NOFLOCK */
 
+#endif /* _WIN32 */
+
+#ifdef _WIN32
+
+/*
+ * Win32 does not provide ftruncate()/truncate(), so roll our own.
+ * It provides _chsize() which does the same as ftruncate().
+ */
+static int ftruncate(int fd, long length)
+{
+    return _chsize(fd, length);
+}
+static int truncate(const char *path, long length)
+{
+    long        fd;
+    int         ret;
+
+    fd = open(path, _O_WRONLY);
+    if (fd == -1)
+        return -1;
+    ret = _chsize(fd, length);
+    close(fd);
+    return ret;
+}
+
+#endif
+
 /*
  * sys.truncate(int|string, len)
  *
  * Use 'truncate(2)' or 'ftrunctate(2)' to truncate a file to 'len'
  * bytes.
  *
- * Not supported on Win32.
+ * Supported on Win32 platforms.
  *
  * This --topic-- forms part of the --ici-sys-- documentation.
  */
@@ -2008,7 +2035,6 @@ static int ici_sys_truncate()
     }
     return 1;
 }
-#endif
 
 #ifndef _WIN32
 
@@ -2530,7 +2556,9 @@ static cfunc_t ici_sys_cfuncs[] =
          * This --topic-- forms part of the --ici-sys-- documentation.
          */
         {CF_OBJ, "sync",    ici_sys_simple, sync,   ""},
+#   endif
         {CF_OBJ, "truncate",ici_sys_truncate},
+#   ifndef _WIN32
         /*
          * sys.umask(int)
          *
