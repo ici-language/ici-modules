@@ -1,0 +1,6 @@
+data := clearsilver.hdf:new();
+data:set_value("user.name", "David");
+data:set_value("user.has_paid", "1");
+template := clearsilver.template:new(data);
+template:parse_file("simple.template");
+template:render(stdout);

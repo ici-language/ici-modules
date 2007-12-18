@@ -1,0 +1,16 @@
+/*
+ * hdf = clearsilver.struct_to_hdf(struct)
+ */
+extern
+struct_to_hdf(s)
+{
+    h = hdf:new();
+    forall (v, k in s)
+    {
+	if (typeof(k) == "string")
+	{
+	    h:set_value(k, string(v));
+	}
+    }
+    return h;
+}

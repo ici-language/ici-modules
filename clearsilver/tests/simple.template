@@ -1,0 +1,10 @@
+<HTML>
+<BODY>
+<TABLE BORDER="1">
+<TR>
+<TD><?cs var:user.name ?></TD>
+<TD><?cs if:user.has_paid == "1" ?>PAID<?cs /if ?></TD>
+</TR>
+</TABLE>
+</BODY>
+</HTML>
