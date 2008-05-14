@@ -1,5 +1,5 @@
 /*
- * $Id: ici4str.ici,v 1.2 2003/01/27 02:34:48 atrn Exp $
+ * $Id: ici4str.ici,v 1.3 2003/04/19 11:33:34 timl Exp $
  */
 
 /*
@@ -38,7 +38,7 @@ plural(word, count, suffix)
 extern
 trim(str)
 {
-    return sub(sub(str, #^ +#, ""), # +$#, "");
+    return sub(sub(str, #^\s+#, ""), #\s+$#, "");
 }
 
 
