@@ -1,0 +1,34 @@
+rpush(path, "..");
+
+types := [array
+    "array",
+    "float",
+    "func",
+    "int",
+    "mem",
+    "null",
+    "ptr",
+    "regexp",
+    "set",
+    "string",
+    "struct",
+    "scope",
+    "cyclic-array",
+];
+
+forall (t in types)
+{
+    printf("%s\n", t);
+    save_test := sprintf("test-save-%s.ici", t);
+    restore_test := sprintf("test-restore-%s.ici", t);
+    if
+    (
+	system(sprintf("ici %s", save_test))
+	||
+	system(sprintf("ici %s", restore_test))
+    )
+    {
+	printf("%s failed\n", t);
+    }
+    try remove(sprintf("test-save-%s.ici.dat", t)); onerror ;
+}
