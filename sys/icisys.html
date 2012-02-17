@@ -11,7 +11,7 @@
                         font-style: italic; font-weight: bold}
                     PRE {background: aliceblue}
                     DT {font-style: Italic}
-                    DD.DefnIn4cm {width: 337pt; margin-left: 113pt}   
+                    DD.DefnIn4cm {width: 337pt; margin-left: 113pt}
                     DD.DefnIn2cm {width: 396pt; margin-left: 56pt}
                 </STYLE>
                 <META NAME="Generator" CONTENT="extract-doc-from-src.ici">
@@ -405,9 +405,34 @@ supported on Win32.</P>
 <P ALIGN="left">Create a pipe and return an array containing two, integer,
 file descriptors used to refer to the input and output
 endpoints of the pipe.</P>
-<H2>string = sys.read(fd, len)</H2>
-<P ALIGN="left">Read up to <I>len</I> bytes from the given file descriptor
-using <I>read(2)</I>, and return the result as a string.</P>
+<H2>string|int = sys.read(fd, [string|mem|ptr,] len)</H2>
+<P ALIGN="left">If only 2 arguments are supplied, read up to <I>len</I>
+bytes from the given file descriptor using <I>read(2)</I>,
+and return the result as a string.</P>
+<P ALIGN="left">If 3 arguments are supplied, read up to <I>len</I>
+elements from the given file descriptor using <I>read(2)</I>,
+into an existing buffer specified by the second argument,
+and return the number of elements read. The second
+argument in this case must be one of the following
+types:</P>
+<DT>string</DT>
+<DD CLASS="DefnIn2cm">The string must be a non-atomic string buffer allocated
+with <I>strbuf()</I>. <I>len</I> and the return value are specified
+in bytes. If the read will overrun the string, the
+string is extended and zero-filled as necessary.
+</DD>
+<DT>mem</DT>
+<DD CLASS="DefnIn2cm"><I>len</I> and the return value are specified in words according
+to the memory object's access size (see <I>alloc()</I>).
+If the read will overrun the memory object, the read
+is truncated to fit.
+</DD>
+<DT>ptr</DT>
+<DD CLASS="DefnIn2cm">The pointer must point to one of the above types. The
+behaviour is as above, except that data is read into
+the pointed-to object at the offset specified by the
+pointer.
+</DD>
 <H2>string = sys.readlink(path)</H2>
 <P ALIGN="left">Return and return the contents of a symbolic link <I>path</I>.
 Not supported on Win32.</P>
@@ -517,11 +542,25 @@ some BSD, or Cygwin.</P>
 <P ALIGN="left">Wait for a child process to exit and return a struct
 containing the process id (key of &quot;pid&quot;)
 and the exit status (key of &quot;status&quot;).</P>
-<H2>int = sys.write(fd, string|mem [, len)</H2>
-<P ALIGN="left">Write a string or mem object to the given file descriptor
-using <I>write(2)</I>. If <I>len</I> is given, and
-it is less than the size in bytes of the data, that
-<I>len</I> will be used. Returns the actual number
-of bytes written.</P>
+<H2>int = sys.write(fd, string|mem|ptr [, len])</H2>
+<P ALIGN="left">Write elements from an existing buffer, specified by
+the second argument, to the given file descriptor using
+<I>write(2)</I>, and return the number of elements
+written. If <I>len</I> is given, and it is less than
+the number of elements in the buffer, that <I>len</I>
+will be used. The second argument must be one of the
+following types:</P>
+<DT>string</DT>
+<DD CLASS="DefnIn2cm"><I>len</I> and the return value are specified in bytes.
+</DD>
+<DT>mem</DT>
+<DD CLASS="DefnIn2cm"><I>len</I> and the return value are specified in words according
+to the memory object's access size (see <I>alloc()</I>).
+</DD>
+<DT>ptr</DT>
+<DD CLASS="DefnIn2cm">The pointer must point to one of the above types. The
+behaviour is as above, except that the data written
+starts from the offset specified by the pointer.
+</DD>
 </BODY>
 </HTML>

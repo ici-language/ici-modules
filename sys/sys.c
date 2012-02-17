@@ -802,53 +802,146 @@ static int ici_sys_mkfifo()
 }
 
 /*
- * string = sys.read(fd, len)
+ * string|int = sys.read(fd, [string|mem|ptr,] len)
  *
- * Read up to 'len' bytes from the given file descriptor using 'read(2)',
- * and return the result as a string.
+ * If only 2 arguments are supplied, read up to 'len' bytes from the given
+ * file descriptor using 'read(2)', and return the result as a string.
+ *
+ * If 3 arguments are supplied, read up to 'len' elements from the given file
+ * descriptor using 'read(2)', into an existing buffer specified by the second
+ * argument, and return the number of elements read.  The second argument in
+ * this case must be one of the following types:
+ *
+ * string   The string must be a non-atomic string buffer allocated with
+ *          'strbuf()'.  'len' and the return value are specified in bytes.
+ *          If the read will overrun the string, the string is extended and
+ *          zero-filled as necessary.
+ *
+ * mem      'len' and the return value are specified in words according to the
+ *          memory object's access size (see 'alloc()').  If the read will
+ *          overrun the memory object, the read is truncated to fit.
+ *
+ * ptr      The pointer must point to one of the above types.  The behaviour
+ *          is as above, except that data is read into the pointed-to object
+ *          at the offset specified by the pointer.
  *
  * This --topic-- forms part of the --ici-sys-- documentation.
  */
 static int ici_sys_read()
 {
     long        fd;
+    object_t    *o = NULL;
     long        len;
     string_t    *s;
     int         r;
     char        *msg;
+    char        *addr;
+    int         offset = 0;
 
     if (ici_typecheck("ii", &fd, &len))
-        return 1;
-    if ((msg = ici_alloc(len+1)) == NULL)
-        return 1;
-    switch (r = read(fd, msg, len))
+        if (ici_typecheck("ioi", &fd, &o, &len))
+            return 1;
+    if (len < 0)
     {
-    case -1:
-        ici_free(msg);
-        return sys_ret(-1);
+        ici_error = "attempt to read a negative length";
+        return 1;
+    }
+    if (o == NULL)
+    {
+        if ((msg = ici_alloc(len+1)) == NULL)
+            return 1;
+        switch (r = read(fd, msg, len))
+        {
+        case -1:
+            ici_free(msg);
+            return sys_ret(-1);
 
-    case 0:
+        case 0:
+            ici_free(msg);
+            return ici_null_ret();
+        }
+        if ((s = ici_str_alloc(r)) == NULL)
+        {
+            ici_free(msg);
+            return 1;
+        }
+        memcpy(s->s_chars, msg, r);
+        s = stringof(ici_atom(objof(s), 1));
         ici_free(msg);
-        return ici_null_ret();
+        return ici_ret_with_decref(objof(s));
     }
-    if ((s = ici_str_alloc(r)) == NULL)
+    if (isptr(o) && isint(ptrof(o)->p_key))
     {
-        ici_free(msg);
-        return 1;
+        offset = intof(ptrof(o)->p_key)->i_value;
+        if (offset < 0)
+        {
+            ici_error = "attempt to read into a negative buffer offset";
+            return 1;
+        }
+        o = ptrof(o)->p_aggr;
     }
-    memcpy(s->s_chars, msg, r);
-    s = stringof(ici_atom(objof(s), 1));
-    ici_free(msg);
-    return ici_ret_with_decref(objof(s));
+    if (isstring(o))
+    {
+        if ((o->o_flags & (O_ATOM|ICI_S_SEP_ALLOC)) != ICI_S_SEP_ALLOC)
+        {
+            ici_error = "attempt to read into an atomic string";
+            return 1;
+        }
+        s = stringof(o);
+        /*
+         * Extend the string buffer first, to ensure it can hold 'len' bytes
+         * read in at offset 'offset', even though there may not be 'len'
+         * bytes of data left in the file, or the read may fail.  The
+         * pessimistic outlook would be to allocate a temporary buffer, but
+         * I'm an optimist.  If the read succeeds, update s->s_nchars (which
+         * is independent of the buffer's allocated size).
+         */
+        if (ici_str_need_size(s, offset + len))
+            return 1;
+        addr = (char *)s->s_chars + offset;
+        r = read(fd, addr, len);
+        if (r != -1)
+        {
+            if (offset > s->s_nchars)
+                memset(s->s_chars + s->s_nchars, 0, offset - s->s_nchars);
+            if (s->s_nchars < offset + r)
+                s->s_nchars = offset + r;
+            s->s_chars[s->s_nchars] = '\0';
+        }
+        return sys_ret(r);
+    }
+    if (ismem(o))
+    {
+        if (len > memof(o)->m_length - offset)
+            len = memof(o)->m_length - offset;
+        offset *= memof(o)->m_accessz;
+        len *= memof(o)->m_accessz;
+        addr = (char *)memof(o)->m_base + offset;
+        r = read(fd, addr, len);
+        if (r != -1)
+            r /= memof(o)->m_accessz;
+        return sys_ret(r);
+    }
+    return ici_argerror(1);
 }
 
 /*
- * int = sys.write(fd, string|mem [, len)
+ * int = sys.write(fd, string|mem|ptr [, len])
  *
- * Write a string or mem object to the given file descriptor using
- * 'write(2)'. If 'len' is given, and it is less than the size in
- * bytes of the data, that 'len' will be used.
- * Returns the actual number of bytes written.
+ * Write elements from an existing buffer, specified by the second argument,
+ * to the given file descriptor using 'write(2)', and return the number of
+ * elements written.  If 'len' is given, and it is less than the number of
+ * elements in the buffer, that 'len' will be used.  The second argument must
+ * be one of the following types:
+ *
+ * string   'len' and the return value are specified in bytes.
+ *
+ * mem      'len' and the return value are specified in words according to the
+ *          memory object's access size (see 'alloc()').
+ *
+ * ptr      The pointer must point to one of the above types.  The behaviour
+ *          is as above, except that the data written starts from the offset
+ *          specified by the pointer.
  *
  * This --topic-- forms part of the --ici-sys-- documentation.
  */
@@ -857,32 +950,48 @@ static int ici_sys_write()
     long        fd;
     object_t    *o;
     char        *addr;
-    long        sz;
-    int         havesz = 0;
+    long        len;
+    int         havelen = 0;
+    int         offset = 0;
 
     if (ici_typecheck("io", &fd, &o))
     {
-        if (ici_typecheck("ioi", &fd, &o, &sz))
+        if (ici_typecheck("ioi", &fd, &o, &len))
             return 1;
-        havesz = 1;
+        if (len < 0)
+        {
+            ici_error = "attempt to write a negative length";
+            return 1;
+        }
+        havelen = 1;
+    }
+    if (isptr(o) && isint(ptrof(o)->p_key))
+    {
+        offset = intof(ptrof(o)->p_key)->i_value;
+        if (offset < 0)
+        {
+            ici_error = "attempt to write from a negative buffer offset";
+            return 1;
+        }
+        o = ptrof(o)->p_aggr;
     }
     if (isstring(o))
     {
-        addr = (char *)stringof(o)->s_chars;
-        if (!havesz || sz > stringof(o)->s_nchars)
-            sz = stringof(o)->s_nchars;
+        if (!havelen || len > stringof(o)->s_nchars - offset)
+            len = stringof(o)->s_nchars - offset;
+        addr = (char *)stringof(o)->s_chars + offset;
+        return sys_ret(write((int)fd, addr, (size_t)len));
     }
-    else if (ismem(o))
+    if (ismem(o))
     {
-        addr = (char *)memof(o)->m_base;
-        if (!havesz || (size_t)sz > memof(o)->m_length * memof(o)->m_accessz)
-            sz = memof(o)->m_length * memof(o)->m_accessz;
+        if (!havelen || (size_t)len > memof(o)->m_length - offset)
+            len = memof(o)->m_length - offset;
+        offset *= memof(o)->m_accessz;
+        len *= memof(o)->m_accessz;
+        addr = (char *)memof(o)->m_base + offset;
+        return sys_ret(write((int)fd, addr, (size_t)len) / memof(o)->m_accessz);
     }
-    else
-    {
-        return ici_argerror(1);
-    }
-    return sys_ret(write((int)fd, addr, (size_t)sz));
+    return ici_argerror(1);
 }
 
 /*

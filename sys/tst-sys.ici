@@ -3,6 +3,10 @@
  * some don't test for correct results or anything.
  */
 
+//net;
+//str;
+//exit(0);
+
 t := sys.time();
 if (typeof(t) != "int")
     fail("sys.time() didn't return an int");
@@ -24,11 +28,121 @@ sys.write(f, "world\n...", 6);
 sys.lseek(f, 0, sys.SEEK_SET);
 if (sys.read(f, 1024) != "Hello world\n")
     fail("failed to read file I wrote");
+
+
+static verify_transfer(test, actual, expected)
+{
+    if (actual != expected)
+        fail(sprintf("%s: failed to transfer expected # of elements (%d instead of %d)", test, actual, expected));
+}
+
+static verify_buffer(test, actual, expected)
+{
+    actual_as_string = "";
+    for (i = 0; i < nels(actual); i++)
+        actual_as_string += sprintf(" %X", typeof(actual)=="string" ? toint(actual[i]) : actual[i]);
+    expected_as_string = "";
+    for (i = 0; i < nels(actual); i++)
+        expected_as_string += sprintf(" %X", typeof(expected)=="string" ? toint(expected[i]) : expected[i]);
+
+    if (actual_as_string != expected_as_string)
+    {
+        printf("%s:\n  actual: %s\nexpected: %s\n", test, actual_as_string, expected_as_string);
+        fail("actual buffer differs from expected");
+    }
+}
+
+sys.lseek(f, 0, sys.SEEK_SET);
+
+// Create a  10-byte string buffer.
+s := strbuf("XXXXXXXXXX");
+
+// Read 6 bytes into the start of the string buffer.
+verify_transfer("str read #1", sys.read(f, s, 6), 6);
+verify_buffer("str read #1", s, "Hello XXXX");
+
+// Read 5 bytes into offset 4 of the string buffer.
+verify_transfer("str read #2", sys.read(f, &s[4], 5), 5);
+verify_buffer("str read #2", s, "HellworldX");
+
+// Try to read 15 bytes, but there are only 12 in the file.
+// Read into offset 9 of the string buffer, extending it to 9+12=21 bytes.
+sys.lseek(f, 0, sys.SEEK_SET);
+verify_transfer("str read #3", sys.read(f, &s[9], 15), 12);
+verify_buffer("str read #3", s, "HellworldHello world\n");
+
+// Read 5 bytes into offset 25 of the string buffer, extending it to 30 bytes.
+// Check that the bytes in the middle get zero-filled.
+sys.lseek(f, 0, sys.SEEK_SET);
+verify_transfer("str read #4", sys.read(f, &s[25], 5), 5);
+verify_buffer("str read #4", s, "HellworldHello world\n\0\0\0\0Hello");
+
+// Write the string "TEST" to the file with default length.
+sys.lseek(f, 10, sys.SEEK_SET);
+verify_transfer("str write #1", sys.write(f, "TEST"), 4);
+verify_buffer("str write #1", getfile("junk-test-file"), "Hello worlTEST");
+
+// Try to write the string "TEST" to the file with length 10, check only 4 bytes are written.
+verify_transfer("str write #2", sys.write(f, "TEST", 10), 4);
+verify_buffer("str write #2", getfile("junk-test-file"), "Hello worlTESTTEST");
+
+// Write the string "TEST" to the file with length 2.
+verify_transfer("str write #3", sys.write(f, "TEST", 2), 2);
+verify_buffer("str write #3", getfile("junk-test-file"), "Hello worlTESTTESTTE");
+
+// Write the string "0123456789" from offset 5 with default length, check 5 bytes are written.
+sys.lseek(f, 0, sys.SEEK_SET);
+verify_transfer("str write #4", sys.write(f, &"0123456789"[5]), 5);
+verify_buffer("str write #4", getfile("junk-test-file"), "56789 worlTESTTESTTE");
+
+// Write the string "0123456789" from offset 0 with length 5.
+verify_transfer("str write #5", sys.write(f, &"0123456789"[0], 5), 5);
+verify_buffer("str write #5", getfile("junk-test-file"), "5678901234TESTTESTTE");
+
+// Create a 10-byte memory object containing the values from 'a' to 'j'.
+m := alloc(10,1);
+for (i = 0; i < 10; i++) m[i] = i + 'a';
+verify_buffer("1-byte mem setup", m, "abcdefghij");
+
+// Read 5 bytes into the start of the memory object.
+sys.lseek(f, 5, sys.SEEK_SET);
+verify_transfer("1-byte mem read #1", sys.read(f, m, 5), 5);
+verify_buffer("1-byte mem read #1", m, "01234fghij");
+
+// Try to read 100 bytes into offset 5, but there is only space for 5.
+sys.lseek(f, 0, sys.SEEK_SET);
+verify_transfer("1-byte mem read #2", sys.read(f, &m[5], 100), 5);
+verify_buffer("1-byte mem read #2", m, "0123456789");
+
+// Try to write 100 bytes from offset 5, but there are only 5 available.
+sys.lseek(f, 10, sys.SEEK_SET);
+verify_transfer("1-byte mem write #1", sys.write(f, &m[5], 100), 5);
+verify_buffer("1-byte mem write #1", getfile("junk-test-file"), "567890123456789ESTTE");
+
+// Create a 4-word memory object containing the 32-bit values from 'a' to 'd'.
+m := alloc(4, 4);
+for (i = 0; i < 4; i++) m[i] = i + 'a';
+verify_buffer("4-byte mem setup", m, [array 'a', 'b', 'c', 'd']);
+
+/*
+ * Endian-ness may affect the tests of file contents written from a 32-bit memory object.
+ * I'll assume most machines are little-endian these days.
+ * 0x00000001 is stored as "\00\00\00\01" on big-endian (old Motorola)
+ * 0x00000001 is stored as "\01\00\00\00" on little-endian (Intel, most others?)
+ */
+
+// Write the memory object from offset 1 with default length.  Check 3 words (12 bytes) written.
+sys.lseek(f, 0, sys.SEEK_SET);
+verify_transfer("4-byte mem write #1", sys.write(f, &m[1]), 3);
+verify_buffer("4-byte mem write #1", getfile("junk-test-file"), "b\000\000\000c\000\000\000d\000\000\000789ESTTE");
+
+// Read 1 word (4 bytes) into offset 2 of the memory object.
+verify_transfer("4-byte mem read #1", sys.read(f, &m[2], 1), 1);
+verify_buffer("4-byte mem read #1", m, [array 'a', 'b', ('7'<<0|'8'<<8|'9'<<16|'E'<<24), 'd']);
+
+// Try to read 5 words (20 bytes) into offset 1 of the memory object, but there is only 1 word (4 bytes) left in the file.
+verify_transfer("4-byte mem read #2", sys.read(f, &m[1], 5), 1);
+verify_buffer("4-byte mem read #2", m, [array 'a', ('S'<<0|'T'<<8|'T'<<16|'E'<<24), ('7'<<0|'8'<<8|'9'<<16|'E'<<24), 'd']);
+
 sys.close(f);
 remove("junk-test-file");
-
-
-if (version() !~ #Win32#)
-{
-    
-}
