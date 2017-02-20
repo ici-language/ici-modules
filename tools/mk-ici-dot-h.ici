@@ -1,0 +1,34 @@
+#!/usr/local/bin/ici3
+
+/*
+ * $Id: mk-ici-dot-h.ici,v 1.3 1999/10/18 09:15:38 andy Exp $
+ *
+ * Generate ici.h for a particular module.
+ */
+
+
+static	extsdir, template;
+
+if (scope().spawn)
+{
+    extsdir = "..\\tools";
+    template = sprintf("%s\\ici.h-in", extsdir);
+}
+else
+{
+    extsdir	 = "/usr/local/lib/ici3/exts";
+    if (getenv("PREFIX"))
+	extsdir = sprintf("%slib/ici/exts", getenv("PREFIX"));
+    template = sprintf("%s/ici.h-in", extsdir);
+}
+
+if (argc != 2)
+     exit("usage: " + basename(argv[0]) + " <module-name>");
+
+auto txt, out;
+
+txt = getfile(fopen(template));
+out = fopen("ici.h", "w");
+printf(out, "%s", gsub(txt, #%s#, argv[1]));
+close(out);
+

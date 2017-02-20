@@ -1,0 +1,57 @@
+MODULE_NAME	= xml
+EXPAT		= expat
+EXPAT_OBJS	= xmlparse.obj xmltok.obj xmlrole.obj
+TOOLS		= ..\tools
+PREFIX		= \src\ici
+ICI		= $(PREFIX)\ici-2.1.3
+ICI_EXE		= $(ICI)\ici
+FLAVOUR		= w32
+CONFIG  	= conf-$(FLAVOUR).h
+ICI_DEFS	= -DCONFIG_FILE=\"$(CONFIG)\" /D_WINDOWS /DICI_DLL
+INCS		= -I$(ICI) -I. -I$(EXPAT)\xmlparse -I$(EXPAT)\xmltok
+DEFS		= $(ICI_DEFS)
+OPTIM		= -MDd -Zi -GB -O2p-
+CC		= cl /nologo
+CFLAGS		= $(OPTIM) $(INCS) $(DEFS)
+LIBS		= $(ICI)\ici.lib
+
+all : icixml.dll
+
+icixml.dll: xml.obj strings.obj cfuncs.obj $(EXPAT_OBJS)
+	$(CC) /LD /Fe$@ xml.obj strings.obj cfuncs.obj $(EXPAT_OBJS) $(LIBS) /link /export:ici_xml_library_init
+
+xmlparse.obj: expat/xmlparse/xmlparse.c
+	$(CC) $(CFLAGS) -c expat/xmlparse/xmlparse.c
+
+xmltok.obj: expat/xmltok/xmltok.c
+	$(CC) $(CFLAGS) -c expat/xmltok/xmltok.c
+
+xmlrole.obj: expat/xmltok/xmlrole.c
+	$(CC) $(CFLAGS) -c expat/xmltok/xmlrole.c
+
+xml.obj:	strs.h ici.h
+
+strs.h strings.c : xml.c
+	$(ICI_EXE) $(TOOLS)\mk-strings.ici $(MODULE_NAME) < xml.c
+
+cfuncs.c : xml.c
+	$(ICI_EXE) $(TOOLS)\mk-cfuncs.ici $(MODULE_NAME) < xml.c
+
+ici.h: strs.h
+	$(ICI_EXE) $(TOOLS)\mk-ici-dot-h.ici $(MODULE_NAME)
+
+clean:
+	-del *.dll >nul:
+	-del *.obj >nul:
+	-del icixml.lib >nul:
+	-del icixml.exp >nul:
+	-del *.pdb >nul:
+
+clobber: clean
+	-del cfuncs.c >nul:
+	-del strs.h >nul:
+	-del strings.c >nul:
+	-del ici.h >nul:
+
+depend:
+	mkdep $(CFLAGS) *.c

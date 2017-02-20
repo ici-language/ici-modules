@@ -1,0 +1,6 @@
+WM.InitializeApplication(path.base(argv[0]));
+auto p = WM.GetOpenPanel(WM.CreateSimpleApplicationScreen(X.OpenDisplay()));
+if (WM.RunModalFilePanelForDirectory(p, NULL, getenv("HOME"), NULL))
+    printf("%s\n", WM.GetFilePanelFileName(p));
+else
+    exit(1);

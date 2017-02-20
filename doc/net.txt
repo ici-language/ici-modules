@@ -1,0 +1,29 @@
+The net module is the sockets code from the ICI interpreter
+extracted into a separate module.  The module provides the
+same functions as documented for the ICI network functions.
+
+A summary of the functions follows, 
+
+    socket = accept(socket)
+    socket = bind(socket, string)
+    close(socket)
+    socket = connect(socket, string)
+    string = gethostbyaddr(string)
+    string = gethostbyname(string)
+    string = getpeername(socket)
+    int = getportno(socket)
+    string = getsockname(socket)
+    int = getsockopt(socket, string)
+    string = hostname()
+    socket = listen(socket [, int])
+    string = recv(socket, int)
+    struct = recvfrom(socket, int)
+    set|struct = select([int,] set, ...)
+    send(socket, string)
+    sendto(socket, string, string)
+    setsockopt(socket, string [, int])
+    shutdown(socket [, int])
+    int = sktno(socket)
+    file = sktopen(socket [, string])
+    socket = socket(int|socket)
+    array = socketpair()

@@ -1,0 +1,275 @@
+The X module is an interface to Xlib.  It provides many of the types
+and functions actually used in writing X11 programs and has been used
+to write simple applications, a toolkit and a window manager.  It is
+not yet a complete binding to Xlib but does provide a usable base
+which can be easily extended and enhanced.
+
+The module is essentially a mapping of Xlib into ICI with conversion
+of structured types and practices as appropriate to ICI.  No attempt
+is made to abstract the Xlib programming interface and the same
+principles applied during C development of Xlib programs apply for ICI
+Xlib programs. The same techniques apply although ICI's structured
+types allow for simpler approaches the many implementation problems.
+
+The module uses the same name used in Xlib with the removal of the "X"
+prefix replacing it with the ICI module reference, "X.". The argument
+lists of functions have been retained where possible with changes as
+appropriate to the ICI environment. X11 structures such as events and
+window attributes are stored in ICI struct objects and sets of strings
+may be used as flags rather than bitsets (which may also be used
+however).  ICI X11 programs are quite similar to their C counterparts
+when dealing with X11 however much of the remaining program is simpler
+or more adaptable to the ICI environment.
+
+The large number of constants used in X11 programming are defined
+as elements of the X module.  The complete list of names is too
+long for inclusion in a short note such as this and the reader is
+directed to the source code (the file "vars.c" to be precise).
+
+The functions defined the module may be split into a number of
+function groups according to the area of X11 or Xlib to which
+they relate. A summary of the module functions follows.
+
+
+Atoms
+
+	atom = Atom(int)
+	    Return an atom with the corresponding integer value.
+
+	atom = InternAtom(display, string [, int])
+	    Create an atom. Optional int defaults to 0 and
+	    causes atom to be created if needed, pass non-zero
+	    to test for atoms.
+
+	string = GetAtomName(display, atom)
+	    Return the string associated with an atom.
+
+
+Colors
+
+	color = Color(string)
+	color = Color(int, int, int)
+	    Return a color given a name or an RGB triplet.
+
+	struct = LookupColor(display, colormap, string)
+	    Returns a struct containing two colors with
+	    the keys "screen" and "exact".
+
+	color = AllocColor(display, colormap, color)
+
+	struct = AllocNamedColor(display, colormap, string)
+
+	color = ParseColor(display, colormap, string)
+
+	colormap = DefaultColormap(display, int)
+	    Return the default colormap associated with
+	    the numbered screen on the display.
+
+
+Cursors
+
+	cursor = CreateFontCursor(display, int)
+
+	CreatePixmapCursor(display, pixmap, pixmap, color, color, int, int)
+
+	DefineCursor(display, window, cursor)
+
+	UndefineCursor(display, window)
+
+
+Initialisation, Defaults and Control
+
+	display = OpenDisplay([string])
+
+	CloseDisplay(display)
+
+	int = DefaultScreen(display)
+
+	window = RootWindow(display, int)
+
+	window = DefaultRootWindow(display)
+
+	int = DisplayWidth(display)
+
+	int = DisplayHeight(display)
+
+	Flush(display)
+
+	Sync(display [, int])
+
+	Synchronize(display, [int])
+
+	int = ConnectionNumber(display)
+
+	SetErrorHandler(NULL | func)
+
+	string = GetErrorText(display, int)
+
+	int = DefaultDepth(display, int)
+
+	int = BlackPixel(display, int)
+
+	int = WhitePixel(display, int)
+
+	Bell(display [, int])
+
+	visual = DefaultVisual(display, int)
+
+	int = VisualIDFromVisual(visual)
+
+	array = GetVisualInfo(display, struct)
+
+	struct = MatchVisualInfo(display, int, int, int)
+
+Events
+
+	event = NextEvent(display)
+
+	event = WindowEvent(display, window [, int])
+
+	CheckWindowEvent(display, window [, int])
+
+	SendEvent(display, window, int, string, struct)
+
+	int = QLength(display)
+
+	int = Pending(display)
+
+	string = KeysymToString(keysym)
+
+	keysym = LookupKeysym(event [, int])
+
+Fonts
+
+	font = LoadFont(display, string)
+
+	UnloadFont(display, font)
+
+	fontstruct = LoadQueryFont(display, string)
+
+	int = TextWidth(fontstruct, string)
+
+Graphics
+
+	gc = CreateGC(display, pixmap|window, struct)
+
+	CopyGC(display, gc, gc, int)
+
+	ChangeGC(display, gc, struct)
+
+	struct = GetGCValues(display, gc, int)
+
+	FreeGC(display, gc)
+
+	SetFillRule(display, gc, int)
+
+	SetFillStyle(display, gc, int)
+
+	SetLineAttributes(display, gc, int, int, int, int)
+
+	SetState(display, gc, int, int, int, int)
+
+	SetFunction(display, gc, int)
+
+	SetPlaneMask(display, gc, int)
+
+	SetForeground(display, gc, int)
+
+	SetBackground(display, gc, int)
+
+	SetFont(display, gc, font)
+
+	DrawPoint(display, pixmap|window, gc, int, int)
+
+	DrawPoints(display, pixmap|window, gc, array, int)
+
+	DrawLine(display, pixmap|window, gc, int, int, int, int)
+
+	DrawLines(display, pixmap|window, gc, array, int)
+
+	DrawSegments(display, pixmap|window, gc, array)
+
+	DrawRectangle(display, pixmap|window, gc, int, int, int, int)
+
+	DrawRectangles(display, pixmap|window, gc, array)
+
+	DrawArc(display, pixmap|window, gc, int, int, int, int, int, int)
+
+	DrawArcs(display, pixmap|window, gc, array)
+
+	FillRectangledisplay, pixmap|window, gc, int, int, int, int)
+
+	FillRectangles(display, pixmap|window, gc, array)
+
+	FillPolygon(display, pixmap|window, gc, array, int, int)
+
+	FillArc(display, pixmap|window, gc, , int, int, int, int, int, int)
+
+	FillArcs(display, pixmap|window, gc, array)
+
+	DrawString(display, pixmap|window, gc, int, int, string)
+
+	pixmap = CreatePixmap(display, pixmap|window, int, int, int)
+
+	FreePixmap(display, pixmap)
+
+	CreatePixmapFromBitmapData(display, pixmap|window, mem,
+						int, int, int, int, int)
+
+	CopyArea(display, pixmap|window, pixmap|window, gc,
+			int, int, int, int [, int, int])
+
+Window Manager Interaction
+
+	SetClassHint(display, window, string [, string])
+	SetWMHints(display, window, struct)
+	SetWMProtocols(display, window, array)
+
+
+Windows
+
+	CreateSimpleWindow(display, window [, [int, int] int])
+
+	window = Window(int|window)
+
+	int = WindowId(window)
+
+	RaiseWindow(display, window)
+
+	MapWindow(display, window)
+
+	UnmapWindow(display, window)
+
+	UnmapSubwindows(display, window)
+
+	MapRaised(display, window)
+
+	MapSubwindows(display, window)
+
+	DestroyWindow(display, window)
+
+	StoreName(display, window, string)
+
+	string = FetchName(display, window)
+
+	SelectInput(display, window, int|string|set)
+
+	ConfigureWindow(display, window, struct)
+
+	ClearWindow(display, window)
+
+	MoveWindow(display, window, int, int)
+
+	ResizeWindow(display, window, int, int)
+
+	SetWindowBackground(display, window, int)
+
+	SetWindowBorder(display, window, int)
+
+	SetWindowBorderWidth(display, window, int)
+
+	SetWindowBackgroundPixmap(display, window, pixmap)
+
+	ChangeWindowAttributes(display, window, struct)
+
+	ReparentWindow(display, window, window)

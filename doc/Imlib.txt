@@ -1,0 +1,31 @@
+The Imlib module is a wrapper around the Imlib library for handling
+images in X11.  The Imlib module depends on the X11 module to define
+ICI object types to access X11.
+
+    ImlibData = init(display)
+
+    ImlibImage = load_image(ImlibData, string)
+
+    apply_image(ImlibData, ImlibImage, window)
+
+    render(ImlibData, ImlibImage, int, int)
+
+    pixmap = copy_image(ImlibData, ImlibImage)
+
+    pixmap = copy_mask(ImlibData, ImlibImage)
+
+    pixmap = move_image(ImlibData, ImlibImage)
+
+    move_mask(ImlibData, ImlibImage)
+
+    changed_image(ImlibData, ImlibImage)
+
+    destroy_image(ImlibData, ImlibImage)
+
+    free_pixmap(ImlibData, pixmap)
+
+    kill_image(ImlibData, ImlibImage)
+
+    load_file_to_pixmap(ImlibData, ImlibImage)
+
+    paste_image(ImlibData, ImlibImage, pixmap|window, int, int, int, int)

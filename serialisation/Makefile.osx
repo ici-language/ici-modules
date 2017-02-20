@@ -1,0 +1,35 @@
+PREFIX	= /usr/local/
+ICIV	?= ici3
+ICI	= $(PREFIX)include/$(ICIV)
+LIBICI	= $(PREFIX)lib/$(ICIV)
+ICI_DEFS= -D$(ICIV)
+INCS	= -I$(ICI)
+DEFS	= $(ICI_DEFS)
+OPTIM	= -g -O
+PIC	= -dynamic -fno-common
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LDFLAGS = -flat_namespace -bundle -undefined suppress
+
+ALL=	$(ICIV)save.dylib $(ICIV)restore.dylib
+
+all:	$(ALL)
+
+$(ICIV)save.dylib: save.o misc.o
+	$(CC) $(LDFLAGS) -o $@ save.o misc.o
+	@chmod 644 $@
+
+$(ICIV)restore.dylib: restore.o misc.o
+	$(CC) $(LDFLAGS) -o $@ restore.o misc.o
+	@chmod 644 $@
+
+install: $(ALL)
+	install -c -m 444 $(ALL) $(LIBICI)
+
+clean:
+	rm -f *.dylib *.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) *.c

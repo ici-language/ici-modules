@@ -1,0 +1,29 @@
+PREFIX	= /usr/local/
+ICI	= $(PREFIX)include/ici
+FLAVOUR	= sol2
+CC	= gcc -Wall
+OPTIM	= -g -O
+PIC	= -fpic
+CFLAGS	= $(PIC) $(OPTIM) -I$(ICI) -DCONFIG_FILE='"conf-$(FLAVOUR).h"'
+
+ALL	= icisave.so icirestore.so
+
+all:	$(ALL)
+
+icisave.so: save.o misc.o
+	ld -G -o $@ save.o misc.o
+
+icirestore.so: restore.o misc.o
+	ld -G -o $@ restore.o misc.o
+
+install: $(ALL)
+	/usr/ucb/install -c -m 444 $(ALL) $(PREFIX)lib/ici
+
+clean:
+	rm -f *.so *.o
+
+clobber: clean
+	rm -f .depend opfunc.c
+
+depend:
+	mkdep $(CFLAGS) *.c

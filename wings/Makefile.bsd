@@ -1,0 +1,55 @@
+MODULE_NAME	= WM
+OBJS		= wings.o wmaker.o
+PREFIX		= /usr/local/
+ICIV		?= ici
+ICI		?= $(PREFIX)include/$(ICIV)
+LIBICI		?= $(PREFIX)lib/$(ICIV)
+FLAVOUR		= bsd
+ICI_DEFS	= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+TOOLS		= ../tools
+X11		= /usr/X11R6
+XINCS		= -I$(X11)/include -I/usr/local/include
+XLIBS		= $(LIBICI)/$(ICIV)X.so -lX11 -lXext
+INCS		= -I../X -I$(ICI) $(XINCS)
+DEFS		= $(ICI_DEFS)
+OPTIM		= -g -O
+#OPTIM		= -g -O3 -mpentium -fexpensive-optimizations -funroll-loops
+PIC		= -fpic
+CFLAGS		= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LIB		= $(ICIV)$(MODULE_NAME).so
+LIBS		=  -L$(X11)/lib -L$(PREFIX)/lib -lWINGs -lWMaker -lwraster -lXpm -ltiff -lpng -lz -ljpeg -lungif -lPropList $(XLIBS)
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS) strings.o cfuncs.o
+	$(CC) -shared -o $@ $(OBJS) strings.o cfuncs.o $(LIBS)
+	@chmod 644 $@
+
+$(OBJS): ici.h strs.h
+
+.SUFFIXES: .c .i
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+strs.h strings.c : $(OBJS:.o=.c) $(TOOLS)/mk-strings.ici
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-strings.ici $(MODULE_NAME)
+
+cfuncs.c : $(OBJS:.o=.c) $(TOOLS)/mk-cfuncs.ici
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-cfuncs.ici $(MODULE_NAME)
+
+ici.h : $(TOOLS)/mk-ici-dot-h.ici
+	ici $(TOOLS)/mk-ici-dot-h.ici $(MODULE_NAME)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+	install -c -m 444 iciWM.ici $(LIBICI)/$(ICIV)WM.ici
+
+clean:
+	rm -f *.o *.so cfuncs.c strings.c strs.h
+
+clobber: clean
+	rm -f .depend ici.h
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(OBJS:.o=.c)

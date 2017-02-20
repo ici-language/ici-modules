@@ -1,0 +1,3 @@
+An interface to controlling FreeBSD's user-level PPP program.  In
+development although a new cable modem interface may slow that down
+due to lack of interest.

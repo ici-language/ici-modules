@@ -1,0 +1,49 @@
+#
+# $Id: Makefile.bsd,v 1.4 2000/07/27 06:50:31 atrn Exp $
+#
+
+MODULE_NAME	= dll
+OBJS		= dll.o dllfunc.o dllmanager.o 
+TOOLS		= ../tools
+PREFIX		= /usr/local/
+ICIV		= ici
+ICI		= $(PREFIX)include/$(ICIV)
+LIBICI		= $(PREFIX)lib/$(ICIV)
+FLAVOUR		= linux
+ICI_DEFS	= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -DPREFIX=\"$(PREFIX)\" -D$(ICIV)
+INCS		= -I$(ICI)
+DEFS		= $(ICI_DEFS) -DBSD4_4
+OPTIM		= -g -O2
+PIC		= -fpic
+CFLAGS		= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LIB		= $(ICIV)$(MODULE_NAME).so
+LIBS		=
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS)
+	$(CC) -shared -o $@ $(OBJS) $(LIBS)
+	@chmod 644 $@
+
+.SUFFIXES: .c .i
+
+.c.s:
+	$(CC) -S $(CFLAGS) $*.c
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+
+uninstall:
+	rm -f $(LIBICI)/$(LIB)
+
+clean:
+	rm -f *.o *.so
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) $(OBJS:.o=.c)

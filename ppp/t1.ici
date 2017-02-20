@@ -1,0 +1,106 @@
+static	ppphost = "ska.bsn";
+static	ppppass = "ska";
+
+debug(0);
+con = ppp.ctl:new(ppphost, ppppass);
+for (;;)
+{
+    printf("PPPCMD> ");
+    flush();
+    if ((line = getline()) == NULL)
+	break;
+    token = gettokens(line);
+    switch (token[0])
+    {
+    case "debug":
+    case "log":
+	if (nels(token) == 1)
+	    printf("%sging is %sabled\n", token[0], debug() ? "en" : "dis");
+	else if (nels(token) > 2)
+	    printf("usage: %s [on|off]\n", token[0]);
+	else
+	    debug(token[1] == "on");
+	break;
+
+    case "status":
+    case "state":
+	printf("%s\n", con:status());
+	break;
+
+    case "stats":
+    case "stat":
+	con:updatestats();
+	printf
+	(
+	    "IP address %s\n"
+	    "%d bps\n"
+	    "%d input packets,  %d bytes\n"
+	    "%d output packets, %d bytes\n",
+	    con.ipaddr,
+	    con.stats.bps,
+	    con.stats.ipkts, con.stats.ibytes,
+	    con.stats.opkts, con.stats.obytes
+	);
+	break;
+
+    case "dial":
+    case "online":
+	con:dial();
+	break;
+
+    case "hangup":
+    case "offline":
+	con:hangup();
+	break;
+
+    case "help":
+    case "?":
+    case "h":
+	printf
+	(
+	    "\n"
+	    "Commands are:\n"
+	    "\n"
+	    "    dial | online\n"
+	    "    hangup | offline\n"
+	    "    stats | stat\n"
+	    "    status | state\n"
+	    "    quit | bye q Q\n"
+	    "    exit q!\n"
+	    "    log | debug [on|off]\n"
+	    "    ! sh shell\n"
+	    "    help h ?\n"
+	    "\n"
+	);
+	break;
+
+    case "quit":
+    case "bye":
+    case "q":
+    case "Q":
+	con:disconnect();
+	exit(0);
+
+    case "exit":
+    case "q!":
+	exit(1);
+
+    default:
+	if (token[0][0] != "!")
+	{
+	    printf("Huh?\n");
+	    break;
+	}
+	token = array(token[0][0], interval(token[0], 1)) + interval(token, 1);
+	/* FALLTHROUGH */
+    case "!":
+    case "sh":
+    case "shell":
+	cmd = line ~~ regexp(sprintf("^[ \t]*%s[ \t]*(.*)", token[0]));
+	if (debug())
+	    printf(stderr, "run \"%s\"\n", cmd);
+	system(cmd);
+	break;
+    }
+}
+con:disconnect();

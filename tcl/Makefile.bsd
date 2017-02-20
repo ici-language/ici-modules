@@ -1,0 +1,57 @@
+#
+# $Id: Makefile.bsd,v 1.3 2000/07/27 06:04:29 atrn Exp $
+#
+# Makefile for building ici-tcl on FreeBSD. Tested on the following
+# distributions,
+#
+#	FreeBSD 2.1.{56}
+#	FreeBSD 2.2.x
+#
+
+ICIV	?= ici
+ID	= $(ICIV)tcl
+PREFIX	?= /usr/local/
+LIBICI	?= $(PREFIX)lib/$(ICIV)
+ICI	?= $(PREFIX)include/$(ICIV)
+TCL_LIBDIR= /usr/local/lib/tcl8.0
+TCL_INCDIR= /usr/local/include/tcl8.0
+TK_LIBDIR= /usr/local/lib
+TK_INCDIR= /usr/local/include/tkstep8.0
+TCL	= tcl80
+TK	= tkstep80
+TKSTEP	= -DICI_TKSTEP
+STEPLIBS= -ltiff -lXpm
+#TK	= tk80
+#TKSTEP	=
+#STEPLIBS=
+T_LIBS	= -L$(TK_LIBDIR) -l$(TK) -L$(TCL_LIBDIR) -l$(TCL)
+X11	= /usr/X11R6
+INCS	= -I$(ICI) -I$(X11)/include -I$(TK_INCDIR) -I$(TCL_INCDIR)
+LIBS	= $(T_LIBS) -L$(X11)/lib -lX11 $(STEPLIBS)
+DEFS	= -DCONFIG_FILE='"conf-bsd.h"' -D$(ICIV) -DICI_TK $(TKSTEP)
+OPTIM	= -g -O
+PIC	= -fpic
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+INSTALL	= install -c -m 444
+
+#
+# Buildin', cleanin', installin'
+#
+
+all:	$(ID).so
+
+$(ID).so:	tcl.o
+	$(CC) -shared -o $@ tcl.o $(LIBS)
+
+clean:
+	rm -f $(ID).so tcl.o
+
+clobber: clean
+	rm -f .depend
+
+install: $(ID).so tcl.ici
+	$(INSTALL) $(ID).so $(LIBICI)
+	$(INSTALL) tcl.ici $(LIBICI)/$(ICIV)tcl.ici
+
+depend:
+	mkdep $(CFLAGS) tcl.c

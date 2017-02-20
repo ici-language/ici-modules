@@ -1,0 +1,35 @@
+/*
+ * $Id: iciWM.ici,v 1.1 1999/05/16 04:24:44 andy Exp $
+ */
+
+extern
+CreateCommandButton(parent)
+{
+    return
+	CreateCustomButton
+	(
+	    parent,
+	    WM.WBBSpringLoadedMask
+	    | WM.WBBPushInMask
+	    | WM.WBBPushLightMask
+	    | WM.WBBPushChangeMask
+	);
+}
+
+extern
+CreateRadioButton(parent)
+{
+    return CreateButton(parent, WBTRadio);
+}
+
+extern
+CreateSwitchButton(parent)
+{
+    return CreateButton(parent, WBTSwitch);
+}
+
+extern
+AddListItem(list, item)
+{
+    InsertListItem(list, -1, item);
+}

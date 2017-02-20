@@ -1,0 +1,72 @@
+This is an object serialisation module for ICI. This adds two
+functions, save() and restore(), that write and read ICI objects via
+ICI files. Most object types, including functions, may be serialised.
+Objects that have state extenal to the ICI interpreter, windows,
+sockets, files and object types unknown to the module may not be
+serialised and raise errors.
+
+This module must be built against a particular ICI executable. It
+extracts the addresses of a number of functions within the executable
+and stores these addresses within the compiled module. This isn't seen
+as too much of a problem. If mis-matches happen often its easy to add
+a checksum check or similar.
+
+Object serialisation has a very simple user interface. Two functions
+are added, save and restore, that write and read, objects to and from
+files. Each is a separate module, i.e., if a program never calls
+save() the save() module is never loaded. There is only little code in
+shared by the two functions and this is duplicated.
+
+The functions have the following usage,
+
+	      save(any [, file])
+	any = restore([file] [, struct])
+
+The save function writes a representation of its first argument to
+the file object, its second argument. If the file object is not
+specified it defaults to the current value of "stdout". The output
+stream should be in binary mode on systems where this matters (the
+default use of stdout is a little troublesome on such systems).
+
+The restore function reads from a file, which defaults to the current
+"stdin", and returns the object found. It complements save and also
+requires the stream to be in binary mode. If end-of-file is encountered
+when restoring an error ("end of file in restore") is raised. This
+allows the NULL object to be restored. Restore optionally accepts a
+struct object to be used as the scope for any function objects
+restored allowing control over the objects accessible to such code.
+
+The protocol used to save objects is quite straightforward. Each
+object is sent as a single byte `tag' to identify the object type and
+if the object is atomic or not. This is followed by some type-specific
+representation, e.g., integers are sent as a 32-bit signed integer in
+network byte order, strings are sent as a count of the number of bytes
+of data (a 32-bit integer in network byte order) followed by that many
+bytes of character data.
+
+Objects that may contain references to themselves, either directly or
+indirectly, have a "name" associated with them. This "name" is
+generated from the object's location in memory. Later references to
+the same object within the same save operation are sent as references
+to the previously transmitted object. This  allows cyclic data
+structures to the saved and restored. 
+
+It should be noted that when an ICI function is saved the internal
+compiled form of the function is written to the stream but when an
+intrinsic function is saved only its name is saved. When restoring an
+intrinsic function the name is looked up in the current scope and
+whatever object results is used.  This allows an interpreter to
+provide alternate implementations of intrinsic functions when running
+functions restored from untrusted sources.
+
+Also when ICI functions are serialised their scope is broken at the
+static level, i.e., only the auto scope level of a function is
+serialised along with the code. The function expect various variables
+to exist in the static or extern scope. It is the responsibility of
+the programmer to ensure the correct environment for code, the
+serialisation module doesn't help.
+
+The protocol uses a binary representation with a well-defined byte
+order (big-endian) for speed of implementation.  It is planned to
+change the protocol to use XML as the base syntax with an ICI specific 
+DTD. With serialisation as a module this is very easy to achieve.

@@ -1,0 +1,13 @@
+file = fopen("cfuncs.c");
+lines = array();
+if (argv[1] == "c++")
+     push(lines, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+while (line = getline(file))
+    if (line !~ #mozilla#)
+	push(lines, line + "\n");
+close(file);
+if (argv[1] == "c++")
+    push(lines, "#ifdef __cplusplus\n}\n#endif\n");
+file = fopen("cfuncs.c", "w");
+put(implode(lines), file);
+close(file);

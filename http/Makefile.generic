@@ -1,0 +1,29 @@
+INSTALL=	install
+PREFIX=		/usr/local/
+ICIV=		ici3
+LIBICI=		$(PREFIX)lib/$(ICIV)
+
+all:
+
+install:\
+	$(LIBICI)/$(ICIV)http.ici\
+	$(LIBICI)/$(ICIV)HTTP.ici
+
+$(LIBICI)/$(ICIV)http.ici:	icihttp.ici
+	$(INSTALL) -c -m 444 icihttp.ici $@
+
+$(LIBICI)/$(ICIV)HTTP.ici:	ici3HTTP.ici
+	$(INSTALL) -c -m 444 ici3HTTP.ici $@
+
+uninstall:
+	rm -f $(LIBICI)/$(ICIV)http.ici
+
+
+ici.h\
+strs.h\
+strings.h\
+cfuncs.c\
+clean\
+depend\
+clobber:
+	@: no need to do anything

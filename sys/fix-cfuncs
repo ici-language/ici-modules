@@ -1,0 +1,98 @@
+/*
+ * Fix up bad things in the cfuncs.c file until mk-cfuncs.ici gets fixed.
+ */
+
+auto	rules = [struct
+
+    linux = [array
+	#spawn#,
+	#ulimit#,
+	#lockf#,
+	#OBJ.*setpgrp#,
+    ],
+
+    osx = [array
+	#acct#,
+	#spawn#,
+	#ulimit#,
+	#lockf#,
+	#^extern int\s+signal#,
+	#^extern int\s+_exit#,
+	#^extern int\s+alarm#,
+	#^extern int\s+clock#,
+	#^extern int\s+gete[gu]id#,
+	#^extern int\s+get[ug]id#,
+	#^extern int\s+sleep#,
+	#^extern int\s+usleep#,
+	#^extern int\s+sync#,
+	#^extern int\s+umask#,
+	#"setpgrp".*sys_simple#,
+    ],
+
+    bsd = [array
+	#spawn#,
+	#ulimit#,
+	#lockf#,
+	#^extern int\s+signal#,
+	#"setpgrp".*sys_simple#,
+    ],
+
+    sol2 = [array
+	#^extern int[	 ]+clock#,
+    ],
+
+    w32 = [array
+	#_exit#,
+	#rename#,
+	#unlink#,
+	#setpgrp#,
+	#passwd#,
+	#flock#,
+	#lstat#,
+	#u?sleep#,
+	#ulimit#,
+	#sync#,
+	#set[gu]id#,
+	#pause#,
+	#nice#,
+	#mknod#,
+	#lockf#,
+	#link#,
+	#kill#,
+	#gete?[gu]id#,
+	#getppid#,
+	#getpgrp#,
+	#fork#,
+	#chroot#,
+	#chown#,
+	#alarm#,
+	#acct#,
+	#truncate#,
+    ],
+
+];
+
+auto f, g, s, r, output;
+f = fopen("cfuncs.c");
+g = fopen("newcfuncs.c", "w");
+while (s = getline(f))
+{
+    output = 1;
+    forall (r in rules[argv[1]])
+    {
+	if (typeof(r) == "regexp")
+	{
+	    if (s ~ r)
+	    {
+		output = 0;
+		break;
+	    }
+	}
+    }
+    if (output)
+	printf(g, "%s\n", s);
+}
+close(g);
+close(f);
+remove("cfuncs.c");
+rename("newcfuncs.c", "cfuncs.c");

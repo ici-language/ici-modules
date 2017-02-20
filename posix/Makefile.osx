@@ -1,0 +1,87 @@
+PREFIX	= /usr/local/
+ICIV	?= ici3
+ICI	= $(PREFIX)include/$(ICIV)
+LIBICI	= $(PREFIX)lib/$(ICIV)
+FLAVOUR	= osx
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+TOOLS	= ../tools
+INCS	= -I$(ICI)
+DEFS	= $(ICI_DEFS) $(CDEFS)
+OPTIM	= -g -O
+PIC	= -dynamic -fno-common
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LDFLAGS = -flat_namespace -bundle -undefined suppress
+
+ALL=	$(ICIV)readlink.dylib $(ICIV)symlink.dylib $(ICIV)mkfifo.dylib $(ICIV)fcntl.dylib\
+	$(ICIV)write.dylib $(ICIV)read.dylib $(ICIV)fileno.dylib $(ICIV)setlinebuf.dylib\
+	$(ICIV)getitimer.dylib $(ICIV)setitimer.dylib $(ICIV)gettimeofday.dylib\
+	$(ICIV)truncate.dylib $(ICIV)getpass.dylib
+
+all:	$(ALL)
+
+$(ICIV)readlink.dylib: icireadlink.o
+	$(CC) $(LDFLAGS) -o $@ icireadlink.o
+	@chmod 644 $@
+
+$(ICIV)truncate.dylib: icitruncate.o
+	$(CC) $(LDFLAGS) -o $@ icitruncate.o
+	@chmod 644 $@
+
+$(ICIV)symlink.dylib: icisymlink.o
+	$(CC) $(LDFLAGS) -o $@ icisymlink.o
+	@chmod 644 $@
+
+$(ICIV)mkfifo.dylib: icimkfifo.o
+	$(CC) $(LDFLAGS) -o $@ icimkfifo.o
+	@chmod 644 $@
+
+$(ICIV)fcntl.dylib: icifcntl.o
+	$(CC) $(LDFLAGS) -o $@ icifcntl.o
+	@chmod 644 $@
+
+$(ICIV)write.dylib: iciwrite.o
+	$(CC) $(LDFLAGS) -o $@ iciwrite.o
+	@chmod 644 $@
+
+$(ICIV)read.dylib: iciread.o
+	$(CC) $(LDFLAGS) -o $@ iciread.o
+	@chmod 644 $@
+
+$(ICIV)fileno.dylib: icifileno.o
+	$(CC) $(LDFLAGS) -o $@ icifileno.o
+	@chmod 644 $@
+
+$(ICIV)setlinebuf.dylib: icisetlinebuf.o
+	$(CC) $(LDFLAGS) -o $@ icisetlinebuf.o
+	@chmod 644 $@
+
+$(ICIV)getitimer.dylib: icigetitimer.o
+	$(CC) $(LDFLAGS) -o $@ icigetitimer.o
+	@chmod 644 $@
+
+$(ICIV)setitimer.dylib: icisetitimer.o
+	$(CC) $(LDFLAGS) -o $@ icisetitimer.o
+	@chmod 644 $@
+
+$(ICIV)gettimeofday.dylib: icigettimeofday.o
+	$(CC) $(LDFLAGS) -o $@ icigettimeofday.o
+	@chmod 644 $@
+
+$(ICIV)getpass.dylib: icigetpass.o
+	$(CC) $(LDFLAGS) -o $@ icigetpass.o
+	@chmod 644 $@
+
+install: $(ALL)
+	install -c -m 444 $(ALL) $(LIBICI)
+
+uninstall:
+	@for fn in $(ALL); do echo -n "$$fn"; rm -f "$$fn"; done; echo
+
+clean:
+	rm -f *.dylib *.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) *.c

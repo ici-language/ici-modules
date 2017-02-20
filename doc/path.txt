@@ -1,0 +1,27 @@
+Functions for dealing with file system pathnames,
+
+	string = path.separator
+		A string, the path element separator for this platform.
+
+	string = path.join(array | string, ...)
+		Join N path elements. These are either stored as an
+		array of strings (as returned by path.split()) or
+		given as individual string parameters.
+
+	 array = path.split(string)
+		Split a pathname into its elements.
+
+	string = path.base(string [, string])
+	string = path.basename(string [, string])
+		Return the base portion of a pathname possibly
+		with a specific extension removed.
+
+	string = path.dir(string)
+	string = path.dirname(string)
+		Return the directory portion of a filename.
+
+	string = path.ext(string)
+	string = path.extension(string)
+		Return the "extension" portion of the filename. This
+		refers to the convention of using suffixes on filenames
+		to indicate the type of data stored in the file.

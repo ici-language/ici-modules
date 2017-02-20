@@ -1,0 +1,25 @@
+ICIV?=		ici3
+INSTALL=	install
+PREFIX?=	/usr/local/
+LIBICI?=	$(PREFIX)lib/$(ICIV)
+
+all:
+
+install:\
+	$(LIBICI)/$(ICIV)ppp.ici
+
+$(LIBICI)/$(ICIV)ppp.ici: ppp.ici
+	$(INSTALL) -c -m 444 ppp.ici $@
+
+uninstall:
+	rm -f $(LIBICI)/$(ICIV)ppp.ici
+
+
+ici.h\
+strs.h\
+strings.h\
+cfuncs.c\
+clean\
+depend\
+clobber:
+	@: no need to do anything

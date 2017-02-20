@@ -1,0 +1,143 @@
+#!/usr/local/bin/ici3
+
+static	fs, text;
+
+static
+open_file()
+{
+    fs = gtk.file_selection_new("Open File...");
+    gtk.file_selection_show_fileop_buttons(fs);
+    gtk.widget_show(fs);
+    gtk.signal_connect
+    (
+	fs,
+	"destroy",
+	open_file_callback,
+	array(fs, false)
+    );
+    gtk.signal_connect
+    (
+	gtk.file_selection_ok_button(fs),
+	"clicked",
+	open_file_callback, array(fs, true)
+    );
+    gtk.signal_connect
+    (
+	gtk.file_selection_cancel_button(fs),
+	"clicked",
+	open_file_callback, array(fs, false)
+    );
+}
+
+static
+open_file_callback(args, x, args)
+{
+    if (typeof(args) != "array")
+	return;
+    fs = args[0];
+    ok = args[1];
+    if (ok)
+    {
+	name = gtk.file_selection_get_filename(fs);
+	gtk.text_set_point(text, 0);
+	gtk.text_forward_delete(text, gtk.text_get_length(text));
+	gtk.text_insert(text, getfile(file = fopen(name)));
+	close(file);
+    }
+    gtk.widget_hide(fs);
+}
+
+gtk.init();
+
+window = gtk.window_new(gtk.WINDOW_TOPLEVEL);
+gtk.signal_connect(window, "delete_event", [func (){ gtk.main_quit(); }]);
+gtk.window_set_default_size(window, 1024, 768);
+
+vbox = gtk.vbox_new(false, 1);
+gtk.container_add(window, vbox);
+
+menubar = gtk.menu_bar_new();
+gtk.widget_show(menubar);
+gtk.box_pack_start(vbox, menubar, false, false, 0);
+
+menu = gtk.menu_item_new_with_label("File");
+gtk.container_add(menubar, menu);
+gtk.widget_show(menu);
+
+filemenu = gtk.menu_new();
+gtk.menu_item_set_submenu(menu, filemenu);
+
+item = gtk.menu_item_new_with_label("Open");
+gtk.widget_show(item);
+gtk.container_add(filemenu, item);
+gtk.signal_connect(item, "activate", open_file);
+
+item = gtk.menu_item_new_with_label("Close");
+gtk.widget_show(item);
+gtk.container_add(filemenu, item);
+
+static
+about()
+{
+    d = gtk.dialog_new();
+    gtk.widget_show(d);
+}
+
+item = gtk.menu_item_new_with_label("About");
+gtk.widget_show(item);
+gtk.container_add(filemenu, item);
+gtk.signal_connect(item, "activate", about);
+
+item = gtk.menu_item_new_with_label("Quit");
+gtk.widget_show(item);
+gtk.container_add(filemenu, item);
+gtk.signal_connect(item, "activate", [func () {gtk.main_quit();}]);
+
+hbox = gtk.hbox_new(true, 2);
+gtk.widget_show(hbox);
+gtk.container_add(vbox, hbox);
+
+gtk.box_set_child_packing(vbox, hbox, false, true, 0, 0);
+
+b = gtk.button_new_with_label("Press Me");
+gtk.signal_connect(b, "clicked", [func () {put("Clicked 1\n");}]);
+gtk.container_add(hbox, b);
+gtk.widget_show(b);
+
+b = gtk.button_new_with_label("No Press Me");
+gtk.signal_connect(b, "clicked", [func () {put("Clicked 2\n");}]);
+gtk.container_add(hbox, b);
+gtk.widget_show(b);
+
+b = gtk.button_new_with_label("Alright, Me Then");
+gtk.signal_connect(b, "clicked", [func () {put("Clicked 3\n");}]);
+gtk.container_add(hbox, b);
+gtk.widget_show(b);
+
+b = gtk.button_new_with_label("Give It A Rest");
+gtk.signal_connect(b, "clicked", [func () {put("Clicked 4\n");}]);
+gtk.container_add(hbox, b);
+gtk.widget_show(b);
+
+hbox2 = gtk.hbox_new(false, 0);
+gtk.container_add(vbox, hbox2);
+gtk.widget_show(hbox2);
+
+text = gtk.text_new();
+gtk.box_pack_start(hbox2, text, true, true, 0);
+gtk.widget_show(text);
+
+vadj = gtk.text_get_vadj(text);
+scrollbar = gtk.vscrollbar_new(vadj);
+gtk.box_pack_end(hbox2, scrollbar, false, true, 0);
+gtk.widget_show(scrollbar);
+
+status = gtk.statusbar_new();
+gtk.box_pack_end(vbox, status, false, false, 0);
+gtk.widget_show(status);
+
+gtk.widget_show(vbox);
+
+gtk.widget_show(window);
+
+gtk.main();

@@ -1,0 +1,6 @@
+An ICI-only module that helps generate HTML output.  The functions
+perform printf's for you and help structure the program.  Using these
+functions is an alternative to scattering printf's and unwieldly format
+strings throughout your code.  Generating HTML is verbose and writing
+code to do so is even more so however the structure afforded by the
+module makes up for many of its short-comings.

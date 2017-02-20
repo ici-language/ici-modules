@@ -1,0 +1,50 @@
+Structure of the Collection.
+
+Each module is in its own directory and has a makefile to control
+building and installing the module. The makefile must be named
+Makefile.generic, if it is generic, or Makefile.<platform> where
+platform is currently one of "bsd", "linux", "sol2", "sunos" or
+"win32" (this list may change). The configure program (written in
+ici of course) creates links (or copies on Windows) of the platform
+specific file as "Makefile".
+
+A module's makefile MUST provide the following targets,
+
+	all		Build everything required to install the
+			module, e.g., compile sources, build libraries,
+			whatever you need to do. This should be the default
+			target in the makefile.
+
+	clean		Remove things to allow rebuilding. This should
+			remove generated files that are quick to
+			regenerate. For other things use the clobber
+			target.
+
+	clobber		As for clean but remove everything not part of
+			the package including things considered
+			expensive to regenerate such as libraries.
+			This should strip the module back to its
+			distributed state, i.e., no generated things
+			at all. Clobber depends on clean so you don't
+			have to repeat yourself.
+
+	install		Install everything the module requires.
+
+	uninstall	Remove everything that was installed.
+
+	depend		Generate dependencies for makefiles.
+
+Following these simple conventions allows the module to integrate into 
+the simple build system. This lets all modules be built with a single
+command.
+
+Auto-configuration is done in the top-level makefile. It defines all
+the above targets, aside from clobber, to be dependent upon the config
+target which in turn depends on the .config file created when the
+configure program is run. The config target is also dependent upon
+configure itself so changes to the program will cause a rebuild.
+The clobber target is handled specially. It traverses the collection
+doing "make clobber" in directories that still have Makefiles and then 
+removes the Makefile (to undo what configure did). It also removes the 
+.config file to force a reconfiguration. It restores the collection to 
+its distribution state.

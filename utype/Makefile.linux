@@ -1,0 +1,29 @@
+PREFIX	=	/usr/local/
+ICIV	=	ici3
+LIBICI	=	$(PREFIX)lib/$(ICIV)
+ICI	=	$(PREFIX)include/$(ICIV)
+CC	=	cc -Wall
+OPTIM	=	-g -O
+PIC	= 	-fpic
+CFLAGS	=	$(PIC) $(OPTIM) -I$(ICI) -DCONFIG_FILE='"conf-linux.h"'
+
+O	=	utype.o
+
+all:	iciutype.so
+
+$(ICIV)utype.so:	$O
+	$(CC) -shared -Wl,-soname,$@ -o $@ $O
+	@chmod 644 $@
+
+clean:
+	rm utype.o iciutype.so
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) utype.c
+-include .depend
+
+install: $(ICIV)utype.so
+	install -c -m 444 $(ICIV)utype.so $(LIBICI)

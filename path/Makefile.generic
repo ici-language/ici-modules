@@ -1,0 +1,35 @@
+INSTALL=	install
+PREFIX=		/usr/local/
+ICIV=		ici3
+LIBICI=		$(PREFIX)lib/$(ICIV)
+
+all:
+
+install:\
+	$(LIBICI)/$(ICIV)path.ici
+
+$(LIBICI)/$(ICIV)path.ici:	icipath.ici
+	$(INSTALL) -c -m 444 icipath.ici $@
+
+uninstall:
+	rm -f $(LIBICI)/$(ICIV)path.ici
+
+doc-directory:
+	-mkdir doc 2>/dev/null
+
+doc-html: doc-directory
+	ici ../tools/mk-doc.ici -html -dir doc -module path icipath.ici
+
+doc-text: doc-directory
+	ici ../tools/mk-doc.ici -text -dir doc -module path icipath.ici
+
+doc: doc-html doc-text
+
+ici.h\
+strs.h\
+strings.h\
+cfuncs.c\
+clean\
+depend\
+clobber:
+	@: no need to do anything

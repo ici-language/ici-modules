@@ -1,0 +1,9 @@
+The glx module is the X11 binding portion of the OpenGL module.  It too
+is at present non-functional although it is far more complete than the
+gl module with its very large number of functions.
+
+There is currently an unresolved problem with the gl/glx module
+interaction that prevents any output from appearing in the window!
+Complications due to the use of multiple layers of shared objects and
+run-time linking is likely to be the cause however this is unproven.
+

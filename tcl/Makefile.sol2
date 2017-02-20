@@ -1,0 +1,31 @@
+ID	= icitcl
+X11	= /usr/openwin
+PREFIX	= /usr/local
+T_LIBDIR= $(PREFIX)/lib
+T_INCDIR= $(PREFIX)/include
+T_LIBS	= -L$(T_LIBDIR) -ltk8.0 -ltcl8.0
+ICI	= $(PREFIX)/include/ici
+INCS	= -I$(ICI) -I$(X11)/include -I$(T_INCDIR)
+LIBS	= $(T_LIBS) -L$(X11)/lib -lX11
+DEFS	= -DCONFIG_FILE='"conf-sol2.h"' -DICI_TK
+CC	= gcc -Wall -Wno-implicit-int
+OPTIM	= -g -O
+PIC	= -fpic
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+
+all:	$(ID).so
+
+$(ID).so:	tcl.o
+	ld -G -o $@ tcl.o $(LIBS)
+
+clean:
+	rm -f $(ID).so tcl.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) tcl.c
+
+install:
+	/usr/ucb/install -c -m 444 icitcl.so /usr/local/lib/ici

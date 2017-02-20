@@ -1,0 +1,34 @@
+An interface to libshout for streaming MP3 files via
+Icecast and Shoutcast streaming servers.
+
+conn = shout.init_connection();
+shout.connect(conn)
+shout.disconnect(conn)
+shout.send_data(conn, string)
+shout.sleep()
+shout.update_metadata(conn, string)
+
+Connection objects
+
+Connection objects represent the C shout_conn_t data structure.
+Connection objects may be indexed using the following string
+to access the fields of the shout_conn_t structure. The member's
+type is given in parentheses.
+
+     ip	(string)
+     port (int)
+     mount (string)
+     password (string)
+     connected (int)
+     icy_compat (int)
+     name (string)
+     genre (string)
+     description (string)
+     url (string)
+     bitrate (int)
+     ispublic (int)
+     dumpfile (string)
+     error (int, read-only)
+     frames (int, read-only)
+
+The members not marked read-only may be assigned to.

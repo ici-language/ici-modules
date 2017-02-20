@@ -1,0 +1,64 @@
+static	xAngle	    = 42.0;
+static	yAngle	    = 82.0;
+static	zAngle	    = 112.0;
+
+static
+redraw()
+{
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.Begin(gl.QUADS);
+    gl.Color3f(0.0, 0.7, 0.1);	/* green */
+    gl.Vertex3f(-1.0, 1.0, 1.0);
+    gl.Vertex3f(1.0, 1.0, 1.0);
+    gl.Vertex3f(1.0, -1.0, 1.0);
+    gl.Vertex3f(-1.0, -1.0, 1.0);
+    /* back face */
+    gl.Color3f(0.9, 1.0, 0.0);	/* yellow */
+    gl.Vertex3f(-1.0, 1.0, -1.0);
+    gl.Vertex3f(1.0, 1.0, -1.0);
+    gl.Vertex3f(1.0, -1.0, -1.0);
+    gl.Vertex3f(-1.0, -1.0, -1.0);
+    /* top side face */
+    gl.Color3f(0.2, 0.2, 1.0);	/* blue */
+    gl.Vertex3f(-1.0, 1.0, 1.0);
+    gl.Vertex3f(1.0, 1.0, 1.0);
+    gl.Vertex3f(1.0, 1.0, -1.0);
+    gl.Vertex3f(-1.0, 1.0, -1.0);
+    /* bottom side face */
+    gl.Color3f(0.7, 0.0, 0.1);	/* red */
+    gl.Vertex3f(-1.0, -1.0, 1.0);
+    gl.Vertex3f(1.0, -1.0, 1.0);
+    gl.Vertex3f(1.0, -1.0, -1.0);
+    gl.Vertex3f(-1.0, -1.0, -1.0);
+    gl.End();
+    gl.Flush();
+}
+
+static	display, screen, spec, vi, context, root, window;
+
+display = X.OpenDisplay();
+screen	= X.DefaultScreen(display);
+
+glx.QueryExtension(display);
+spec = [array glx.RGBA, glx.DEPTH_SIZE, 16];
+vi = glx.ChooseVisual(display, screen, spec);
+context = glx.CreateContext(display, vi, NULL, true);
+root = X.RootWindow(display, vi.screen);
+window = X.CreateSimpleWindow(display, root, 512, 512, 0x7fd);
+X.SelectInput(display, window, X.ExposureMask|X.StructureNotifyMask);
+glx.MakeCurrent(display, window, context);
+X.MapWindow(display, window);
+
+gl.Enable(gl.DEPTH_TEST);
+gl.ClearColor(0.0, 0.0, 0.0, 0.0);
+gl.MatrixMode(gl.PROJECTION);
+gl.LoadIdentity();
+gl.Frustum(-1.0, 1.0, -1.0, 1.0, 1.0, 10.0);
+gl.Viewport(0, 0, 512, 512);
+
+auto e;
+while (e = X.NextEvent(display))
+{
+    if (e.type == "Expose")
+	redraw();
+}

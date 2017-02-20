@@ -1,0 +1,33 @@
+All objects are preceded by a one-byte tag that identifies the type of object
+and if it is atomic. The tag has the same value as the type's code defined in
+ici's object.h. Types that have the code TC_OTHER have special codes, above
+the maximum ici type code value, defined by the serialisation protocol. If
+the object is atomic the top bit of the type tag is set.
+
+Following the type tag is zero or more bytes of type specific representation.
+
+NULL		None.
+int		32-bit signed integer in network byte order.
+float		Double precision IEEE 754 FP in network byte order.
+string		A 32-bit count of the number of bytes of string data
+		followed by that many bytes of string data.
+regexp		A 32-bit value for the regexp options settings followed by
+		the pattern as a string (sent as a 32-bit count followed
+		by that many bytes of string data).
+mem
+file		
+array
+set
+struct
+func
+
+Serialisation also transfers some types that are only used internally to the
+ici interpreter. These objects are used to represent the "compiled" form of
+ici code.
+
+pc
+src
+parse
+op
+catch
+method

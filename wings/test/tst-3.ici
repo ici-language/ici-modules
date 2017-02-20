@@ -1,0 +1,40 @@
+static	display, screen, pixmap, win, nwindows = 0;
+
+WM.InitializeApplication(path.base(argv[0]));
+
+display = X.OpenDisplay();
+
+screen = WM.CreateScreen(display, X.DefaultScreen(display));
+pixmap = WM.CreatePixmapFromFile(screen, "logo.xpm");
+WM.SetApplicationIconImage(screen, pixmap);
+WM.ReleasePixmap(pixmap);
+
+win = WM.CreateWindow(screen, "testColor"), ++nwindows;
+WM.ResizeWidget(win, 300, 300);
+WM.SetWindowCloseAction
+(
+    win,
+    [func (self)
+    {
+	WM.DestroyWidget(self);
+	if (--nwindows <= 0)
+	    exit();
+    }]
+);
+
+auto w;
+w = WM.CreateColorWell(win);
+WM.ResizeWidget(w, 60, 40);
+WM.MoveWidget(w, 100, 100);
+WM.SetColorWellColor(w, WM.CreateRGBColor(screen, 0x8888, 0, 0x1111, true));
+
+w = WM.CreateColorWell(win);
+WM.ResizeWidget(w, 60, 40);
+WM.MoveWidget(w, 200, 100);
+WM.SetColorWellColor(w, WM.CreateRGBColor(screen, 0, 0, 0x8888, true));
+
+WM.RealizeWidget(win);
+WM.MapSubwidgets(win);
+WM.MapWidget(win);
+
+WM.ScreenMainLoop(screen);

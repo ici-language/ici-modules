@@ -1,0 +1,24 @@
+gtk.init();
+
+w = gtk.window_new(gtk.WINDOW_TOPLEVEL);
+gtk.signal_connect(w, "delete_event",
+    [func (){ gtk.main_quit(); }]);
+
+b = gtk.button_new_with_label("Press Me");
+gtk.signal_connect(b, "clicked",
+    [func () {put("Clicked\n");}]);
+gtk.signal_connect(b, "enter",
+    [func () {put("Enter\n");}]);
+gtk.signal_connect(b, "leave",
+    [func () {put("Leave\n");}]);
+gtk.signal_connect(b, "pressed",
+    [func () {put("Pressed\n");}]);
+gtk.signal_connect(b, "released",
+    [func () {put("Released\n");}]);
+
+gtk.container_add(w, b);
+
+gtk.widget_show(b);
+gtk.widget_show(w);
+
+gtk.main();

@@ -1,0 +1,41 @@
+#
+# $Id: Makefile.osx,v 1.1 2001/04/19 13:16:57 atrn Exp $
+#
+
+MODULE_NAME	= env
+OBJS		= env.o
+TOOLS		= ../tools
+PREFIX		= /usr/local/
+ICI		= $(PREFIX)include/ici3
+FLAVOUR		= osx
+INCS		= -I$(ICI)
+CC		= cc -pipe -Wall
+PIC		= -dynamic -fno-common
+OPTIM		= -g -O
+CFLAGS		= $(OPTIM) $(PIC) $(INCS) $(DEFS)
+LDFLAGS		= -flat_namespace -bundle -undefined suppress
+LIB		= ici3$(MODULE_NAME).dylib
+LIBS		=
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) -install_name $(PREFIX)lib/ici3/$(LIB)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(PREFIX)lib/ici3/$(LIB)
+
+uninstall:
+	rm -f $(PREFIX)lib/ici3/$(LIB)
+
+clean:
+	rm -f *.o *.dylib
+
+clobber: clean
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(OBJS:.o=.c)
+
+docs:
+	-@mkdir doc
+	ici $(TOOLS)/mk-doc.ici -module $(NAME) -dir doc -text $(SRCS)

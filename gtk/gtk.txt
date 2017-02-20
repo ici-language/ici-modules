@@ -1,0 +1,118 @@
+Gtk module for ici
+
+Introduction
+
+The gtk module provides an interface to the Gtk GUI toolkit. The module comprises
+a native code (C) layer that provides a direct mapping of the Gtk C API to ICI. This
+is augmented with a thin ICI layer used to define various constants.  In addition an
+OO interface using ICI's class mechanism is provided. This interface is layered atop
+the C-like API and represents the Gtk class hierarchy using ICI classes, methods
+are mapped to the appropriate C-like API function.
+
+Additionally, if built, the module also provides access to the Mozilla
+web browser as a Gtk widget which may be embedded in applications.
+Although the functions exist I have not been able to successfully use
+a module using the Mozilla interface.  Problems exist with the use of
+C++ in the Mozilla libraries and the lack of C++ run-time in the ICI
+interpreter.  Even building a C++-based ICI interpreter (C++ main
+calling on the C compiled ICI library) did not produce success. Any
+help in this area would be appreciated.
+
+C-like Interface
+
+Functions
+
+gtk.init
+gtk.main
+gtk.main_quit
+
+gtk.signal_connect
+
+gtk.adjustment_new
+
+gtk.widget_show
+
+gtk.box_pack_end
+gtk.box_pack_start
+gtk.box_reorder_child
+gtk.box_set_homegeneous
+gtk.box_set_spacing
+
+gtk.hbox_new
+
+gtk.vbox_new
+
+gtk.button_clicked
+gtk.button_enter
+gtk.button_get_type
+gtk.button_leave
+gtk.button_new
+gtk.button_new_with_label
+gtk.button_pressed
+gtk.button_released
+
+gtk.check_button_get_type
+gtk.check_button_new
+gtk.check_button_new_with_label
+
+gtk.container_add
+gtk.container_border_width
+gtk.container_check_resize
+gtk.container_remove
+
+gtk.hbutton_box_get_layout_default
+gtk.hbutton_box_get_spacing_default
+gtk.hbutton_box_new
+gtk.hbutton_box_set_layout_default
+gtk.hbutton_box_set_spacing_default
+
+gtk.hpaned_new
+
+gtk.hruler_new
+
+gtk.hscale_new
+
+gtk.hscrollbar_new
+
+gtk.statusbar_get_context_id
+gtk.statusbar_new
+gtk.statusbar_pop
+gtk.statusbar_push
+gtk.statusbar_remove
+
+gtk.window_new
+gtk.window_position
+gtk.window_set_default
+gtk.window_set_default_size
+gtk.window_set_focus
+gtk.window_set_policy
+gtk.window_set_title
+
+
+Mozilla in a widget
+
+Mozilla, Netscape's, now AOL's, web browser is available as a Gtk
+widget.  If built with Mozilla support the following functions are
+provided to create a Mozilla widget and to control it. See the Mozilla
+source code directory, embedding/browser/gtk, for more information on
+the embedding interface.
+
+gtk.mozilla_append_data
+gtk.mozilla_can_go_back
+gtk.mozilla_can_go_forward
+gtk.mozilla_close_stream
+gtk.mozilla_get_chrome_mask
+gtk.mozilla_get_js_status
+gtk.mozilla_get_link_message
+gtk.mozilla_get_location
+gtk.mozilla_get_title
+gtk.mozilla_get_type
+gtk.mozilla_go_back
+gtk.mozilla_go_forward
+gtk.mozilla_load_url
+gtk.mozilla_new
+gtk.mozilla_open_stream
+gtk.mozilla_reload
+gtk.mozilla_render_data
+gtk.mozilla_set_chrome_mask
+gtk.mozilla_stop_load

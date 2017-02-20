@@ -1,0 +1,25 @@
+The cgi module is an ICI-only module intended to assist in the
+task of writing CGI programs.  The module provides functions to
+take care of the common problems met when building CGI-based web
+systems.  Query string parsing, reply generation and data encoding
+utilities are provided in the module.
+
+    start_reply_header(...)
+
+    content_type(string)
+
+    content_length(int)
+
+    redirect(string)
+
+    setcookie(string)
+
+    end_reply_header()
+
+    string = getcookie()
+
+    string = string_to_urle(string)
+
+    string = urle_to_string(string)
+
+    struct = query_string_to_struct([string])

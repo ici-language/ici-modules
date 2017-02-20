@@ -1,0 +1,38 @@
+static	display, screen, spec, vi, context, root, window;
+
+display = X.OpenDisplay();
+glx.QueryExtension(display);
+screen	= X.DefaultScreen(display);
+spec = [array glx.RGBA, glx.DEPTH_SIZE, 16];
+vi = glx.ChooseVisual(display, screen, spec);
+context = glx.CreateContext(display, vi, NULL, true);
+root = X.RootWindow(display, vi.screen);
+window = X.CreateSimpleWindow(display, root, 512, 512);
+X.SelectInput(display, window, X.ExposureMask|X.StructureNotifyMask);
+glx.MakeCurrent(display, window, context);
+X.MapWindow(display, window);
+
+static
+doit()
+{
+    gl.Viewport(0, 0, 512, 512);
+    gl.ClearColor(0.0, 0.0, 1.0, 0.0);
+    gl.Clear(gl.COLOR_BUFFER_BIT);
+    gl.Color3f(1.0, 1.0, 1.0);
+    gl.Ortho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+    gl.Begin(gl.POLYGON);
+    gl.Vertex2f(-0.5, -0.5);
+    gl.Vertex2f(-0.5,  0.5);
+    gl.Vertex2f( 0.5,  0.5);
+    gl.Vertex2f( 0.5, -0.5);
+    gl.End();
+    gl.Flush();
+}
+
+
+auto e;
+while (e = X.NextEvent(display))
+{
+    if (e.type == "Expose")
+	doit();
+}

@@ -1,0 +1,10 @@
+int = getbyte(file)
+
+    Read a byte from the given file and return it as an integer.  Returns
+    NULL upon end-of-file or error.
+
+string = join(array [, string])
+
+    Perform an "implode" on the array (see ici documentation) but
+    separates elements with the given string or a single space if
+    no separator is given.

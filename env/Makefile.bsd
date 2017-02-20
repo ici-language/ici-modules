@@ -1,0 +1,31 @@
+PREFIX	= /usr/local/
+ICIV	?= ici
+ICI	?= $(PREFIX)include/$(ICIV)
+LIBICI	?= $(PREFIX)lib/$(ICIV)
+FLAVOUR	= bsd
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+INCS	= -I$(ICI)
+DEFS	= $(ICI_DEFS)
+OPTIM	= -O -g
+WARN	= -Wall
+CODEGEN	= -fpic
+CFLAGS	= $(WARN) $(OPTIM) $(SYMS) $(CODEGEN) $(INCS) $(DEFS)
+LIB	= $(ICIV)env.so
+
+all:	$(LIB)
+
+$(LIB):	env.o
+	$(CC) -shared -o $@ env.o
+	@chmod 644 $@
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+
+clean:
+	rm -f $(LIB) env.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) env.c

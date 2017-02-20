@@ -1,0 +1,7 @@
+The dll module allows ICI programs to call functions in normal system
+shared libraries or DLLs.  The module acts as a wrapper that performs
+the name lookups, address resolutions and stack frame marshalling
+required to call such functions at run-time.  The module allows other
+modules to be written in ICI that interface to system or third-party
+libraries without resorting to C or C++ native code modules. Further
+documentation is included as part of the module.

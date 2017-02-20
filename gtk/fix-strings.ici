@@ -1,0 +1,16 @@
+file = fopen("strings.c");
+lines = array("#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+push(lines, getfile(file));
+close(file);
+push(lines, "#ifdef __cplusplus\n}\n#endif\n");
+file = fopen("strings.c", "w");
+put(implode(lines), file);
+close(file);
+file = fopen("strs.h");
+lines = array("#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+push(lines, getfile(file));
+close(file);
+push(lines, "#ifdef __cplusplus\n}\n#endif\n");
+file = fopen("strs.h", "w");
+put(implode(lines), file);
+close(file);

@@ -1,0 +1,5 @@
+Functions for generating PostScript.  A little easier than
+embedding raw printf's in the code.  This module is similar
+to the html module in that it provides a thin veneer over
+a fairly simple output protocol.  The veneer helps structure
+programs.

@@ -1,0 +1,36 @@
+/*
+ * Fix up bad things in the cfuncs.c file until mk-cfuncs.ici gets fixed.
+ */
+
+auto	rules = [struct
+
+    w32 = [array
+	#ptime#,
+    ],
+
+];
+
+auto f, g, s, r, output;
+f = fopen("cfuncs.c");
+g = fopen("newcfuncs.c", "w");
+while (s = getline(f))
+{
+    output = 1;
+    forall (r in rules[argv[1]])
+    {
+	if (typeof(r) == "regexp")
+	{
+	    if (s ~ r)
+	    {
+		output = 0;
+		break;
+	    }
+	}
+    }
+    if (output)
+	printf(g, "%s\n", s);
+}
+close(g);
+close(f);
+remove("cfuncs.c");
+rename("newcfuncs.c", "cfuncs.c");

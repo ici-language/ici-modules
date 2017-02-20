@@ -1,0 +1,113 @@
+#!/usr/local/bin/ici3
+
+// our menus from left to right
+static
+menus = [array
+    [struct
+	title = "File",
+	items = [array
+	    [struct label = "New",],
+	    [struct label = "Open",],
+	    [struct label = "Save",],
+	    [struct label = "Save As",],
+	    [struct label = "Print",],
+	    [struct label = "Quit",	func  = gtk.main_quit],
+	],
+    ],
+
+    [struct
+	title = "Edit",
+	items = [array
+	    [struct label = "Cut",],
+	    [struct label = "Copy",],
+	    [struct label = "Paste",],
+	    [struct label = "Delete",],
+	    [struct label = "Select All",],
+	    [struct label = "Unselect",],
+	],
+    ],
+
+    [struct
+	title = "Help",
+	rightjustify = true,
+	items = [array
+	    [struct label = "Help",],
+	    [struct label = "Web Site",],
+	    [struct label = "About",],
+	],
+    ],
+];
+
+// given a menus struct define the menus and add to the menubar
+static
+makemenu(menubar, menudef)
+{
+    title = gtk.menu_item_new_with_label(menudef.title);
+    if (menudef.rightjustify)
+	gtk.menu_item_right_justify(title);
+    gtk.container_add(menubar, title);
+    gtk.widget_show(title);
+    gtk.widget_show(menu = gtk.menu_new());
+    gtk.menu_item_set_submenu(title, menu);
+    forall (item in menudef.items)
+    {
+	gtk.widget_show(menu_item = gtk.menu_item_new_with_label(item.label));
+	gtk.container_add(menu, menu_item);
+	if (item.func)
+	    gtk.signal_connect(menu_item, "activate", item.func);
+    }
+}
+
+static
+makeui()
+{
+    // create a 768x640 window and arrange for the close button
+    // to quit the main event loop (we enter after initialisation)
+    main_window = gtk.window_new(gtk.WINDOW_TOPLEVEL);
+    gtk.window_set_default_size(main_window, 768, 640);
+    gtk.signal_connect(main_window, "delete_event", gtk.main_quit);
+
+    // the window contents are arranged in a vertical box
+    gtk.widget_show(vbox = gtk.vbox_new(false, 0));
+    gtk.container_add(main_window, vbox);
+
+    // first there is the menubar
+    gtk.widget_show(menubar = gtk.menu_bar_new());
+    gtk.box_pack_start(vbox, menubar, false, false, 0);
+    forall (menu in menus)
+	makemenu(menubar, menu);
+
+    // followed by a box containing a text area and a
+    // scrollbar hooked up to the text area, i.e., a
+    // scrolling text window
+    gtk.widget_show(textbox = gtk.hbox_new(false, 0));
+    gtk.container_add(vbox, textbox);
+    text = gtk.text_new();
+    style = gtk.style_copy(gtk.widget_get_style(text));
+    style.font = gtk.gdk_font_load("10x20");
+    gtk.widget_set_style(text, style);
+    gtk.widget_ensure_style(text);
+    gtk.text_set_editable(text, true);
+    gtk.box_pack_start(textbox, text, true, true, 0);
+    gtk.widget_show(scrollbar = gtk.vscrollbar_new(gtk.text_get_vadj(text)));
+    gtk.box_pack_end(textbox, scrollbar, false, true, 0);
+    gtk.widget_show(text);
+
+    // at the bottom of the window is a status bar
+    gtk.widget_show(status = gtk.statusbar_new());
+    gtk.box_pack_end(vbox, status, false, false, 0);
+    gtk.statusbar_push(status, 1, "Ready");
+
+    // show the window once complete
+    gtk.widget_show(main_window);
+}
+
+static
+main()
+{
+    gtk.init();
+    makeui();
+    gtk.main();
+}
+
+exit(main());

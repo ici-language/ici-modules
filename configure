@@ -1,0 +1,200 @@
+#!/usr/local/bin/ici
+
+#
+# Configuration script for the module collection. This just sets up
+# the correct Makefiles by copying/linking ``Makefile'' to the
+# platform specific file.
+#
+
+static	myname = "configure";
+
+#
+# Emulate configure :)
+#
+if (argc > 1 && argv[1] == "--help")
+{
+    printf("This is NOT an autoconf configure script!\n");
+    exit(0);
+}
+
+static	flavour;
+static	p;
+static	uname;
+
+# Override printf with a version that flushes after each call.
+static
+printf()
+{
+    auto vargs = [array], rc, file;
+    rc = call($printf, vargs);
+    if (typeof(vargs[0]) == "file")
+	flush(vargs[0]);
+    else
+	flush(stdout);
+    return rc;
+}
+
+# Keep a record of the config
+static	dot_config = fopen(".config", "w");
+try
+{
+
+# Redirect all output to the logfile
+stderr = stdout = popen("tee ./config.log", "w");
+
+printf("%s: Configuring ICI module collection.\n", myname);
+
+/*
+ * The following struct maps the system uname to a particular ici "flavour".
+ * Entries can be either strings or functions. If they are functions it is
+ * called to return a string giving the flavour. Every system must have an
+ * entry otherwise it is declared "unsupported".
+ */
+static	flavours = [struct
+
+    Darwin	= "osx",
+    FreeBSD	= "bsd",
+    NetBSD	= "bsd",
+    Linux	= "linux",
+    /* SunOS 1.x and 2.x have the same uname but are different beasts */
+    SunOS	= [func () {
+		      try
+		      { close(fopen("/vmunix")); return "sunos"; }
+		      onerror
+			  return "sol2";
+		  }],
+];
+
+/*
+ * Get uname and find ici flavour
+ */
+uname = getline(p = popen("uname"));
+close(p);
+if (!(flavour = flavours[uname]))
+{
+    printf
+    (
+	stderr,
+	"%s: module package is not configured for a %s system\n",
+	myname,
+	uname
+    );
+    exit(1);
+}
+if (typeof(flavour) == "func")
+    flavour = flavour();
+
+printf("%s: Hmm, this is %s (%s)...\n", myname, uname, flavour);
+printf(dot_config, "UNAME=%s\n", uname);
+printf("%s: Using FLAVOUR=%s\n", myname, flavour);
+printf(dot_config, "FLAVOUR=%s\n", flavour);
+
+if (getenv("CC"))
+{
+    printf("%s: Using CC=%s\n", myname, getenv("CC"));
+    printf(dot_config, "CC=%s\n", getenv("CC"));
+}
+else
+{
+    printf("%s: Using default C compiler (cc)\n", myname);
+}
+if (getenv("OPTIM"))
+{
+    printf("%s: Using OPTIM=%s\n", myname, getenv("OPTIM"));
+    printf(dot_config, "OPTIM=%s\n", getenv("OPTIM"));
+}
+else
+    printf("%s: Using default optimisation level\n", myname);
+if (getenv("PREFIX"))
+    printf("%s: NOT using %s as installation prefix\n", myname, getenv("PREFIX"));
+printf("%s: Using PREFIX=/usr/local/\n", myname);
+printf(dot_config, "PREFIX=%s\n", "/usr/local/");
+
+static
+remove(fn)
+{
+    try
+	($remove)(fn);
+    onerror
+	;
+}
+
+static
+symlink(old, new)
+{
+    auto cmd;
+
+    cmd = sprintf("ln -s '%s' '%s'", old, new);
+    printf("%s: %-24s -> %s\n", myname, new, old);
+    system(cmd);
+}
+
+static
+dir(path)
+{
+    auto	f;
+    auto	a;
+    auto	s;
+
+    a = array();
+    f = popen(sprintf("/bin/ls -F '%s'", path));
+    while (s = getline(f))
+    {
+	if (s ~ #/$#)
+	    push(a, sub(s, #/$#, ""));
+    }
+    close(f);
+    return a;
+}
+
+static
+makemakefiles(dirname)
+{
+    auto	dirname = ".", d, makefile;
+
+    forall (d in sort(dir(dirname, "d")))
+    {
+	if (d == "." || d == "..")
+	    continue;
+	makemakefiles(pathjoin(dirname, d));
+	makefile = pathjoin(d, "Makefile.generic");
+	try
+	{
+	    close(fopen(makefile));
+	    remove(pathjoin(d, "Makefile"));
+	    symlink(basename(makefile), pathjoin(d, "Makefile"));
+	    continue;
+	}
+	onerror
+	{
+	    if (error !~ #[Nn]o such file#)
+		fail(error);
+	}
+	makefile = pathjoin(d, "Makefile." + flavour);
+	try
+	{
+	    close(fopen(makefile));
+	    remove(pathjoin(d, "Makefile"));
+	    symlink(basename(makefile), pathjoin(d, "Makefile"));
+	}
+	onerror
+	{
+	    if (error !~ #[Nn]o such file#)
+		fail(error);
+	}
+    }
+}
+
+printf("%s: Creating makefiles...\n", myname);
+makemakefiles();
+close(dot_config);
+
+}
+
+onerror
+{
+    try { close(dot_config); } onerror {};
+    try { remove(".config"); } onerror {};
+    printf(stderr, "configure: %s\n", error);
+    exit(1);
+}

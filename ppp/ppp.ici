@@ -1,0 +1,314 @@
+/*
+ * $Id$
+ *
+ * Interface to FreeBSD's user ppp (ppp(8)).  Requires ppp be running
+ * with a TCP control socket ("set server nnnn" in ppp.conf, see ppp(8)).
+ *
+ *
+ */
+
+/*
+ * Various constant attributes
+ */
+
+extern		PPPCTLPORT = 3000;
+extern		IFACE	   = "tun0";
+extern		PPPDIR	   = "/etc/ppp";
+extern		TMPDIR	   = "/var/tmp";
+extern		RUNDIR	   = "/var/run";
+extern		LOGDIR	   = "/var/log";
+extern		LOGFILE	   = path.join(LOGDIR, "ppp.log");
+extern		PPPLOGDIR  = path.join(LOGDIR, "ppp");
+extern		PPPLOGFILE = path.join(PPPLOGDIR, "%s.log");
+extern		PROMPTRE   = #^(ppp|PPP) .*> $#;
+
+/*
+ * Pick a way to invoke commands on the ppp host.
+ * Ssh is slow but safer. Rsh is insecure and often
+ * disabled. Custom methods may also be employed.
+ */
+static		remote_shell_cmd = "ssh -q -n";
+//static	remote_shell_cmd = "rsh";
+
+/*
+ * ppp.ctl
+ *
+ * A class representing a control interface to the FreeBSD
+ * user level ppp program (ppp(8)). The class expects the
+ * ppp program to be running and the PPPCTLPORT to
+ * be used for control purposes (set server in ppp.conf).
+ *
+ *
+ */
+
+extern
+ctl = [class
+
+    new(hostname, password)
+    {
+	auto hostname = ".";
+	auto password = "";
+
+	this = this:^new();
+
+	this.ipaddr := NULL;	// our assigned ip address
+	this.gateway := NULL;	// the gateway at the other end
+	this.stats := struct();	// current performance stats
+	this.initialstats = NULL;
+	this.password := password;
+	this.lastline := NULL;	// the last thing we read from the ctl socket
+	this.lastpromptline := NULL;	// last prompt line (status is in it)
+	this.host := hostname;		// host running ppp
+	this.portno := PPPCTLPORT;	// the pppctl port for this instance
+	this.skt := NULL;		// socket connected to that port
+	this.fto := NULL;		// and file versions of the socket
+	this:connect();
+	if (password != "")
+	    this:passwd();
+
+	return this;
+    }
+
+
+    //
+    // Return the socket descriptor as an integer
+    fileno()
+    {
+	return net.sktno(skt);
+    }
+
+
+    //
+    // Send a command using a printf-like call semantics
+    //
+    sendcmd(readreply, fmt)
+    {
+	auto vargs = [array];
+
+	// allow readreply to have a default, true, if not passed
+	// shift all the arguments up one to compensate
+	if (typeof(readreply) == "string")
+	{
+	    vargs = array(fmt) + vargs;
+	    fmt = readreply;
+	    readreply = true;
+	}
+	cmd = call(sprintf, array(fmt) + vargs);
+	if (debug())
+	    printf(stderr, "> \"%s\"\n", cmd);
+	printf(fto, "%s\r\n", cmd);
+	flush(fto);
+	lines = array();
+	if (readreply)
+	    return this:getlines();
+	return [array];
+    }
+
+
+    //
+    // Get a single character from the connection. Have to
+    // do single byte receives as the ici getchar would
+    // try to fill its input buffer.
+    //
+    getchar()
+    {
+	return net.recv(skt, 1);
+    }
+
+
+    //
+    // ppp doesn't terminate its prompt line with a newline which
+    // makes the normal ici getline block awaiting end of line. We
+    // have to do a character by character read of the connection
+    // to see if we've read the prompt and return if so. But the
+    // normal ici getchar will also block trying to fill the input
+    // buffer so we have to use single byte socket reads. Sad.
+    //
+    getline()
+    {
+	line = "";
+	while (c = this:getchar())
+	{
+	    if (c == "\r") // ignore CRs
+		continue;
+	    if (c == "\n") // like normal ici getline
+		break;
+	    line = line + c;
+	    if (line ~ PROMPTRE)
+	    {
+		lastpromptline = line; // most upto date state info
+		break;
+	    }
+	}
+	if (line == "" && !c) // no input at all and hit eof
+	    return NULL;
+	if (debug())
+	    printf(stderr, "< \"%s\"\n", string(line));
+	return line;
+    }
+
+
+    //
+    // Read the response to a command, terminated by a
+    // line consisting only of a prompt.
+    //
+    getlines()
+    {
+	for
+	(
+	    lines = array(), line = this:getline();
+	    line && line !~ PROMPTRE;
+	    line = this:getline()
+	)
+	{
+	    push(lines, line);
+	}
+	return lines;
+    }
+
+
+    //
+    // Connect to the running ppp
+    //
+    connect()
+    {
+	skt = net.connect(net.socket(), sprintf("%s@%s", string(portno), host));
+	fto = net.sktopen(skt, "w");
+	if (this:getline() !~ PROMPTRE)
+	    fail("expected prompt from daemon");
+	return this;
+    }
+
+
+    //
+    // Shutdown the connection
+    //
+    disconnect()
+    {
+	this:sendcmd("quit", false);
+	close(fto);
+	net.close(skt);
+	return this;
+    }
+
+
+    //
+    // Update the statistics on the connection
+    //
+    updatestats()
+    {
+	lines = this:sendcmd("show links");
+	n = nels(lines);
+#	if (n < 1 || n > 3)
+#	    fail(sprintf("bad reply to 'show links': %d lines", n));
+	if (lines[0] ~ #closed#)
+	{
+	    stats.bps = 0;
+	    ipaddr = "0.0.0.0";
+	}
+	else
+	{
+	    if (debug())
+	    {
+		forall (l in lines)
+		printf(stderr, "debug: got \"%s\"\n", l);
+	    }
+	    stats.bps = int(lines[0] ~~ #(\d+) bps#);
+	}
+	
+	netstat = popen
+	(
+	    sprintf
+	    (
+		"%s %s netstat -I %s -n -b",
+		remote_shell_cmd,
+		host,
+		IFACE
+	    )
+	);
+	lines = gettokens(netstat, "\n");
+	close(netstat);
+	v = gettokens(lines[2]);
+	stats.ipkts = int(v[4]);
+	stats.ibytes = int(v[6]);
+	stats.opkts = int(v[7]);
+	stats.obytes = int(v[9]);
+
+	if (!initialstats)
+	    initialstats = copy(stats);
+
+	ipaddr = v[3];
+
+	stats.ipkts -= initialstats.ipkts;
+	stats.opkts -= initialstats.opkts;
+	stats.ibytes -= initialstats.ibytes;
+	stats.obytes -= initialstats.obytes;
+
+	return this;
+    }
+
+
+    //
+    // Return last known call status, either "online" or "offline"
+    //
+    status()
+    {
+	if (lastpromptline && lastpromptline ~ #^PPP#)
+	    return "online";
+	return "offline";
+    }
+
+
+    //
+    //
+    //
+    dial()
+    {
+	this:sendcmd("open");
+	return this;
+    }
+
+
+    //
+    //
+    //
+    hangup()
+    {
+	this:sendcmd("close");
+	return this;
+    }
+
+
+    //
+    //
+    //
+    settimeout(n)
+    {
+	this:sendcmd("set timeout %d", n);
+	return this;
+    }
+
+
+    //
+    //
+    //
+    passwd(str)
+    {
+	if (!str)
+	    str = password;
+	this:sendcmd("passwd %s", str);
+	return this;
+    }
+
+    noop()
+    {
+	this:sendcmd("");
+	return this;
+    }
+
+    readuptoprompt()
+    {
+	return this:getlines();
+    }
+
+];

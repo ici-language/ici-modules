@@ -1,0 +1,21 @@
+static
+afunc()
+{
+    auto	i;
+
+    for (i = 0; i < 10; ++i)
+	printf("Hello %d\n", i);
+}
+
+auto f, o = afunc;
+
+f = fopen("test.out", "w");
+save(o, f);
+close(f);
+
+f = fopen("test.out");
+o = restore(f);
+close(f);
+
+printf("%s\n", typeof(o));
+o();

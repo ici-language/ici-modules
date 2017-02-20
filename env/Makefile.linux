@@ -1,0 +1,32 @@
+PREFIX	= /usr/local/
+ICIV	= ici3
+ICI	= $(PREFIX)include/$(ICIV)
+LIBICI	= $(PREFIX)lib/$(ICIV)
+FLAVOUR	= linux
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+INCS	= -I$(ICI)
+DEFS	= $(ICI_DEFS)
+
+OPTIM	= -O
+WARN	= -Wall
+SYMS	= -g
+CODEGEN	= -fpic
+CFLAGS	= $(WARN) $(OPTIM) $(SYMS) $(CODEGEN) $(INCS) $(DEFS)
+LIB	= $(ICIV)env.so
+
+all:	$(LIB)
+
+$(ICIV)env.so:	env.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ -dp env.o
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+
+clean:
+	rm -f $(LIB) env.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) env.c

@@ -1,0 +1,14 @@
+
+style "text"
+{
+    font = "-adobe-courier-medium-r-normal--*-140-*-*-m-0-iso8859-1"
+}
+
+widget_class "*GtkText" style "text"
+
+style "msgbox"
+{
+    font = "-adobe-courier-medium-r-normal--*-140-*-*-m-0-iso8859-1"
+}
+
+widget "msgbox_title.*GtkLabel*" style "msgbox"

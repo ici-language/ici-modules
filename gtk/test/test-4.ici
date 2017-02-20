@@ -1,0 +1,194 @@
+/*
+ * A text editor.
+ */
+
+use("Gtk");
+
+static	win;	  // main window
+static	text;	  // text widget
+static	filename; // currently loaded file, NULL if "new"
+static	makebackups = true;
+
+static
+set_window_title(filename)
+{
+    str = "ICI Editor: ";
+    if (filename)
+	str += filename;
+    else
+	str += "Untitled";
+    win:set_title(str);
+}
+
+/*
+ * Set the text widget to a file
+ */
+static
+load_file(filename)
+{
+    text:freeze();
+    text:delete_all();
+    file = fopen(filename);
+    text:insert(file);
+    close(file);
+    text:thaw();
+    set_window_title(filename);
+}
+
+/*
+ * Call back when file menu's "Open" item selected
+ */
+static
+file_open()
+{
+    auto callback = [func (widget, args)
+    {
+	if (args[1])
+	    load_file(args[0]:get_filename());
+	args[0]:hide();
+    }];
+
+    fs = FileSelection:new("Open File..."):show_fileop_buttons();
+    failed = array(fs, false);
+    worked = array(fs, true);
+    fs:signal_connect("destroy", callback, failed);
+    fs:ok_button():signal_connect("clicked", callback, worked);
+    fs:cancel_button():signal_connect("clicked", callback, failed);
+    fs:show();
+}
+
+static
+file_save()
+{
+    if (!filename)
+	return file_save_as();
+    if (makebackups)
+	makebackup(filename);
+    file = fopen(filename, "w");
+    put(text:get_chars(0, text:get_length()), file);
+    close(file);
+}
+
+static
+file_save_as()
+{
+    auto callback = [func (widget, args)
+    {
+	if (args[1])
+	{
+	    filename = args[0]:get_filename();
+	    file_save();
+	    set_window_title(filename);
+	}
+	args[0]:hide();
+    }];
+
+    fs = FileSelection:new("Save File As..."):show_fileop_buttons();
+    failed = array(fs, false);
+    worked = array(fs, true);
+    fs:signal_connect("destroy", callback, failed);
+    fs:ok_button():signal_connect("clicked", callback, worked);
+    fs:cancel_button():signal_connect("clicked", callback, failed);
+    fs:show();
+}
+    
+static
+makebackup(filename)
+{
+    backupfile = filename + ".bak";
+    try
+    {
+	rename(filename, backupfile);
+    }
+    onerror
+    {
+	if (error !~ #No such file#)
+	    fail(error);
+    }
+}
+
+
+/*
+ * Call back used to exit the application
+ */
+static
+file_quit()
+{
+    App:main_quit();
+}
+
+/*
+ * Our menus
+ */
+static
+menus = [array
+    [struct
+	title = "File",
+	items = [array
+	    [struct label = "New",],
+	    [struct label = "Open",	    func = file_open],
+	    [struct label = "Save",	    func = file_save],
+	    [struct label = "Save As",	    func = file_save_as],
+	    [struct label = "Print",],
+	    [struct label = "Quit",	    func = file_quit],
+	],
+    ],
+
+    [struct
+	title = "Edit",
+	items = [array
+	    [struct label = "Cut",],
+	    [struct label = "Copy",],
+	    [struct label = "Paste",],
+	    [struct label = "Delete",],
+	    [struct label = "Select All",],
+	    [struct label = "Unselect",],
+	],
+    ],
+
+    [struct
+	title = "Help",
+	rightjustify = true,
+	items = [array
+	    [struct label = "Help",],
+	    [struct label = "Web Site",],
+	    [struct label = "About",],
+	],
+    ],
+];
+
+/* Initialise the app and create it's top level window */
+App:init();
+win = Window:new();
+win:set_title(path.base(argv[0]));
+win:set_default_size(640, 480);
+win:signal_connect("delete_event", file_quit);
+/* We use a vbox to organise the window's contents in a vertical list */
+box = VBox:new(false, 5):show();
+win:add(box);
+/* At the top is a menubar showing our menus */
+menubar = MenuBar:new(menus):show();
+box:pack_start(menubar, false, true, 0);
+/* Followed by a text widget and scrollbar in an hbox */
+box:add(hbox = HBox:new():show());
+text = Text:new():show():set_editable();
+win:set_focus(text);
+hbox:pack_start(text, true, true, 5);
+hbox:pack_end(VScrollBar:new(text:vadjustment()):show(), false, true, 0);
+/* And finally a status bar */
+sbar = Statusbar:new():show();
+sbar:push(1, "Ready");
+box:pack_end(sbar, false, true, 0);
+
+/* Load a file if given on the command line */
+if (argc > 1)
+    try
+	load_file(argv[1]);
+    onerror
+	exit(sprintf("can't open %s: %s", argv[1], error));
+else
+    set_window_title();
+
+/* Show the whole window and handle events */
+win:show();
+App:main();

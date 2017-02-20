@@ -1,0 +1,86 @@
+The ici OpenGL interface.
+
+The gl module provides a binding to OpenGL, specifically the Mesa
+implementation of OpenGL for X11.
+
+The ici binding follows the C binding in almost all respects. Changes
+are made where the ici type system does not have a good match the C
+types used in OpenGL however this is rare and in general the principles
+of the C interface apply to the ici module.
+
+There are a number of general rules that apply to the ici binding
+
+*     As ici has modules there is no need for the ``gl'' and ``GL''
+      prefixes on names. Function names lose the ``gl'' prefix as
+      they are explicity selected from the gl module, e.g., the C
+      code,
+
+	glEnd();
+	glEndlist();
+
+      in ici becomes,
+
+	gl.End();
+	gl.EndList();
+
+      Constants lose the ``GL_'' prefix and are referenced from the
+      module, e.g.,
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+      becomes,
+
+	gl.Clear(gl.DEPTH_BUFFER_BIT);
+
+      Where the name of a constant, with the ``GL_'' removed, is not
+      a valid C identifier, e.g., GL_2_BYTES would be 2_BYTES, then
+      the ``_'' is retained, GL_2_BYTES becomes gl._2_BYTES.
+
+*     Functions that have multiple forms in C to accomodate different
+      data types are present in ici however they map to one of two
+      underlying types, integer or floating point.
+
+      If a function exists in various instances that accept different
+      types, i.e., the 'd', 's', 'f', 'i', modifiers etc..., then there
+      is a function with the base name that determines the function
+      to call from its parameters. E.g.,
+
+	gl.Vertex3f(0.0, 1.0, -1.2);
+	gl.Vertex3i(1, 2, 3);
+
+      Can be replaced with a call to gl.Vertex3(),
+
+	gl.Vertex3(0, 1, -1.2);
+	gl.Vertex3(1, 2, 3);
+
+      The rules used to select the underlying OpenGL function are
+      simple and straightforward,
+
+	     If any of the parameters is a floating point number
+	     then 'd' variant of the function is used. If there
+	     is no 'd' variant the 'f' variant is used. 
+
+	     If all the parameters are integers the 'd' variant,
+	     or the closest to it, is used.
+
+*     Functions that have multiple forms in C to accomodate different
+      numbers of arguments are present in ici (as demonstrated in the
+      previous rule). However as ici can determine the number of actual
+      arguments to a function it is possible to implement more general
+      forms of the functions that call the OpenGL function based on the
+      number of actual parameters passed to the function.
+
+      Using the above example gl.Vertex3() may be replaced with the more
+      general gl.Vertex() that uses the number of actual parameters to
+      select the OpenGL function, glVertex2, glVertex3 or glVertex4, to
+      be used. Because we pass three parameters gl.Vertex() knows to
+      call the '3' variant of the glVertex function.
+
+      This behaviour combines with the automatic type selection to
+      allow the general forms to completely replace the more specific
+      OpenGL functions.
+
+*     The 'v' functions that accept C arrays accept ici arrays instead.
+      The more general forms also accept ici arrays and can infer the
+      correct OpenGL function from the number of elements in the arrays
+      and their types.

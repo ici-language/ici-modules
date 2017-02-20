@@ -1,0 +1,10 @@
+auto d = dll.X11.XOpenDisplay("int", ":0.0");
+dll.X11.XBell("int", d, 100);
+dll.X11.XFlush("int", d);
+sys.sleep(1);
+dll.X11.XBell("int", d, 100);
+dll.X11.XFlush("int", d);
+sys.sleep(1);
+dll.X11.XCloseDisplay("int", d);
+dll.c.printf("int", "Display is 0x%08x\n", d);
+dll.c.printf("int", "Time is %s", dll.c.ctime("int", &time()));

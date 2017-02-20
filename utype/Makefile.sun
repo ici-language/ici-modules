@@ -1,0 +1,8 @@
+CC=	gcc -pipe -g
+CFLAGS=	-fpic -I.. -DCONFIG_FILE='"conf-sun.h"'
+
+O=	utype.o
+
+libutype.so:	$O
+	ld -o $@ -dc -dp $O
+	@chmod 644 $@

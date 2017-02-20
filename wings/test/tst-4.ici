@@ -1,0 +1,4 @@
+WM.InitializeApplication(path.base(argv[0]));
+auto screen = WM.CreateSimpleApplicationScreen(X.OpenDisplay());
+WM.ShowFontPanel(WM.GetFontPanel(screen));
+WM.ScreenMainLoop(screen);

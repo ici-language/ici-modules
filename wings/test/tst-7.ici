@@ -1,0 +1,83 @@
+static	display, screen, pixmap, window, nwindows = 0, menu, app;
+
+static
+closewindow(self)
+{
+    WM.DestroyWidget(self);
+    if (--nwindows == 0)
+	exit();
+}
+
+WM.InitializeApplication(path.base(argv[0]));
+display = X.OpenDisplay();
+screen = WM.CreateScreen(display, X.DefaultScreen(display));
+pixmap = WM.CreatePixmapFromFile(screen, "logo.xpm");
+WM.SetApplicationIconImage(screen, pixmap);
+
+window = WM.CreateWindow(screen, "testList"), ++nwindows;
+WM.SetWindowTitle(window, "Browser");
+WM.SetWindowCloseAction(window, closewindow);
+
+auto b;
+b = WM.CreateBrowser(window);
+WM.InsertBrowserItem(b, 0, 0, "One", false);
+WM.InsertBrowserItem(b, 0, 1, "Two", false);
+
+b = WM.CreateButton(window, 0);
+WM.SetButtonText(b, "Hello, World!");
+WM.MoveWidget(b, 320, 100);
+WM.ResizeWidget(b, 64, 64);
+WM.SetButtonAction(b, [func () {exit();}]);
+
+WM.RealizeWidget(window);
+WM.MapSubwidgets(window);
+WM.MapWidget(window);
+
+app = WM.AppCreateWithMain
+(
+    display,
+    X.DefaultScreen(display),
+    WM.WidgetXID(display, window)
+);
+
+auto menus = [array
+    [struct	title = "File",
+	items = [array
+	    [struct text = "Open", action = [func () {}]],
+	    [struct text = "Close", action = [func () {}]],
+	    [struct text = "Quit", action = [func () {exit(0);}]],
+	],
+    ],
+    [struct	title = "Info",
+	items = [array
+	    [struct text = "About", action = [func () {}]],
+	    [struct text = "Help", action = [func () {}]],
+	],
+    ],
+];
+
+static
+makemenu(s)
+{
+    auto	m, i;
+
+    m = WM.MenuCreate(app, s.title);
+    forall (i in s.items)
+	WM.MenuAddItem(m, i.text, i.action);
+    return m;
+}
+
+auto s;
+menu = WM.MenuCreate(app, "Main");
+forall (s in menus)
+    WM.MenuAddSubmenu(menu, s.title, makemenu(s));
+WM.AppSetMainMenu(app, menu);
+WM.RealizeMenus(app);
+
+auto event;
+for (;;)
+{
+    event = WM.NextEvent(display);
+    if (!WM.ProcessEvent(app, event))
+	WM.HandleEvent(event);
+}

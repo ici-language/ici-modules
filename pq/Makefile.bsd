@@ -1,0 +1,84 @@
+#
+# $Id: Makefile.bsd,v 1.2 2000/08/29 06:03:24 atrn Exp $
+#
+
+NAME	= PQ
+OBJS	= pq.o
+ICISRC1	= PQ.ici
+ICISRC2	= PostgreSQL.ici
+
+PREFIX	= /usr/local/
+
+ICIV	?= ici
+ICI	?= $(PREFIX)include/$(ICIV)
+LIBICI	?= $(PREFIX)lib/$(ICIV)
+
+FLAVOUR	= bsd
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"'
+
+TOOLS	= ../tools
+
+PGSQL	= /usr/local/pgsql
+
+INCS	= -I$(ICI) -I$(PGSQL)/include -I$(PGSQL)/../include/pgsql
+DEFS	= $(ICI_DEFS)
+
+CC	?= cc
+OPTIM	?= -O2
+WARN	= -Wall
+SYMS	= -g
+CODEGEN	= -fpic
+CFLAGS	= $(WARN) $(OPTIM) $(SYMS) $(CODEGEN) $(INCS) $(DEFS)
+
+LIBS	= -L$(PGSQL)/lib -L$(PGSQL)/../lib/ -lpq -lm
+
+
+LIB	= $(ICIV)$(NAME).so
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS) strings.o cfuncs.o
+	$(CC) -shared -o $@ $(OBJS) strings.o cfuncs.o $(LIBS)
+	@chmod 644 $@
+
+$(OBJS): ici.h
+
+.SUFFIXES: .c .i .s
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+.c.s:
+	$(CC) -S $(CFLAGS) $*.c
+
+SRCS=	$(OBJS:.o=.c)
+
+$(OBJS): ici.h strs.h
+
+#strs.h strings.c : $(SRCS) $(TOOLS)/mk-strings.ici
+
+strs.h strings.c : $(SRCS)
+	@cat $(SRCS) | ici $(TOOLS)/mk-strings.ici $(NAME)
+
+cfuncs.c : $(SRCS) $(TOOLS)/mk-cfuncs.ici
+	cat $(SRCS) | ici $(TOOLS)/mk-cfuncs.ici $(NAME)
+
+ici.h : $(TOOLS)/mk-ici-dot-h.ici
+	ici $(TOOLS)/mk-ici-dot-h.ici $(NAME)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+	install -c -m 444 $(ICISRC1) $(LIBICI)/$(ICIV)$(ICISRC1)
+	install -c -m 444 $(ICISRC2) $(LIBICI)/$(ICIV)$(ICISRC2)
+
+clean:
+	rm -f *.o *.so cfuncs.c strings.c strs.h *.bak
+
+clobber: clean
+	rm -f .depend ici.h
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(SRCS)
+
+docs:
+	ici $(TOOLS)/mk-doc.ici -module $(NAME) -dir doc -text $(SRCS)

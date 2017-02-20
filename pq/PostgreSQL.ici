@@ -1,0 +1,319 @@
+/*
+ * $Id: PostgreSQL.ici,v 1.14 2001/01/15 01:26:53 atrn Exp $
+ */
+
+/*
+ * Re-export all integer "constants" exported by PQ module.
+ * Remove any leading "PGRES_" from the identifiers so we
+ * get nicer looking names (PostgreSQL.COMMAND.OK etc...)
+ */
+forall (v, k in PQ)
+{
+    if (typeof(v) == "int")
+    {
+	if (k ~ #^PGRES_#)
+	    PostgreSQL[sub(k, #^PGRES_#, "")] = v;
+	// else // uncomment else when user code changed over
+	PostgreSQL[k] = v;
+    }
+}
+
+/*
+ * PostgreSQL.escape_string
+ */
+extern
+escape_string(str)
+{
+    return gsub(str, "(')", "\\\\\\&");
+}
+
+
+/*
+ * Class to represent a connection to PostgreSQL.
+ *
+ */
+extern
+Connection = [class
+
+    new(info)
+    {
+	this = this:^new();
+	this.conn := PQ.connectdb(info);
+	return this;
+    }
+
+    defaults()
+    {
+	return PQ.conndefaults();
+    }
+
+    trace(file)
+    {
+	auto file = stderr;
+	PQ.trace(conn, file);
+	return this;
+    }
+
+    untrace()
+    {
+	PQ.untrace(conn);
+	return this;
+    }
+
+    status()
+    {
+	return PQ.status(conn);
+    }
+
+    finish()
+    {
+	PQ.finish(conn);
+	return this;
+    }
+
+    reset()
+    {
+	PQ.reset(conn);
+	return this;
+    }
+
+    db()
+    {
+	return PQ.db(conn);
+    }
+
+    user()
+    {
+	return PQ.user(conn);
+    }
+
+    pass()
+    {
+	return PQ.pass(conn);
+    }
+
+    host()
+    {
+	return PQ.host(conn);
+    }
+
+    port()
+    {
+	return PQ.port(conn);
+    }
+    
+    tty()
+    {
+	return PQ.tty(conn);
+    }
+    
+    options()
+    {
+	return PQ.options(conn);
+    }
+
+    error_message()
+    {
+	return PQ.errorMessage(conn);
+    }
+
+    socket()
+    {
+	return PQ.socket(conn);
+    }
+
+    exec(stmt)
+    {
+	return Result:new(PQ.exec(conn, stmt));
+    }
+
+    tuples(res)
+    {
+	kys = array();
+	v = array();
+	for (NF = res:nfields(), i = 0; i < NF; ++i)
+	    kys[i] = res:fname(i);
+	for (i = 0; i < res:ntuples(); ++i)
+	{
+	    r = struct();
+	    for (j = 0; j < NF; ++j)
+		r[kys[j]] = res:getvalue(i, j);
+	    push(v, r);
+	}
+	return v;
+    }
+
+    query(str)
+    {
+	trim := [func (s)
+	{
+	    return sub(sub(s, #^ +#, ""), # +$#, "");
+	}];
+
+	res = this:exec(str);
+	kys = array();
+	v = array();
+	for (NF = res:nfields(), i = 0; i < NF; ++i)
+	    kys[i] = res:fname(i);
+	for (i = 0; i < res:ntuples(); ++i)
+	{
+	    r = struct();
+	    for (j = 0; j < NF; ++j)
+		r[kys[j]] = trim(res:getvalue(i, j));
+	    push(v, r);
+	}
+	return v;
+    }
+
+    select(clause)
+    {
+	return this:query(sprintf("select %s", clause));
+    }
+
+    insert(tablespec, valuespec)
+    {
+	sql = sprintf
+	(
+	    "INSERT INTO %s VALUES (%s)",
+	    tablespec,
+	    valuespec
+	);
+	result = this:exec(sql);
+	if (result:status() != COMMAND_OK)
+	    result:failed();
+	result:clear();
+    }
+
+    update(table, fields, values)
+    {
+	sql = sprintf
+	(
+	    "UPDATE %s SET %s = %s",
+	    table,
+	    fields,
+	    values
+	);
+	result = this:exec(sql);
+	if (result:status() != COMMAND_OK)
+	    result:failed();
+	result:clear();
+    }
+
+];
+
+
+extern
+Result = [class
+
+    new(r)
+    {
+	this = this:^new();
+	this.result := r;
+	return this;
+    }
+
+    status()
+    {
+	return PQ.resultStatus(result);
+    }
+
+    sstatus(code)
+    {
+	if (code == NULL)
+	    code = PQ.resultStatus(result);
+	return PQ.resStatus(code);
+    }
+
+    error_message()
+    {
+	return PQ.resultErrorMessage(result);
+    }
+
+    failed()
+    {
+	err = this:sstatus();
+	this:clear();
+	fail(err);
+    }
+
+    cmd_status()
+    {
+	return PQ.cmdStatus(result);
+    }
+
+    oid_status()
+    {
+	return PQ.oidStatus(result);
+    }
+    
+    oid_value()
+    {
+	return PQ.oidValue(result);
+    }
+    
+    cmd_tuples()
+    {
+	return PQ.cmdTuples(result);
+    }
+    
+    ntuples()
+    {
+	return PQ.ntuples(result);
+    }
+    
+    nfields()
+    {
+	return PQ.nfields(result);
+    }
+    
+    binary_tuples()
+    {
+	return PQ.binaryTuples(result);
+    }
+
+    fname(idx)
+    {
+	return PQ.fname(result, idx);
+    }
+
+    fnumber(nam)
+    {
+	return PQ.fnumber(result, nam);
+    }
+
+    ftype(idx)
+    {
+	return PQ.ftype(result, idx);
+    }
+    
+    fsize(idx)
+    {
+	return PQ.fsize(result, idx);
+    }
+    
+    fmod(idx)
+    {
+	return PQ.fmod(result, idx);
+    }
+
+    getvalue(tup, fld)
+    {
+	return PQ.getvalue(result, tup, fld);
+    }
+
+    getlength(tup, fld)
+    {
+	return PQ.getlength(result, tup, fld);
+    }
+
+    getisnull(tup, fld)
+    {
+	return PQ.getisnull(result, tup, fld);
+    }
+
+    clear()
+    {
+	PQ.clear(result);
+    }
+    
+];

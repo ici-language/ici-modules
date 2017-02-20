@@ -1,0 +1,24 @@
+ID	= icitcl
+
+X11	= /usr/local/X11R5
+
+PREFIX	= /u/andy
+
+T_LIBDIR= $(PREFIX)/lib/sun4
+T_INCDIR= $(PREFIX)/include
+
+T_LIBS	= -L$(T_LIBDIR) -ltk42 -ltcl76 
+
+INCS	= -I$(ICI) -I$(X11)/include -I$(T_INCDIR)
+LIBS	= $(T_LIBS) -L$(X11)/lib -lX11
+
+DEFS	= -DCONFIG_FILE='"conf-sun.h"' -DICI_TK
+
+CC	= gcc -pipe
+CFLAGS	= -g -Wall $(INCS) $(DEFS)
+
+lib$(ID).so:	tcl.o
+	ld -o $@ -r tcl.o $(LIBS)
+
+clean:
+	rm -f lib$(ID).so tcl.o

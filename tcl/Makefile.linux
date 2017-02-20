@@ -1,0 +1,87 @@
+#
+# $Id: Makefile.linux,v 1.3 1999/09/15 09:05:08 andy Exp $
+#
+# Makefile for building ici-tcl on Linux. Tested on the following
+# distributions,
+#
+#	RedHat 4.2
+#
+
+ICIV	= ici3
+ID	= $(ICIV)tcl
+PREFIX	= /usr/local/
+LIBICI	= $(PREFIX)lib/$(ICIV)
+ICI	= $(PREFIX)include/$(ICIV)
+NAME		= tcl
+LIB		= $(ICIV)$(NAME).so
+ICILIBDIR	= $(LIBICI)
+ICIINCDIR	= $(ICI)
+
+#
+# The names of the TCL and Tk libraries to use.
+#
+TCL		= tcl
+TCL_LIBDIR	= /usr/lib
+TCL_INCDIR	= /usr/include
+#TCL_LIBDIR	= /usr/local/lib
+#TCL_INCDIR	= /usr/local/include
+#TCL		= tcl80
+#TCL_LIBDIR	= /usr/local/lib/tcl8.0
+#TCL_INCDIR	= /usr/local/include/tcl8.0
+
+#TK		= tkstep8.0
+#TKSTEP		= -DICI_TKSTEP
+
+#
+# This is where we get to choose between vanilla Tk, with its Motif-ish
+# look and feel, and Tkstep with its Nextstep-ish look and feel.
+#
+#TK		= tk
+#TKSTEP		=
+#TK		= tk80
+#TKSTEP		=
+#TK_LIBDIR	= /usr/local/lib
+#TK_INCDIR	= /usr/local/include/tk8.0
+#STEPLIBS	=
+TK		= tkstep80
+TKSTEP		= -DICI_TKSTEP
+TK_LIBDIR	= /usr/local/lib
+TK_INCDIR	= /usr/local/include/tkstep8.0
+STEPLIBS	= -ltiff -lXpm
+
+T_LIBS		= -L$(TK_LIBDIR) -l$(TK) -L$(TCL_LIBDIR) -l$(TCL)
+X11		= /usr/X11R6
+INCS		= -I$(ICI) -I$(X11)/include -I$(TK_INCDIR) -I$(TCL_INCDIR)
+LIBS		= $(T_LIBS) -L$(X11)/lib -lX11 $(STEPLIBS)
+DEFS		= -DCONFIG_FILE='"conf-linux.h"' -D$(ICIV) -DICI_TK $(TKSTEP)
+OPTIM		= -g -O
+PIC		= -fpic
+CFLAGS		= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+INSTALL		= install -c -m 444
+FLAVOUR		= linux
+CC		= cc -Wall
+PIC		= -fpic
+
+#
+# Buildin', cleanin', installin'
+#
+all:	$(LIB)
+
+$(LIB):	tcl.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ tcl.o $(LIBS) -lc
+
+clean:
+	rm -f $(LIB) tcl.o
+
+clobber:	clean
+	rm -f .depend
+
+install: $(LIB)
+	$(INSTALL) $(LIB) $(ICILIBDIR)
+	$(INSTALL) tcl.ici $(ICILIBDIR)/icitcl.ici
+
+uninstall:
+
+depend:
+	mkdep $(CFLAGS) tcl.c
+-include .depend

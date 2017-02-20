@@ -1,0 +1,42 @@
+static	display, screen, pixmap, win, nwindows = 1;
+
+WM.InitializeApplication(path.base(argv[0]));
+
+display = X.OpenDisplay();
+
+screen = WM.CreateScreen(display, X.DefaultScreen(display));
+pixmap = WM.CreatePixmapFromFile(screen, "logo.xpm");
+WM.SetApplicationIconImage(screen, pixmap);
+WM.ReleasePixmap(pixmap);
+
+win = WM.CreateWindow(screen, "testSlider");
+WM.ResizeWidget(win, 300, 300);
+WM.SetWindowTitle(win, "Sliders");
+WM.SetWindowCloseAction
+(
+    win,
+    [func (self)
+    {
+	WM.DestroyWidget(self);
+	if (--nwindows == 0)
+	    exit();
+    }]
+);
+
+auto s;
+
+s = WM.CreateSlider(win);
+WM.ResizeWidget(s, 16, 100);
+WM.MoveWidget(s, 100, 100);
+WM.SetSliderKnobThickness(s, 8);
+
+s = WM.CreateSlider(win);
+WM.ResizeWidget(s, 100, 16);
+WM.MoveWidget(s, 100, 10);
+WM.SetSliderKnobThickness(s, 10);
+
+WM.RealizeWidget(win);
+WM.MapSubwidgets(win);
+WM.MapWidget(win);
+
+WM.ScreenMainLoop(screen);

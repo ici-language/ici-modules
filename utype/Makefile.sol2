@@ -1,0 +1,25 @@
+CC=	gcc -pipe
+OPTIM=	-g -O
+PIC=	-fpic
+CFLAGS=	$(OPTIM) $(PIC) -I/usr/local/include/ici -DCONFIG_FILE='"conf-sol2.h"'
+
+O=	utype.o
+
+all:	iciutype.so
+
+iciutype.so:	$O
+	ld -G -o $@ $O
+
+clean:
+	rm -f utype.o iciutype.so
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) utype.c
+
+-include .depend
+
+install: iciutype.so
+	/usr/ucb/install -c -m 444 iciutype.so /usr/local/lib/ici

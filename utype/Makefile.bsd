@@ -1,0 +1,33 @@
+PREFIX	?= /usr/local/
+ICIV	?= ici
+ICI	?= $(PREFIX)include/$(ICIV)
+LIBICI	?= $(PREFIX)lib/$(ICIV)
+
+FLAVOUR	= bsd
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+TOOLS	= ../tools
+INCS	= -I$(ICI) -I/usr/local/include/giflib
+DEFS	= $(ICI_DEFS)
+OPTIM	= -g -O
+PIC	= -fpic
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+
+O=	utype.o
+
+all:	$(ICIV)utype.so
+
+$(ICIV)utype.so:	$O
+	$(CC) -shared -o $@ $O
+	@chmod 644 $@
+
+install:	$(ICIV)utype.so
+	install -c -m 444 $(ICIV)utype.so $(LIBICI)
+
+clean:
+	rm -f *.so *.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) utype.c

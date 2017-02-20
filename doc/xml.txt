@@ -1,0 +1,2 @@
+Interface to James Clark's expat XML parser and ICI-style DOM
+layer built atop expat's SAX style interface.

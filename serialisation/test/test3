@@ -1,0 +1,8 @@
+auto f, o;
+
+f = fopen("test.out");
+o = restore(f);
+close(f);
+
+printf("%s\n", typeof(o));
+o();

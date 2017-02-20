@@ -1,0 +1,31 @@
+MODULE_NAME	= utype
+TOOLS		= ..\tools
+PREFIX		= \src\ici
+ICI		= $(PREFIX)\ici-2.1.3
+ICI_EXE		= $(ICI)\ici
+FLAVOUR		= w32
+CONFIG  	= conf-$(FLAVOUR).h
+ICI_DEFS	= -DCONFIG_FILE=\"$(CONFIG)\" /D_WINDOWS /DICI_DLL
+INCS		= -I$(ICI) -I.
+DEFS		= $(ICI_DEFS)
+OPTIM		= -MDd -Zi -GB -O2p-
+CC		= cl /nologo
+CFLAGS		= $(OPTIM) $(INCS) $(DEFS)
+LIBS		= $(ICI)\ici.lib
+
+all : iciutype.dll
+
+iciutype.dll: utype.obj
+	$(CC) /LD /Fe$@ utype.obj $(LIBS) /link /export:ici_utype_library_init
+
+clean:
+	-del *.dll >nul:
+	-del *.obj >nul:
+	-del iciutype.lib >nul:
+	-del iciutype.exp >nul:
+	-del *.pdb >nul:
+
+clobber: clean
+
+depend:
+	mkdep $(CFLAGS) *.c

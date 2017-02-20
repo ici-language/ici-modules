@@ -1,0 +1,58 @@
+#
+# $Id$
+#
+
+MODULE_NAME	= uuid
+OBJS		= uuid.o
+TOOLS		= ../tools
+PREFIX		?= /usr/local/
+ICIV		?= ici
+ICI		?= $(PREFIX)include/$(ICIV)
+LIBICI		?= $(PREFIX)lib/$(ICIV)
+FLAVOUR		= bsd
+ICI_DEFS	= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+INCS		= -I$(ICI) -I/usr/local/include
+DEFS		= $(ICI_DEFS)
+OPTIM		= -g -O
+PIC		= -fpic
+CFLAGS		= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LIB		= $(ICIV)$(MODULE_NAME).so
+LIBS		= -L/usr/local/lib -luuid
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS) strings.o cfuncs.o
+	$(CC) -shared -o $@ $(OBJS) strings.o cfuncs.o $(LIBS)
+	@chmod 644 $@
+
+$(OBJS) : ici.h strs.h
+
+.SUFFIXES: .c .i
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+strs.h strings.c : $(OBJS:.o=.c)
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-strings.ici $(MODULE_NAME)
+
+cfuncs.c : $(OBJS:.o=.c)
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-cfuncs.ici $(MODULE_NAME)
+
+ici.h :
+	ici $(TOOLS)/mk-ici-dot-h.ici $(MODULE_NAME)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+
+uninstall:
+	rm -f $(LIBICI)/$(LIB)
+	rm -f $(LIBICI)/$(ICIV)sys.ici
+
+clean:
+	rm -f *.o *.so cfuncs.c strings.c strs.h
+
+clobber: clean
+	rm -f .depend ici.h
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(OBJS:.o=.c)

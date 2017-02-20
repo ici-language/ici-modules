@@ -1,0 +1,13 @@
+String functions implemented in native code for performance reasons
+or grouped here because the module prefix is appropriate.
+
+Functions
+
+    string = str.toupper(string)
+	Convert lowercase alphabetic characters in a string to upper case.
+
+    string = str.tolower(string)
+	Convert uppercase alphabetic characters in a string to lower case.
+
+    string = str.error(int)
+	Return the error message associated with the given error code.

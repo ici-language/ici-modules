@@ -1,0 +1,11 @@
+/*
+ * $Id: test1,v 1.4 1999/05/23 04:42:46 andy Exp $
+ *
+ * Smallest program that actually opens a window on the display.
+ */
+
+auto disp = X.OpenDisplay();
+X.MapWindow(disp, X.CreateSimpleWindow(disp, X.DefaultRootWindow(disp)));
+printf("Mapped\n");
+while (X.NextEvent(disp))
+    ;

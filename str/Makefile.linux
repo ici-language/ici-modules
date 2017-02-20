@@ -1,0 +1,62 @@
+#
+# $Id: Makefile.linux,v 1.2 1999/09/09 07:02:10 andy Exp $
+#
+
+MODULE_NAME	= str
+OBJS		= src.o
+TOOLS		= ../tools
+PREFIX		= /usr/local/
+ICIV		= ici3
+ICI		= $(PREFIX)include/$(ICIV)
+LIBICI		= $(PREFIX)lib/$(ICIV)
+FLAVOUR		= linux
+ICI_DEFS	= -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+INCS		= -I$(ICI)
+DEFS		= $(ICI_DEFS)
+PIC		= -fpic
+OPTIM		= -g -O
+CFLAGS		= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LIB		= $(ICIV)$(MODULE_NAME).so
+LIBS		=
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS) strings.o cfuncs.o
+	$(CC) -shared -o $@ $(OBJS) strings.o cfuncs.o $(LIBS)
+	@chmod 644 $@
+
+$(OBJS) : ici.h strs.h
+
+.SUFFIXES: .c .i
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+strs.h strings.c : $(OBJS:.o=.c) $(TOOLS)/mk-strings.ici
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-strings.ici $(MODULE_NAME)
+
+cfuncs.c : $(OBJS:.o=.c) $(TOOLS)/mk-cfuncs.ici
+	cat $(OBJS:.o=.c) | ici $(TOOLS)/mk-cfuncs.ici $(MODULE_NAME)
+
+ici.h : $(TOOLS)/mk-ici-dot-h.ici
+	ici $(TOOLS)/mk-ici-dot-h.ici $(MODULE_NAME)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+	install -c -m 444 str.ici $(LIBICI)/$(ICIV)str.ici
+
+uninstall:
+	rm -f $(LIBICI)/$(LIB)
+
+clean:
+	rm -f *.o *.so cfuncs.c strings.c
+
+clobber: clean
+	rm -f .depend ici.h
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(OBJS:.o=.c)
+
+docs:
+	-@mkdir doc
+	ici $(TOOLS)/mk-doc.ici -module $(NAME) -dir doc -text $(SRCS)

@@ -1,0 +1,16 @@
+static	display, imlib, img, root, win, delwin;
+
+display	= X.OpenDisplay();
+delwin	= X.InternAtom(display, "WM_DELETE_WINDOW");
+root	= X.DefaultRootWindow(display);
+
+imlib	= Imlib.init(display);
+img	= Imlib.load_image(imlib, argv[1]);
+
+win	= X.CreateSimpleWindow(display, root, img.rgb_width, img.rgb_height);
+
+X.SetWMProtocols(display, win, array(delwin));
+X.MapWindow(display, win);
+Imlib.apply_image(imlib, img, win);
+X.Flush(display);
+X.NextEvent(display);

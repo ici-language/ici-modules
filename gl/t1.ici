@@ -1,0 +1,27 @@
+static
+p(o, t)
+{
+    auto	k, v;
+
+    forall (k in sort(keys(o)))
+    {
+        if (typeof(v = o[k]) == t)
+	{
+	    switch (t)
+	    {
+	    case "func":
+		printf("gl.%s()\n", k);
+		break;
+
+	    case "int":
+		printf("gl.%s = %d\n", string(k), v);
+		break;
+	    }
+	}
+    }
+}
+
+printf("Functions\n\n");
+p(gl, "func");
+printf("\nConstants\n\n");
+p(gl, "int");

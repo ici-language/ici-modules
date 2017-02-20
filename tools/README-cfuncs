@@ -1,0 +1,72 @@
+Introduction
+
+The mk-cfuncs program is used to generate a module's cfuncs table used to
+export native code functions out of the module. The program is fed the all
+the source code to the module on its standard input and scans it for uses of
+special macros (defined in another per-module automatically generated file,
+ici.h) that allow it to determine the cfuncs table. When all the input has
+been scanned appropriate C source to define the cfuncs table and initialise
+the module is output.
+
+
+Macros
+
+The per-module ici.h file defines a number of macros to be used with the
+automatic cfuncs scheme. These macros are,
+
+FUNCDEF(name)
+
+	Used to define a C function that implements an ici function.
+	This generates the code,
+
+	     static int
+	     ici_XXX_f_name(void)
+
+	XXX is replaced by the module name and name is the macro argument.
+	This macro does not generate an entry in the cfuncs table.
+
+FUNC(name)
+
+	Used to define a C function that implements an ici function and
+	enter it into the cfuncs table. This generates the same code as
+	FUNCDEF(name) but also generates a cfuncs entry that exports the
+	C function with the specified name.
+
+CFUNC(name, cfunc)
+CFUNC1(name, cfunc, arg1)
+CFUNC2(name, cfunc, arg2)
+CFUNC3(name, cfunc, arg1, arg2)
+
+	These macros are used to define entries in the cfuncs table with
+	the given name as the key and the C function named by cfunc as the
+	function. Depending on the macro used the cf_arg1 and cf_arg2
+	members of ici's cfunc_t structure may be initialised. No code
+	is generated.
+
+	The cfunc argument is the name of the C function that implements
+	the module. This must be a previously FUNCDEF'd function and cfunc
+	is the "short" form of the name, i.e., the same as the name given
+	to FUNCDEF(). I.e., the cfunc argument gets ici_XXX_f_ prepended
+	to it (XXX being the module name).
+
+
+Variables
+
+Some modules export objects other than functions. To support these
+mk-cfuncs scans for a function with the name "ici_XXX_vars_init"
+(XXX being the module name) and if found calls this function during
+the module initialisation to allow it to add objects to the module's
+struct object.
+
+
+
+Output
+
+The output of the scanning process is a C compilation unit that defines the
+module's cfuncs table and its initialisation function (ici_XXX_library_init()).
+The output is split into a number of sections. First there are extern
+declarations for all the functions referred to in the source, followed
+by the cfuncs table and finally the initialisation function. The function
+declarations are split into groups - the var_init function first if required 
+followed by the various cfuncs defined by the user, then any cf_arg1
+functions used via CFUNC1 or CFUNC3 macro usage are output.

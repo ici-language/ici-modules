@@ -1,0 +1,231 @@
+/*
+ * $Id: cgi.ici,v 1.1.1.1 1999/09/08 01:27:24 andy Exp $
+ *
+ * ICI module to interface with the HTTP server Common Gateway Interface
+ */
+
+/*
+ * content_type - generate a "Content-type" HTTP header
+ *
+ * Parameters:
+ *	type		The MIME type to output, a string.
+ */
+extern
+content_type(type)
+{
+    printf("Content-type: %s\r\n", type);
+}
+
+/*
+ * content_length - generate a "Content-Length" HTTP header
+ *
+ * Parameters:
+ *	length		The number of bytes of output, an integer.
+ */
+extern
+content_length(length)
+{
+    printf("Content-Length: %d\r\n", length);
+}
+
+/*
+ * start_reply_header - start the CGI program's output
+ *
+ * Parameters:
+ *	key, value...	Pairs of strings defining HTTP reply
+ *			header field names and their values.
+ *
+ *			Note that the common HTTP header fields
+ *			have their own functions (see below).
+ *
+ */
+extern
+start_reply_header()
+{
+    auto	vargs = [array];
+    auto	i, n;
+
+    if ((n = nels(vargs)) & 1)
+	fail("uneven # of args to start_reply_header");
+    for (i = 0; i < n; i += 2)
+	printf("%s: %s\r\n", vargs[i], vargs[i+1]);
+}
+
+/*
+ * end_reply_header - output the end of header line (a blank line)
+ */
+extern
+end_reply_header()
+{
+    printf("\r\n");
+}
+
+/*
+ * redirect - generate a redirect message
+ *
+ * Parameters:
+ *	url		The URL where the user should be taken.
+ */
+extern
+redirect(url)
+{
+    printf
+    (
+	"Status: 302 Redirect\r\n"
+	"Location: %s\r\n",
+	url
+    );
+    content_type("text/plain");
+    end_reply_header();
+    printf("Redirecting to %s\n", url);
+}
+
+/*
+ * setcookie - output an HTTP header for setting the cookie.
+ */
+extern
+setcookie(text)
+{
+    printf("Set-cookie: \r\n", text);
+}
+
+/*
+ * getcookie - return the cookie for this request or NULL if no cookie.
+ */
+extern
+getcookie()
+{
+    return getenv("HTTP_COOKIE");
+}
+
+/*
+ * string_to_urle - convert a string to "URL encoding" and return it
+ *
+ * Parameters:
+ *	s	unencoded string
+ *
+ * Returns:
+ *	The encoded string.
+ */
+extern
+string_to_urle(s)
+{
+    /* This variable is initialised at parse-time */
+    auto	plain = $([func ()
+		{
+		    auto rc, c, C;
+
+		    rc = set();
+		    for (c = 'a', C = 'A'; c <= 'z'; ++c, ++C)
+		    {
+			rc[tochar(c)] = 1;
+			rc[tochar(C)] = 1;
+		    }
+		    for (c = '0'; c <= '9'; ++c)
+		        rc[tochar(c)] = 1;
+		    return rc;
+		}]());
+
+    auto rc, c;
+
+    rc = array();
+    forall (c in s)
+    {
+	if (plain[c])
+	    push(rc, c);
+	else
+	    push(rc, sprintf("%%%02x", toint(c)));
+    }
+    return implode(rc);
+}
+
+/*
+ * urle_to-string - remove URL encoding sequences from a string and return it
+ *
+ * Parameters:
+ *	s	URL-encoded string
+ */
+extern
+urle_to_string(s)
+{
+    static hex = [struct
+	("0") = 0,	("1") = 1,	("2") = 2,	("3") = 3,
+	("4") = 4,	("5") = 5,	("6") = 6,	("7") = 7,
+	("8") = 8,	("9") = 9,	("a") = 10,	("A") = 10,
+	("b") = 11,	("B") = 11,	("c") = 12,	("C") = 12,
+	("d") = 13,	("D") = 13,	("e") = 14,	("E") = 14,
+	("f") = 15,	("F") = 15
+    ];
+
+    auto a;
+    s = gsub(s, #\+#, " ");
+    while (nels(a = s ~~~ #^([^%]*)%([0-9A-Fa-f])([0-9A-Fa-f])(.*)$#) == 4)
+	s = sprintf("%s%c%s", a[0], hex[a[1]] * 16 + hex[a[2]], a[3]);
+    return s;
+}
+
+/*
+ * query_string_to_struct - parse query string into key/value pairs, make a
+ *			    struct out of them and return it.
+ *
+ * Parameters:
+ *	qs	Optional alternative string to parse. If not passed query
+ *		string is ripped out of the environment or from standard
+ *		input according to the HTTP method used (GET or POST).
+ */
+extern
+query_string_to_struct(qs)
+{
+    static r, f, qs = NULL, method;
+
+    /*
+     * If no explicit query string passed to us then get it. Where we
+     * get it from depends on the HTTP method used.
+     */
+    if (!qs)
+    {
+	switch (method = getenv("REQUEST_METHOD"))
+	{
+	case NULL:
+	    fail("no query string");
+
+	case "GET":
+	    qs = getenv("QUERY_STRING");
+	    break;
+
+	case "POST":
+	    qs = getfile();
+	    break;
+
+	default:
+	    fail
+	    (
+		sprintf
+		(
+		    "don't know how to get query string for HTTP %s method",
+		    method
+		)
+	    );
+	}
+	if (qs == "" || qs == NULL)
+	    fail("no query string");
+    }
+
+    /*
+     * Now split it and create a struct with all the key/values in the string
+     */
+    r = struct();
+    forall (f in gettokens(qs, "&"))
+    {
+        f = f ~~~ #^(.*)=(.*)$#;
+	r[urle_to_string(f[0])] = urle_to_string(f[1]);
+    }
+    return r;
+}
+
+/*
+ * Short form for lazy people
+ */
+extern
+query_string = query_string_to_struct;
+

@@ -1,0 +1,3 @@
+WINGs library interface.
+
+No longer in active development.

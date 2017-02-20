@@ -1,0 +1,61 @@
+/*
+ * $Id: gtk.ici,v 1.2 2000/08/06 22:26:38 atrn Exp $
+ *
+ * Constants for Gtk module.  Manually extracted from gtk/gtkenums.h et al
+ *
+ */
+
+extern	ARROW_UP		= 0;
+extern	ARROW_DOWN		= 1;
+extern	ARROW_LEFT		= 2;
+extern	ARROW_RIGHT		= 3;
+
+extern	JUSTIFY_LEFT		= 0;
+extern	JUSTIFY_RIGHT		= 1;
+extern	JUSTIFY_CENTER		= 2;
+extern	JUSTIFY_FILL		= 3;
+
+extern	PIXELS			= 0;
+extern	INCHES			= 1;
+extern	CENTIMETERS		= 2;
+
+extern	ORIENTATION_HORIZONTAL	= 0;
+extern	ORIENTATION_VERTICAL	= 1;
+
+extern	PACK_START		= 0;
+extern	PACK_END		= 1;
+
+extern	WINDOW_TOPLEVEL		= 0;
+extern	WINDOW_DIALOG		= 1;
+extern	WINDOW_POPUP		= 2;
+
+extern	WIN_POS_NONE		= 0;
+extern	WIN_POS_CENTER		= 1;
+extern	WIN_POS_MOUSE		= 2;
+extern	WIN_POS_CENTER_ALWAYS	= 3;
+
+extern	POLICY_ALWAYS		= 0;
+extern	POLICY_AUTOMATIC	= 1;
+extern	POLICY_NEVER		= 2;
+
+extern	SELECTION_SINGLE	= 0;
+extern	SELECTION_BROWSE	= 1;
+extern	SELECTION_MULTIPLE	= 2;
+extern	SELECTION_EXTENDED	= 3;
+
+
+/*
+ * Functions able to be written in ICI.
+ */
+
+extern
+box_pack_start_defaults(box, widget)
+{
+    return box_pack_start(box, widget, true, true, 0);
+}
+
+extern
+box_pack_end_defaults(box, widget)
+{
+    return box_pack_end(box, widget, true, true, 0);
+}

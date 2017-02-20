@@ -1,0 +1,2 @@
+extern	zero	= bignum(0);
+extern	one	= bignum(1);

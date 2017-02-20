@@ -1,0 +1,36 @@
+INSTALL=	install
+PREFIX=		/usr/local/
+LIBICI=		$(PREFIX)lib/ici3
+
+all:
+
+install:\
+	$(LIBICI)/ici3html.ici\
+	$(LIBICI)/ici3HTML.ici
+
+$(LIBICI)/ici3html.ici:	html.ici
+	$(INSTALL) -c -m 444 html.ici $@
+
+$(LIBICI)/ici3HTML.ici:	ici3HTML.ici
+	$(INSTALL) -c -m 444 ici3HTML.ici $@
+
+uninstall:
+	rm -f $(LIBICI)/ici3html.ici
+	rm -f $(LIBICI)/ici3HTML.ici
+
+
+ici.h\
+strs.h\
+strings.h\
+cfuncs.c\
+clean\
+depend\
+clobber:
+	@: no need to do anything
+
+
+t1.html: FORCE
+	ici3 t1.ici > t1.html || rm t1.html
+
+
+FORCE:

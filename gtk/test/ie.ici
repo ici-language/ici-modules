@@ -1,0 +1,307 @@
+#!/usr/local/bin/ici3
+//
+// A text editor using gtk and ici
+//
+
+use("Gtk");
+
+static	win;			// main window
+static	text;			// text widget
+static	filename;		// currently loaded file, NULL if "new"
+static	untitledcounter = 0;	// Number of new files
+
+static	prefs = [struct
+    makebackups = true,		// make backup files
+    printcmd = "lpr",		// how to print
+];
+
+
+static
+set_window_title(name)
+{
+    str = "ie: ";
+    if (name)
+    {
+	filename = name;
+	str += name;
+    }
+    else
+	str = sprintf("%sUntitled%d", str, ++untitledcounter);
+    win:set_title(str);
+}
+
+static
+load_file(filename)
+{
+    text:freeze();
+    text:delete_all();
+    file = fopen(filename);
+    text:insert(file);
+    close(file);
+    text:thaw();
+    set_window_title(filename);
+}
+
+static
+backup(filename)
+{
+    backupfile = filename + ".bak";
+    try
+    {
+	rename(filename, backupfile);
+    }
+    onerror
+    {
+	if (error !~ #No such file#)
+	    fail(error);
+    }
+}
+
+static
+msgbox(title)
+{
+    auto vargs = [array ""];
+    auto popdown = [func (b, w)
+    {
+	w:hide();
+    }];
+
+    w = Dialog:new();
+    w:set_name("msgbox");
+    w:window():position(gtk.WIN_POS_CENTER);
+
+    b = w:vbox();
+    h = HBox:new():show();
+
+    b:pack_start(h, false, true, 20);
+    bb = Label:new(title):show();
+    bb:set_name("msgbox_title");
+    h:pack_start(bb, false, true, 10);
+
+    h = HBox:new():show();
+    b:add(h);
+    h:pack_end(Label:new(call(sprintf, vargs)):show(), true, true, 10);
+
+    b:pack_end(Label:new(""):show(), false, true, 1);
+
+    h = HBox:new():show();
+    w:action_area():add(h);
+    b = Button:new("Okay"):show();
+    b:signal_connect("clicked", popdown, w);
+    h:pack_end(b, false, true, 20);
+    w:show();
+}
+
+// Menu callbacks
+
+static
+file_new()
+{
+    text:freeze();
+    text:delete_all();
+    set_window_title();
+    filename = NULL;
+}
+
+static
+file_open()
+{
+    auto callback = [func (widget, args)
+    {
+	if (args[1])
+	    load_file(args[0]:get_filename());
+	args[0]:hide();
+    }];
+
+    fs = FileSelection:new("Open File..."):show_fileop_buttons();
+    failed = array(fs, false);
+    worked = array(fs, true);
+    fs:signal_connect("destroy", callback, failed);
+    fs:ok_button():signal_connect("clicked", callback, worked);
+    fs:cancel_button():signal_connect("clicked", callback, failed);
+    fs:show();
+}
+
+static
+file_save()
+{
+    if (!filename)
+	return file_save_as();
+    if (prefs.makebackups)
+	backup(filename);
+    file = fopen(filename, "w");
+    put(text:get_chars(0, text:get_length()), file);
+    close(file);
+}
+
+static
+file_save_as()
+{
+    auto callback = [func (widget, args)
+    {
+	if (args[1])
+	{
+	    filename = args[0]:get_filename();
+	    file_save();
+	    set_window_title(filename);
+	}
+	args[0]:hide();
+    }];
+
+    fs = FileSelection:new("Save File As..."):show_fileop_buttons();
+    failed = array(fs, false);
+    worked = array(fs, true);
+    fs:signal_connect("destroy", callback, failed);
+    fs:ok_button():signal_connect("clicked", callback, worked);
+    fs:cancel_button():signal_connect("clicked", callback, failed);
+    fs:show();
+}
+
+static
+file_print()
+{
+    try
+    {
+	printer = popen(prefs.printcmd, "w");
+	put(text:get_chars(0, text:get_length()), printer);
+	close(printer);
+    }
+    onerror
+    {
+	msgbox
+	(
+	    "Print Failed",
+	    "Printing the current file failed. The error\n"
+	    "returned was:\n"
+	    "\n"
+	    + error
+	);
+    }
+}
+
+static
+file_quit()
+{
+    App:main_quit();
+}
+
+static
+edit_cut()
+{
+    text:cut_clipboard();
+}
+
+static
+edit_copy()
+{
+    text:copy_clipboard();
+}
+
+static
+edit_paste()
+{
+    text:paste_clipboard();
+}
+
+static
+edit_delete()
+{
+    text:delete_selection();
+}
+
+static
+edit_select_all()
+{
+    text:select_region(0, text:get_length());
+}
+
+static
+edit_unselect()
+{
+    text:select_region(0, 0);
+}
+
+static
+help_about()
+{
+    msgbox
+    (
+	"IE text editor",
+	"Version 1.0, written by Andy Newman\n"
+	"Copyright (C) 2000.  All Rights Reserved"
+    );
+}
+
+static
+menus = [array
+    [struct	title = "File",
+	items = [array
+	    [struct label = "New",	    func = file_new],
+	    [struct label = "Open",	    func = file_open],
+	    [struct label = "Save",	    func = file_save],
+	    [struct label = "Save As",	    func = file_save_as],
+	    [struct label = "Print",	    func = file_print],
+	    [struct label = "Quit",	    func = file_quit],
+	],
+    ],
+    [struct	title = "Edit",
+	items = [array
+	    [struct label = "Cut",	    func = edit_cut],
+	    [struct label = "Copy",	    func = edit_copy],
+	    [struct label = "Paste",	    func = edit_paste],
+	    [struct label = "Delete",	    func = edit_delete],
+	    [struct label = "Select All",   func = edit_select_all],
+	    [struct label = "Unselect",	    func = edit_unselect],
+	],
+    ],
+    [struct	title = "Help",
+	rightjustify = true,
+	items = [array
+	    [struct label = "Help",],
+	    [struct label = "Web Site",],
+	    [struct label = "About", 	    func = help_about],
+	],
+    ],
+];
+
+static
+init()
+{
+    App:init();
+    App:rc_parse("ie.rc");
+    win = Window:new();
+    win:set_title(path.base(argv[0]));
+    win:set_default_size(800, 600);
+    win:signal_connect("delete_event", file_quit);
+
+    box = VBox:new(false, 5):show();
+    win:add(box);
+
+    menubar = MenuBar:new(menus):show();
+    box:pack_start(menubar, false, true, 0);
+
+    box:add(hbox = HBox:new():show());
+    text = Text:new():show():set_editable();
+    win:set_focus(text);
+    hbox:pack_start(text, true, true, 5);
+    hbox:pack_end(VScrollBar:new(text:vadjustment()):show(), false, true, 0);
+
+    if (argc > 1)
+	try
+	    load_file(argv[1]);
+	onerror
+	    exit(sprintf("can't open %s: %s", argv[1], error));
+    else
+	set_window_title();
+}
+
+static
+run()
+{
+    win:show();
+    App:main();
+}
+
+init();
+run();
+exit();

@@ -1,0 +1,123 @@
+Unix system calls.
+
+    int = sys.access(string [, int])
+
+    sys.acct(string)
+
+    sys.alarm(int)
+
+    sys.chdir(string)
+
+    sys.chmod(string, int)
+
+    sys.chown(string, int, int)
+
+    sys.chroot(string)
+
+    sys.clock()
+
+    sys.close(int)
+
+    int = sys.creat(string, int [, int])
+
+    string = sys.ctime(int)
+
+    array = sys.dir([string] [, regexp] [, string])
+
+    sys.dup(int [, int])
+
+    sys.exec(string, array | any...)
+
+    sys.execp(string, array | any...)
+
+    sys.exit(int)
+
+    sys.fcntl(int, string [, int])
+
+    file = sys.fdopen(int [, string])
+
+    sys.flock(int, int)
+
+    int = sys.fork()
+
+    string = sys.getcwd()
+
+    int = sys.getegid()
+
+    int = sys.geteuid()
+
+    int = sys.getgid()
+
+    int = sys.getpgrp()
+
+    int = sys.getpid()
+
+    int = sys.getppid()
+
+    int = sys.getuid()
+
+    int = sys.isatty(int)
+
+    sys.kill(int, int)
+
+    sys.link(string, string)
+
+    sys.lseek(int, int [, int])
+
+    struct = sys.lstat(string)
+
+    sys.mkdir(string [, int])
+
+    sys.mkfifo(string, int)
+
+    sys.mknod(string, int, int)
+
+    sys.nice(int)
+
+    sys.open(string, int [, int])
+
+    array = sys.passwd()
+
+    struct = sys.passwd(int|string)
+
+    sys.pause()
+
+    array = sys.pipe()
+
+    string = sys.read(int, int)
+
+    string = sys.readlink(string)
+
+    sys.rename(string, string)
+
+    sys.rmdir(string)
+
+    sys.setgid(int)
+
+    sys.setpgrp(int [, int])
+
+    sys.setuid(int)
+
+    sys.signal(int, int)
+
+    sys.sleep(int)
+
+    struct = sys.stat(int|string)
+
+    sys.symlink(string, string)
+
+    sys.sync()
+
+    int = sys.time()
+
+    sys.umask(int)
+
+    sys.unlink(string)
+
+    sys.usleep(int)
+
+    int = sys.wait()
+
+    sys.write(int, string [, int])
+
+

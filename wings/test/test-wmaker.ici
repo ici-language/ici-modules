@@ -1,0 +1,110 @@
+static
+
+	display, rootwindow, defaultscreen,
+
+	/*
+	 * The X atom for WM_DELETE_WINDOW so we can set a window property.
+	*/
+	wm_delete_window,
+
+	/*
+	 * The handle to the WMaker application context and our lead window
+	 */
+	app, leadwin,
+
+	/*
+	 * We keep track of how many windows are on creen so we know when
+	 * to stop waiting for events. This is the count.
+	 */
+	wincount = 0;
+
+/*
+ * Create a new application window and make it visible on the screen.
+ *
+ * This function does the minimal work required to create a usuable
+ * window for an application under Window Maker.
+ */
+static	make_app_window()
+{
+    auto	window;
+
+    window = X.CreateSimpleWindow(display, rootwindow);
+
+    X.SetWMProtocols(display, window, array(wm_delete_window));
+
+    X.SetClassHint(display, window, "test1");
+
+    X.SetWMHints(display, window, struct("window_group", leadwin));
+
+    WM.AppAddWindow(app, window);
+
+    X.MapWindow(display, window);
+
+    ++wincount;
+
+    X.Sync(display);
+
+}
+
+/*
+ * Open the display and get some initial information about it.
+ */
+display = X.OpenDisplay();
+rootwindow = X.DefaultRootWindow(display);
+defaultscreen  = X.DefaultScreen(display);
+
+X.InternAtom(display, "_GNUSTEP_WM_FUNCTION");
+
+/*
+ * Create our lead window. This window doesn't appear on screen but
+ * exists solely to allow us to group all our application windows
+ * together.
+ */
+leadwin = X.CreateSimpleWindow(display, rootwindow);
+X.SetClassHint(display, leadwin, "test1", "Test1");
+X.SetWMHints(display, leadwin, struct("window_group", leadwin));
+
+/*
+ * Create the application context, while we're at it get the atom
+ * for the delete window window manager property. We'll need this
+ * before we call make_app_window().
+ */
+app = WM.AppCreateWithMain(display, defaultscreen, leadwin);
+wm_delete_window = X.InternAtom(display, "WM_DELETE_WINDOW");
+
+/*
+ * Create the initial window and process events.
+ */
+make_app_window();
+
+static menu, submenu;
+menu = WM.MenuCreate(app, "Test App");
+submenu = WM.MenuCreate(app, "Info");
+WM.MenuAddItem(submenu, "About", [func () {}]);
+WM.MenuAddSubmenu(menu, "Info", submenu);
+WM.MenuAddItem(menu, "Exit", [func () {exit();}]);
+WM.AppSetMainMenu(app, menu);
+WM.RealizeMenus(app);
+
+auto event;
+while (wincount > 0)
+{
+    event = X.NextEvent(display);
+
+    /*
+     * This checks for "delete" messages from the window manager.
+     * We just destroy the window identified in the event.
+     */
+    if (event.type == "ClientMessage")
+    {
+	/*
+	 * X.Atom() is an ICI extension that converts ints to atoms.
+	 */
+	if (X.Atom(display, event.data[0]) == wm_delete_window)
+	{
+	    X.DestroyWindow(display, event.window);
+	    --wincount;
+	}
+    }
+    WM.ProcessEvent(app, event);
+}

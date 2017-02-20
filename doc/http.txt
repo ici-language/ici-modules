@@ -1,0 +1,56 @@
+A module for performing client-side HTTP protocol operations.
+
+The module splits the process of performing the request into a
+number of phases. Firstly a new request is created and various
+request attributes set. These attributes are translated into
+HTTP request headers. Once the request has been prepared it is
+initiated or sent to the destination and the reply received.
+Following the reply header being received the user may elect to
+read the content being returned for the request or to terminate
+the request.
+
+Functions:
+
+	http.proxy(host, port)
+		Define the default proxy server settings inherited by
+		all new requests. Port may be omitted in which case it
+		defaults to the standard HTTP port (80). If host is
+		specified as NULL the use of proxy is removed.
+
+	string = http.getproxyhost()
+		Returns the default proxy host or NULL if none set.
+
+	string = http.getproxyport()
+		Returns the default proxy port or NULL if none set.
+
+
+	http.request(method, url)
+		Create a new HTTP request structure and return it. The
+		method and url are required.
+
+Constants:
+
+	The various HTTP reply codes are given symbolic names which are
+	exported from the http module. See the end of this file for the
+	names. The most commonly used is likely to be http.Okay (200).
+
+
+
+HTTP Request Objects
+
+	The http.request() function returns a new request object stored
+	within an ici struct. Request objects are accessed via a set of
+	method functions used with ici's binary-@ operator (method call).
+	Request objects respond to methods to get and set their internal
+	state and to perform the HTTP request and obtain its results.
+
+	Methods:
+
+	    connect		Initiate the HTTP connection, send the
+				request and receive the reply leaving
+				the connection ready for the user to read
+				any content.
+	    disconnect		Tear down the connection to the HTTP server
+				and arrange the request to be discarded.
+	    stream		Return a file (read-only) 
+	    status		Return the status of the HTTP request.

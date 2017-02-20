@@ -1,0 +1,19 @@
+conn = PQ.connectdb("user=andy dbname=test");
+res = PQ.exec(conn, "select * from \"pg_database\"");
+nf = PQ.nfields(res);
+for (i = 0; i < nf; ++i)
+    printf("===============");
+printf("\n");
+for (i = 0; i < nf; ++i)
+    printf("%-15s", PQ.fname(res, i));
+printf("\n");
+for (i = 0; i < nf; ++i)
+    printf("===============");
+printf("\n");
+for (nt = PQ.ntuples(res), i = 0; i < nt; ++i)
+{
+    for (j = 0; j < nf; ++j)
+	printf("%-15s", PQ.getvalue(res, i, j));
+    printf("\n");
+}
+PQ.finish(conn);

@@ -1,0 +1,32 @@
+PREFIX	?= /usr/local/
+ICIV	?= ici3
+ICI	?= $(PREFIX)include/$(ICIV)
+LIBICI	?= $(PREFIX)lib/$(ICIV)
+ICI_DEFS= -D$(ICIV)
+TOOLS	= ../tools
+INCS	= -I$(ICI) -I/usr/local/include/giflib
+DEFS	= $(ICI_DEFS)
+OPTIM	= -g -O
+PIC	= -dynamic
+CFLAGS	= $(PIC) $(OPTIM) $(INCS) $(DEFS)
+LDFLAGS = -flat_namespace -bundle -undefined suppress
+
+O=	utype.o
+
+all:	$(ICIV)utype.dylib
+
+$(ICIV)utype.dylib:	$O
+	$(CC) $(LDFLAGS) -o $@ $O
+	@chmod 644 $@
+
+install:	$(ICIV)utype.dylib
+	install -c -m 444 $(ICIV)utype.dylib $(LIBICI)
+
+clean:
+	rm -f *.dylib *.o
+
+clobber: clean
+	rm -f .depend
+
+depend:
+	mkdep $(CFLAGS) utype.c

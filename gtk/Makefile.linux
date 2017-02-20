@@ -1,0 +1,85 @@
+#
+# $Id: Makefile.linux,v 1.1 2000/07/31 10:40:14 atrn Exp $
+#
+
+NAME	= gtk
+OBJS	= gtk.o
+ICISRC1	= gtk.ici
+ICISRC2	= Gtk.ici
+
+PREFIX	= /usr/local/
+
+ICIV	= ici3
+ICI	= $(PREFIX)include/$(ICIV)
+LIBICI	= $(PREFIX)lib/$(ICIV)
+
+FLAVOUR	= linux
+ICI_DEFS= -DCONFIG_FILE='"conf-$(FLAVOUR).h"'
+
+TOOLS	= ../tools
+
+GTKCONF	= gtk-config
+
+INCS	= -I$(ICI)
+DEFS	= $(ICI_DEFS)
+
+CC	= cc
+OPTIM	= -O2
+WARN	= -Wall
+SYMS	= -g
+CODEGEN	= -fpic
+CFLAGS	= $(WARN) $(OPTIM) $(SYMS) $(CODEGEN) $(INCS) $(DEFS) `$(GTKCONF) --cflags`
+
+LIBS	=  $(XLIBS) -lm `$(GTKCONF) --libs` -lc
+
+
+LIB	= $(ICIV)$(NAME).so
+
+all:	$(LIB)
+
+$(LIB):	$(OBJS) strings.o cfuncs.o
+	$(CC) -shared -Wl,-soname,$@ -export-dynamic -o $@ $(OBJS) strings.o cfuncs.o $(LIBS)
+	@chmod 644 $@
+
+$(OBJS): ici.h
+
+.SUFFIXES: .c .i .s
+
+.c.i:
+	$(CC) -E $(CFLAGS) $*.c > $*.i
+
+.c.s:
+	$(CC) -S $(CFLAGS) $*.c
+
+SRCS=	$(OBJS:.o=.c)
+
+$(OBJS): ici.h strs.h
+
+#strs.h strings.c : $(SRCS) $(TOOLS)/mk-strings.ici
+
+strs.h strings.c : $(SRCS)
+	@cat $(SRCS) | ici $(TOOLS)/mk-strings.ici $(NAME)
+
+cfuncs.c : $(SRCS) $(TOOLS)/mk-cfuncs.ici
+	cat $(SRCS) | ici $(TOOLS)/mk-cfuncs.ici $(NAME)
+	ici fix-cfuncs.ici
+
+ici.h : $(TOOLS)/mk-ici-dot-h.ici
+	ici $(TOOLS)/mk-ici-dot-h.ici $(NAME)
+
+install: $(LIB)
+	install -c -m 444 $(LIB) $(LIBICI)
+	install -c -m 444 $(ICISRC1) $(LIBICI)/$(ICIV)$(ICISRC1)
+	install -c -m 444 $(ICISRC2) $(LIBICI)/$(ICIV)$(ICISRC2)
+
+clean:
+	rm -f *.o *.so cfuncs.c strings.c strs.h *.bak
+
+clobber: clean
+	rm -f .depend ici.h
+
+depend: ici.h strs.h
+	mkdep $(CFLAGS) $(SRCS)
+
+docs:
+	ici $(TOOLS)/mk-doc.ici -module $(NAME) -dir doc -text $(SRCS)

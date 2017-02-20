@@ -1,0 +1,6 @@
+The gl module is a half completed interface to OpenGL.  The module
+provides many of the several hundred functions in the OpenGL API and
+adapts them to an ICI style.
+
+This module is currently not functional and requires completion and
+testing.  Also see the glx module.

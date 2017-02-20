@@ -1,0 +1,32 @@
+PREFIX	= /usr/local/
+ICIV	= ici3
+ICIEXE	= $(PREFIX)bin/$(ICIV)
+LIBICI	= $(PREFIX)lib/$(ICIV)
+ICI	= $(PREFIX)include/$(ICIV)
+FLAVOUR	= linux
+CC	= cc -Wall
+OPTIM	= -g -O
+PIC	= -fpic
+CFLAGS	= $(PIC) $(OPTIM) -I$(ICI) -DCONFIG_FILE='"conf-$(FLAVOUR).h"' -D$(ICIV)
+
+ALL	= $(ICIV)save.so $(ICIV)restore.so
+
+all:	$(ALL)
+
+$(ICIV)save.so: save.o misc.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ save.o misc.o
+
+$(ICIV)restore.so: restore.o misc.o
+	$(CC) -shared -Wl,-soname,$@ -o $@ restore.o misc.o
+
+install: $(ALL)
+	install -c -m 444 $(ALL) $(LIBICI)
+
+clean:
+	rm -f *.so *.o
+
+clobber: clean
+	rm -f .depend opfunc.c
+
+depend:
+	mkdep $(CFLAGS) *.c

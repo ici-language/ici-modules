@@ -1,0 +1,28 @@
+static	display, screen, pixmap, window, nwindows = 0;
+
+static
+closewindow(self)
+{
+    WM.DestroyWidget(self);
+    if (--nwindows == 0)
+	exit();
+}
+
+WM.InitializeApplication(path.base(argv[0]));
+display = X.OpenDisplay();
+screen = WM.CreateScreen(display, X.DefaultScreen(display));
+pixmap = WM.CreatePixmapFromFile(screen, "logo.xpm");
+WM.SetApplicationIconImage(screen, pixmap);
+
+window = WM.CreateWindow(screen, "testList"), ++nwindows;
+WM.SetWindowTitle(window, "List");
+WM.SetWindowCloseAction(window, closewindow);
+
+auto list, i;
+for (list = WM.CreateList(window), i = 0; i < 50; ++i)
+     WM.AddListItem(list, sprintf("Item %d", i));
+
+WM.RealizeWidget(window);
+WM.MapSubwidgets(window);
+WM.MapWidget(window);
+WM.ScreenMainLoop(screen);
